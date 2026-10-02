@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile } from 'node:fs/promises';
+import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import test from 'node:test';
@@ -26,17 +26,36 @@ const defaults = {
   music: { defaultVolume: 50 },
 };
 
-test('dashboard validates and persists complete guild settings', async () => {
+test('dashboard validates and persists every exposed guild setting', async () => {
   const directory = await mkdtemp(path.join(os.tmpdir(), 'sparkles-dashboard-'));
   const file = path.join(directory, 'store.json');
-  const store = new BotStore(file, defaults);
   const guildId = '123456789012345678';
 
+  await writeFile(
+    file,
+    JSON.stringify({
+      guilds: {
+        [guildId]: {
+          tags: {},
+          automod: { linkProtocols: ['http'] },
+        },
+      },
+      warnings: {},
+    }),
+    'utf8',
+  );
+
+  const store = new BotStore(file, defaults);
   const patch = settingsPatch({
-    aiChatEnabled: true,
-    currency: 'stars',
     logsChannelId: '223456789012345678',
-    verificationRoleId: '323456789012345678',
+    suggestionsChannelId: '223456789012345679',
+    giveawayChannelId: '223456789012345680',
+    ticketCategoryId: '223456789012345681',
+    autoRoleId: '323456789012345678',
+    verificationRoleId: '323456789012345679',
+    rules: 'Be kind and stay on topic.',
+    currency: 'stars',
+    aiChatEnabled: true,
     automod: {
       enabled: true,
       antiLink: true,
@@ -49,6 +68,22 @@ test('dashboard validates and persists complete guild settings', async () => {
       warningThreshold: 4,
       blockedWords: [' Spam ', 'spam', 'Scam'],
     },
+    welcome: {
+      enabled: true,
+      channelId: '223456789012345682',
+      message: 'Welcome {user} to {server}!',
+    },
+    goodbye: {
+      enabled: true,
+      channelId: '223456789012345683',
+      message: 'Goodbye {user}.',
+    },
+    giveaways: {
+      defaultDurationSeconds: 180,
+    },
+    music: {
+      defaultVolume: 72,
+    },
     economy: {
       begReward: 30,
       dailyReward: 300,
@@ -56,21 +91,86 @@ test('dashboard validates and persists complete guild settings', async () => {
       boxPrice: 600,
       robberySuccessPercent: 40,
     },
-    customCommands: { hello: 'Welcome to the server!' },
-    modules: { music: false, moderation: true },
+    modules: {
+      moderation: true,
+      automod: true,
+      roles: true,
+      server: false,
+      community: true,
+      economy: true,
+      fun: false,
+      music: false,
+      events: true,
+      tools: true,
+    },
+    customCommands: {
+      hello: 'Welcome to the server!',
+      rules-short: 'Read the rules channel.',
+    },
   });
 
   const settings = await store.updateGuildSettings(guildId, patch);
+
+  assert.equal(settings.logsChannelId, '223456789012345678');
+  assert.equal(settings.suggestionsChannelId, '223456789012345679');
+  assert.equal(settings.giveawayChannelId, '223456789012345680');
+  assert.equal(settings.ticketCategoryId, '223456789012345681');
+  assert.equal(settings.autoRoleId, '323456789012345678');
+  assert.equal(settings.verificationRoleId, '323456789012345679');
+  assert.equal(settings.rules, 'Be kind and stay on topic.');
   assert.equal(settings.currency, 'stars');
+  assert.equal(settings.aiChatEnabled, true);
+  assert.equal(settings.automod.antiLink, true);
   assert.equal(settings.automod.antiBot, true);
   assert.deepEqual(settings.automod.blockedWords, ['spam', 'scam']);
+  assert.equal(settings.welcome.enabled, true);
+  assert.equal(settings.welcome.channelId, '223456789012345682');
+  assert.equal(settings.goodbye.enabled, true);
+  assert.equal(settings.goodbye.channelId, '223456789012345683');
+  assert.equal(settings.giveaways.defaultDurationSeconds, 180);
+  assert.equal(settings.music.defaultVolume, 72);
   assert.equal(settings.economy.dailyReward, 300);
+  assert.equal(settings.economy.robberySuccessPercent, 40);
+  assert.equal(settings.modules.server, false);
   assert.equal(settings.modules.music, false);
   assert.equal(settings.customCommands.hello, 'Welcome to the server!');
+  assert.equal(settings.customCommands['rules-short'], 'Read the rules channel.');
 
   const persisted = JSON.parse(await readFile(file, 'utf8'));
-  assert.equal(persisted.guilds[guildId].features.antiBot, true);
-  assert.equal(persisted.guilds[guildId].economySettings.boxPrice, 600);
+  const guild = persisted.guilds[guildId];
+
+  assert.equal(guild.logsChannelId, '223456789012345678');
+  assert.equal(guild.suggestionsChannelId, '223456789012345679');
+  assert.equal(guild.giveawayChannelId, '223456789012345680');
+  assert.equal(guild.ticketCategoryId, '223456789012345681');
+  assert.equal(guild.autoRoleId, '323456789012345678');
+  assert.equal(guild.verificationRoleId, '323456789012345679');
+  assert.equal(guild.features.antiBot, true);
+  assert.equal(guild.automod.linkProtocols, undefined);
+  assert.equal(guild.welcome.channelId, '223456789012345682');
+  assert.equal(guild.goodbye.channelId, '223456789012345683');
+  assert.equal(guild.giveawaySettings.defaultDurationSeconds, 180);
+  assert.equal(guild.musicSettings.defaultVolume, 72);
+  assert.equal(guild.economySettings.boxPrice, 600);
+  assert.equal(guild.modules.server, false);
+  assert.equal(guild.customCommands.hello, 'Welcome to the server!');
+});
+
+test('dashboard rejects lifecycle features enabled without a channel', () => {
+  assert.throws(
+    () =>
+      settingsPatch({
+        welcome: { enabled: true, channelId: null, message: 'Welcome!' },
+      }),
+    /INVALID_CHANNEL/u,
+  );
+  assert.throws(
+    () =>
+      settingsPatch({
+        goodbye: { enabled: true, channelId: null, message: 'Goodbye!' },
+      }),
+    /INVALID_CHANNEL/u,
+  );
 });
 
 test('dashboard rejects unknown and unsafe settings', () => {
