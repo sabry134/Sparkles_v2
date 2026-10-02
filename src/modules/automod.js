@@ -220,9 +220,8 @@ export async function protectNewMember(member, t) {
 
   if (!reason) return false;
   await member.send(reason).catch(() => {});
-  if (!member.kickable) return false;
-  return member
-    .kick(reason)
-    .then(() => true)
-    .catch(() => false);
+  if (member.kickable) {
+    await member.kick(reason).catch(() => {});
+  }
+  return true;
 }
