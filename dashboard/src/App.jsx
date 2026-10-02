@@ -737,9 +737,14 @@ function Dashboard({ session, onSessionExpired }) {
     [draft, savedSettings, editableSettings],
   );
 
-  function navigateSection(section, resourceId = null) {
+  async function allowDashboardNavigation() {
+    const guard = window.__sparklesNavigationGuard;
+    return typeof guard === 'function' ? await guard() : true;
+  }
+
+  async function navigateSection(section, resourceId = null) {
     if (!PAGE_IDS.has(section)) return;
-    if (!window.dispatchEvent(new Event('sparkles:navigate', { cancelable: true }))) return;
+    if (!(await allowDashboardNavigation())) return;
     setPlatformResourceId(resourceId);
     setActiveSection(section);
     window.history.pushState(
@@ -750,8 +755,8 @@ function Dashboard({ session, onSessionExpired }) {
     window.scrollTo({ top: 0, behavior: scrollBehavior() });
   }
 
-  function chooseGuild(value) {
-    if (!window.dispatchEvent(new Event('sparkles:navigate', { cancelable: true }))) return;
+  async function chooseGuild(value) {
+    if (!(await allowDashboardNavigation())) return;
     setPlatformResourceId(null);
     activeGuildId.current = value;
     setSelectedGuildId(value);
