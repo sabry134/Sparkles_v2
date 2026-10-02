@@ -2517,22 +2517,26 @@ function Dashboard({ session, onSessionExpired }) {
                           <strong>/{command.name}</strong>
                           <span>{command.description}</span>
                         </div>
-                        <ToggleField
+                        <button
                           id={`command-${command.name}`}
-                          label={enabled ? t('common.on') : t('common.off')}
-                          help=""
-                          checked={enabled}
-                          onChange={(value) =>
+                          className={enabled ? 'toggle checked' : 'toggle'}
+                          type="button"
+                          role="switch"
+                          aria-checked={enabled}
+                          onClick={() =>
                             updateField(
                               'disabledCommands',
-                              value
-                                ? draft.disabledCommands.filter(
+                              enabled
+                                ? [...draft.disabledCommands, command.name]
+                                : draft.disabledCommands.filter(
                                     (name) => name !== command.name,
-                                  )
-                                : [...draft.disabledCommands, command.name],
+                                  ),
                             )
                           }
-                        />
+                        >
+                          <span>{enabled ? t('common.on') : t('common.off')}</span>
+                          <i />
+                        </button>
                       </div>
                     );
                   })}
