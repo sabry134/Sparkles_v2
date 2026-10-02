@@ -1,5 +1,5 @@
 import { PermissionFlagsBits } from 'discord.js';
-import { addWarning, guildConfig, saveStore } from '../store.js';
+import { addModerationCase, addWarning, guildConfig, saveStore } from '../store.js';
 import { componentMessage, errorMessage, successMessage } from '../ui/components.js';
 import { botConfig } from '../config.js';
 
@@ -275,6 +275,24 @@ async function enforceViolation(message, t, reason) {
     at: new Date().toISOString(),
     moderatorId: message.client.user.id,
     reason: `Automod: ${reason}`,
+  });
+  addModerationCase(message.guildId, {
+    action: 'automod',
+    actorId: message.client.user.id,
+    actorTag: message.client.user.tag,
+    targetId: message.author.id,
+    targetTag: message.author.tag,
+    reason,
+    source: 'automod',
+    evidence: {
+      channelId: message.channelId,
+      messageId: message.id,
+      content: message.content.slice(0, 2_000),
+      attachments: [...message.attachments.values()].slice(0, 10).map((attachment) => ({
+        name: attachment.name ?? null,
+        url: attachment.url,
+      })),
+    },
   });
   await saveStore();
 
