@@ -250,7 +250,7 @@ function SettingSection({
       ) : null}
       {moduleKey && !moduleEnabled ? (
         <div className="module-disabled-state">
-          <Icon name="power" size={22} />
+          <Icon name="settings" size={22} />
           <div>
             <strong>{t('modules.pageDisabledTitle')}</strong>
             <span>
@@ -1356,49 +1356,57 @@ function Dashboard({ session, onSessionExpired }) {
                   checked={draft.actionLog.enabled}
                   onChange={(value) => updateNested('actionLog', 'enabled', value)}
                 />
-                <SelectField
-                  id="action-log-channel"
-                  label={t('moderation.actionLogChannel')}
-                  help={t('moderation.actionLogChannelHelp')}
-                  icon="hash"
-                  value={draft.actionLog.channelId}
-                  onChange={(value) => updateNested('actionLog', 'channelId', value)}
-                  options={channelOptions}
-                />
-                {[
-                  ['messageDelete', 'moderation.logMessageDelete'],
-                  ['messageEdit', 'moderation.logMessageEdit'],
-                  ['memberJoin', 'moderation.logMemberJoin'],
-                  ['memberLeave', 'moderation.logMemberLeave'],
-                  ['roleChanges', 'moderation.logRoleChanges'],
-                ].map(([field, label]) => (
-                  <ToggleField
-                    id={`action-log-${field}`}
-                    key={field}
-                    label={t(label)}
-                    help={t(`${label}Help`)}
-                    checked={draft.actionLog[field]}
-                    onChange={(value) => updateNested('actionLog', field, value)}
-                  />
-                ))}
-                <MultiSelectField
-                  id="action-log-ignore-roles"
-                  label={t('moderation.actionLogIgnoreRoles')}
-                  help={t('moderation.actionLogIgnoreRolesHelp')}
-                  value={draft.actionLog.ignoreRoleIds ?? []}
-                  onChange={(value) => updateNested('actionLog', 'ignoreRoleIds', value)}
-                  options={allRoleOptions}
-                  icon="role"
-                />
-                <MultiSelectField
-                  id="action-log-ignore-channels"
-                  label={t('moderation.actionLogIgnoreChannels')}
-                  help={t('moderation.actionLogIgnoreChannelsHelp')}
-                  value={draft.actionLog.ignoreChannelIds ?? []}
-                  onChange={(value) => updateNested('actionLog', 'ignoreChannelIds', value)}
-                  options={channelOptions}
-                  icon="hash"
-                />
+                {draft.actionLog.enabled ? (
+                  <>
+                    <SelectField
+                      id="action-log-channel"
+                      label={t('moderation.actionLogChannel')}
+                      help={t('moderation.actionLogChannelHelp')}
+                      icon="hash"
+                      value={draft.actionLog.channelId}
+                      onChange={(value) => updateNested('actionLog', 'channelId', value)}
+                      options={channelOptions}
+                    />
+                    {[
+                      ['messageDelete', 'moderation.logMessageDelete'],
+                      ['messageEdit', 'moderation.logMessageEdit'],
+                      ['memberJoin', 'moderation.logMemberJoin'],
+                      ['memberLeave', 'moderation.logMemberLeave'],
+                      ['roleChanges', 'moderation.logRoleChanges'],
+                    ].map(([field, label]) => (
+                      <ToggleField
+                        id={`action-log-${field}`}
+                        key={field}
+                        label={t(label)}
+                        help={t(`${label}Help`)}
+                        checked={draft.actionLog[field]}
+                        onChange={(value) => updateNested('actionLog', field, value)}
+                      />
+                    ))}
+                    <MultiSelectField
+                      id="action-log-ignore-roles"
+                      label={t('moderation.actionLogIgnoreRoles')}
+                      help={t('moderation.actionLogIgnoreRolesHelp')}
+                      value={draft.actionLog.ignoreRoleIds ?? []}
+                      onChange={(value) =>
+                        updateNested('actionLog', 'ignoreRoleIds', value)
+                      }
+                      options={allRoleOptions}
+                      icon="role"
+                    />
+                    <MultiSelectField
+                      id="action-log-ignore-channels"
+                      label={t('moderation.actionLogIgnoreChannels')}
+                      help={t('moderation.actionLogIgnoreChannelsHelp')}
+                      value={draft.actionLog.ignoreChannelIds ?? []}
+                      onChange={(value) =>
+                        updateNested('actionLog', 'ignoreChannelIds', value)
+                      }
+                      options={channelOptions}
+                      icon="hash"
+                    />
+                  </>
+                ) : null}
               </div>
 
               <div className="settings-card moderation-history-card">
@@ -2331,25 +2339,29 @@ function Dashboard({ session, onSessionExpired }) {
                     checked={draft[section].enabled}
                     onChange={(value) => updateNested(section, 'enabled', value)}
                   />
-                  <SelectField
-                    id={`${section}-channel`}
-                    label={t(`${prefix}Channel`)}
-                    help={t('community.lifecycleChannelHelp')}
-                    icon="hash"
-                    value={draft[section].channelId}
-                    onChange={(value) => updateNested(section, 'channelId', value)}
-                    options={channelOptions}
-                  />
-                  <InputField
-                    id={`${section}-message`}
-                    label={t(`${prefix}Message`)}
-                    help={t('community.lifecycleMessageHelp')}
-                    value={draft[section].message}
-                    onChange={(value) => updateNested(section, 'message', value)}
-                    maxLength={1900}
-                    multiline
-                    placeholder={t(`${prefix}Placeholder`)}
-                  />
+                  {draft[section].enabled ? (
+                    <>
+                      <SelectField
+                        id={`${section}-channel`}
+                        label={t(`${prefix}Channel`)}
+                        help={t('community.lifecycleChannelHelp')}
+                        icon="hash"
+                        value={draft[section].channelId}
+                        onChange={(value) => updateNested(section, 'channelId', value)}
+                        options={channelOptions}
+                      />
+                      <InputField
+                        id={`${section}-message`}
+                        label={t(`${prefix}Message`)}
+                        help={t('community.lifecycleMessageHelp')}
+                        value={draft[section].message}
+                        onChange={(value) => updateNested(section, 'message', value)}
+                        maxLength={1900}
+                        multiline
+                        placeholder={t(`${prefix}Placeholder`)}
+                      />
+                    </>
+                  ) : null}
                 </div>
               ))}
             </SettingSection>
@@ -2496,49 +2508,53 @@ function Dashboard({ session, onSessionExpired }) {
                   checked={draft.starboard.enabled}
                   onChange={(value) => updateNested('starboard', 'enabled', value)}
                 />
-                <SelectField
-                  id="starboard-channel"
-                  label={t('automation.starboardChannel')}
-                  help={t('automation.starboardChannelHelp')}
-                  icon="hash"
-                  value={draft.starboard.channelId}
-                  onChange={(value) => updateNested('starboard', 'channelId', value)}
-                  options={channelOptions}
-                />
-                <InputField
-                  id="starboard-threshold"
-                  label={t('automation.starboardThreshold')}
-                  help={t('automation.starboardThresholdHelp')}
-                  type="number"
-                  min={1}
-                  max={100}
-                  value={draft.starboard.threshold}
-                  onChange={(value) => updateNested('starboard', 'threshold', value)}
-                />
-                <div className="field-row input-field-row">
-                  <div className="field-copy">
-                    <label htmlFor="starboard-emoji">
-                      {t('automation.starboardEmoji')}
-                    </label>
-                    <p>{t('automation.starboardEmojiHelp')}</p>
-                  </div>
-                  <EmojiPicker
-                    id="starboard-emoji"
-                    value={draft.starboard.emoji}
-                    onChange={(value) => updateNested('starboard', 'emoji', value)}
-                  />
-                </div>
-                <MultiSelectField
-                  id="starboard-ignore-channels"
-                  label={t('automation.starboardIgnoredChannels')}
-                  help={t('automation.starboardIgnoredChannelsHelp')}
-                  value={draft.starboard.ignoreChannelIds}
-                  onChange={(value) =>
-                    updateNested('starboard', 'ignoreChannelIds', value)
-                  }
-                  options={channelOptions}
-                  icon="hash"
-                />
+                {draft.starboard.enabled ? (
+                  <>
+                    <SelectField
+                      id="starboard-channel"
+                      label={t('automation.starboardChannel')}
+                      help={t('automation.starboardChannelHelp')}
+                      icon="hash"
+                      value={draft.starboard.channelId}
+                      onChange={(value) => updateNested('starboard', 'channelId', value)}
+                      options={channelOptions}
+                    />
+                    <InputField
+                      id="starboard-threshold"
+                      label={t('automation.starboardThreshold')}
+                      help={t('automation.starboardThresholdHelp')}
+                      type="number"
+                      min={1}
+                      max={100}
+                      value={draft.starboard.threshold}
+                      onChange={(value) => updateNested('starboard', 'threshold', value)}
+                    />
+                    <div className="field-row input-field-row">
+                      <div className="field-copy">
+                        <label htmlFor="starboard-emoji">
+                          {t('automation.starboardEmoji')}
+                        </label>
+                        <p>{t('automation.starboardEmojiHelp')}</p>
+                      </div>
+                      <EmojiPicker
+                        id="starboard-emoji"
+                        value={draft.starboard.emoji}
+                        onChange={(value) => updateNested('starboard', 'emoji', value)}
+                      />
+                    </div>
+                    <MultiSelectField
+                      id="starboard-ignore-channels"
+                      label={t('automation.starboardIgnoredChannels')}
+                      help={t('automation.starboardIgnoredChannelsHelp')}
+                      value={draft.starboard.ignoreChannelIds}
+                      onChange={(value) =>
+                        updateNested('starboard', 'ignoreChannelIds', value)
+                      }
+                      options={channelOptions}
+                      icon="hash"
+                    />
+                  </>
+                ) : null}
               </div>
             </SettingSection>
 
@@ -2668,21 +2684,23 @@ function Dashboard({ session, onSessionExpired }) {
                           <span>{command.description}</span>
                         </div>
                         <div className="command-manager-actions">
-                          <button
-                            className={
-                              selectedCommandName === command.name
-                                ? 'button secondary selected'
-                                : 'button secondary'
-                            }
-                            type="button"
-                            onClick={() =>
-                              setSelectedCommandName((current) =>
-                                current === command.name ? null : command.name,
-                              )
-                            }
-                          >
-                            {t('modules.commandConfigure')}
-                          </button>
+                          {enabled ? (
+                            <button
+                              className={
+                                selectedCommandName === command.name
+                                  ? 'button secondary selected'
+                                  : 'button secondary'
+                              }
+                              type="button"
+                              onClick={() =>
+                                setSelectedCommandName((current) =>
+                                  current === command.name ? null : command.name,
+                                )
+                              }
+                            >
+                              {t('modules.commandConfigure')}
+                            </button>
+                          ) : null}
                           <button
                             id={`command-${command.name}`}
                             className={enabled ? 'toggle checked' : 'toggle'}
@@ -2708,7 +2726,9 @@ function Dashboard({ session, onSessionExpired }) {
                     );
                   })}
                 </div>
-                {selectedCommand && selectedCommandRule ? (
+                {selectedCommand &&
+                selectedCommandRule &&
+                !draft.disabledCommands.includes(selectedCommand.name) ? (
                   <div className="command-permission-panel">
                     <div className="subsection-heading">
                       <div>
