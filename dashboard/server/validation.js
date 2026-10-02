@@ -475,11 +475,13 @@ function embedPayload(value) {
       'color',
       'url',
       'authorName',
+      'authorUrl',
       'authorIconUrl',
       'thumbnailUrl',
       'imageUrl',
       'footerText',
       'footerIconUrl',
+      'timestamp',
       'fields',
     ]),
   );
@@ -501,7 +503,9 @@ function embedPayload(value) {
     result.author = {
       name: text(value.authorName, 256, { allowEmpty: false }),
     };
+    const authorUrl = webUrl(value.authorUrl ?? null, 'authorUrl');
     const iconUrl = webUrl(value.authorIconUrl ?? null, 'authorIconUrl');
+    if (authorUrl) result.author.url = authorUrl;
     if (iconUrl) result.author.icon_url = iconUrl;
   }
   const thumbnail = webUrl(value.thumbnailUrl ?? null, 'thumbnailUrl');
@@ -514,6 +518,9 @@ function embedPayload(value) {
     };
     const iconUrl = webUrl(value.footerIconUrl ?? null, 'footerIconUrl');
     if (iconUrl) result.footer.icon_url = iconUrl;
+  }
+  if (Object.hasOwn(value, 'timestamp')) {
+    result.timestamp = boolean(value.timestamp) ? new Date().toISOString() : undefined;
   }
   if (Object.hasOwn(value, 'fields')) {
     assert(Array.isArray(value.fields) && value.fields.length <= 25, 'INVALID_INPUT');
@@ -535,6 +542,7 @@ function embedPayload(value) {
         result.thumbnail ||
         result.image ||
         result.footer ||
+        result.timestamp ||
         result.fields?.length,
     ),
     'INVALID_INPUT',
