@@ -1493,21 +1493,7 @@ function Dashboard({ session, onSessionExpired }) {
                 />
               </div>
 
-              <div
-                className={`inline-status ${
-                  draft.automod.enabled &&
-                  (draft.automod.antiLink ||
-                    draft.automod.antiSwear ||
-                    draft.automod.antiSpam ||
-                    draft.automod.antiMentionSpam ||
-                    draft.automod.antiCaps ||
-                    draft.automod.antiEmojiSpam ||
-                    draft.automod.antiAttachmentSpam ||
-                    draft.automod.antiLinkSpam)
-                    ? 'enabled'
-                    : ''
-                }`}
-              >
+              <div className={`inline-status ${automodActive ? 'enabled' : ''}`}>
                 <span />
                 <Icon name="shield" size={16} />
                 {draft.automod.enabled
