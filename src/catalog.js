@@ -10,7 +10,6 @@ anti-raid|View or configure automatic raid protection
 anti-spam|Configure automatic spam and flood protection
 anti-swear|Configure automatic blocked-term filtering
 automod-test|Test text against the current automod configuration
-ask|Chat with the server AI using one complete prompt
 auto-role|Configure the role automatically given to new members
 auto-status|View all automated protection settings
 automod|View or configure warning-based automoderation
@@ -71,7 +70,6 @@ module|View or configure Sparkles command modules
 now-playing|Display the currently playing track
 open|Open one of your owned reward boxes
 organize|Open the event organizer controls
-pastebin|Create a private Pastebin from supplied content
 ping|Check Sparkles response and gateway latency
 play|Search for and play audio in your voice channel
 prefix-only|Run a saved custom command by name
@@ -81,7 +79,6 @@ purchase|Purchase reward boxes with wallet coins
 queue|View the current music queue
 quote|Quote an existing message by its Discord ID
 random|Get a random fact, joke, quote, meme, dog, or cat
-ratings|View a Tanki Online player's complete ratings
 redeem-code|Redeem any valid Sparkles staff access code
 remove-permissions|Remove your Sparkles staff permissions
 remove-points|Remove tournament points from a participant
@@ -90,7 +87,6 @@ remove-role|Remove a role from a server member
 rename|Change or randomize a member's nickname
 reply|Reply to an existing Discord message
 reset-suggestions|Disable and clear the suggestion channel
-reward|Claim the reward for voting for Sparkles
 rob|Attempt to steal coins from another member
 rps|Play one round of rock paper scissors
 rules|Display this server's configured rules
@@ -107,9 +103,7 @@ skip|Skip the current track
 slowmode|Set slowmode for this or another text channel
 soft-ban|Ban and immediately unban a user
 song-search|Search the configured music service
-start|Enable AI chat responses in this server
 status|Inspect a user's Sparkles access status
-stop|Disable AI chat responses in this server
 sudo|Send a webhook-style message as a member
 suggest|Submit a suggestion to the configured channel
 tag|Create, view, list, edit, or delete server tags
