@@ -1,4 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
+import {
+  Button,
+  Checkbox,
+  FormControl,
+  FormControlLabel,
+  MenuItem,
+  Select as MuiSelect,
+  Tab,
+  Tabs,
+  TextField,
+} from '@mui/material';
 import { t } from './i18n/index.js';
 import { DISCORD_LIMITS as L, EMPTY_MESSAGE, MESSAGE_VARIABLES, embedTextLength, messageIssues, safeUrl } from '../../shared/discord-limits.js';
 
@@ -37,17 +48,59 @@ export function MessagePreview({ value, resources = {}, mobile = false }) {
         {safeImage(embed.image?.url, 'studio-large-image')}
         {(embed.footer?.text || embed.timestamp) && <div className="studio-footer">{safeImage(embed.footer?.icon_url, 'studio-small-image')}<span>{embed.footer?.text}{embed.footer?.text && embed.timestamp ? t('studio.separator') : ''}{embed.timestamp && Number.isFinite(Date.parse(embed.timestamp)) ? new Date(embed.timestamp).toLocaleString() : ''}</span></div>}
       </article>)}
-      {(value.components ?? []).map((row, index) => <div className="studio-preview-components" key={index}>{row.components?.map((component, position) => component.type === 2 ? <span key={position} className={`studio-component style-${component.style}`}>{component.emoji?.name} {component.label}</span> : <select key={position} aria-label={t('studio.componentPreview')} disabled>{component.options?.map(option => <option key={option.value}>{option.label}</option>)}</select>)}</div>)}
+      {(value.components ?? []).map((row, index) => <div className="studio-preview-components" key={index}>{row.components?.map((component, position) => component.type === 2 ? (
+          <span
+            key={position}
+            className={`studio-component style-${component.style}`}
+          >
+            {component.emoji?.name} {component.label}
+          </span>
+        ) : (
+          <FormControl size="small" key={position}>
+            <MuiSelect
+              aria-label={t('studio.componentPreview')}
+              disabled
+              value=""
+              displayEmpty
+            >
+              <MenuItem value="">
+                {component.options?.[0]?.label ?? t('studio.componentPreview')}
+              </MenuItem>
+            </MuiSelect>
+          </FormControl>
+        ))}</div>)}
       {!value.content && !value.embeds?.length && <p className="muted">{t('studio.emptyPreview')}</p>}
     </div>
   </div>;
 }
 
-function TextControl({ label, value = '', onChange, maximum, multiline = false, type = 'text' }) {
-  const Element = multiline ? 'textarea' : 'input';
-  return <label className="studio-control"><span>{t(`studio.${label}`)}</span><Element type={multiline ? undefined : type} value={value} rows={multiline ? 4 : undefined} onChange={event => onChange(event.target.value)} />{maximum && <small className={value.length > maximum ? 'error-text' : 'muted'}>{t('studio.characterCount', { count: value.length, limit: maximum })}</small>}</label>;
+function TextControl({
+  label,
+  value = '',
+  onChange,
+  maximum,
+  multiline = false,
+  type = 'text',
+}) {
+  return (
+    <label className="studio-control mui-studio-control">
+      <span>{t(`studio.${label}`)}</span>
+      <TextField
+        fullWidth
+        type={multiline ? 'text' : type}
+        multiline={multiline}
+        minRows={multiline ? 4 : undefined}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+      />
+      {maximum ? (
+        <small className={value.length > maximum ? 'error-text' : 'muted'}>
+          {t('studio.characterCount', { count: value.length, limit: maximum })}
+        </small>
+      ) : null}
+    </label>
+  );
 }
-
 export default function MessageStudio({ value = EMPTY_MESSAGE, onChange, resources = {}, limits, embedOnly = false }) {
   const [tab, setTab] = useState('compose');
   const [mobile, setMobile] = useState(false);
@@ -91,15 +144,25 @@ export default function MessageStudio({ value = EMPTY_MESSAGE, onChange, resourc
   };
   return <div className="message-studio">
     <div className="studio-toolbar">
-      <div className="platform-tabs" role="tablist" aria-label={t('studio.editorMode')}>
-        {['compose', 'json'].map(mode => <button type="button" role="tab" aria-selected={tab === mode} key={mode} onClick={() => { setTab(mode); if (mode === 'json') setJson(JSON.stringify(value, null, 2)); }}>{t(`studio.${mode}`)}</button>)}
-      </div>
+      <Tabs
+        className="platform-tabs mui-studio-tabs"
+        value={tab}
+        onChange={(_, mode) => {
+          setTab(mode);
+          if (mode === 'json') setJson(JSON.stringify(value, null, 2));
+        }}
+        aria-label={t('studio.editorMode')}
+      >
+        {['compose', 'json'].map((mode) => (
+          <Tab key={mode} value={mode} label={t(`studio.${mode}`)} />
+        ))}
+      </Tabs>
       <div className="platform-actions">
-        <button type="button" className="button secondary" disabled={!history.current.past.length} onClick={undo}>{t('studio.undo')}</button>
-        <button type="button" className="button secondary" disabled={!history.current.future.length} onClick={redo}>{t('studio.redo')}</button>
-        <button type="button" className="button secondary" onClick={() => navigator.clipboard.writeText(JSON.stringify(value, null, 2)).then(() => setNotice(t('studio.copied'))).catch(() => setNotice(t('studio.copyFailed')))}>{t('studio.copyJson')}</button>
-        <button type="button" className="button secondary" onClick={() => downloadJson(value, t('studio.exportFilename'))}>{t('studio.export')}</button>
-        <button type="button" className="button secondary" onClick={() => fileInput.current?.click()}>{t('studio.import')}</button>
+        <Button type="button" className="button secondary" disabled={!history.current.past.length} onClick={undo}>{t('studio.undo')}</Button>
+        <Button type="button" className="button secondary" disabled={!history.current.future.length} onClick={redo}>{t('studio.redo')}</Button>
+        <Button type="button" className="button secondary" onClick={() => navigator.clipboard.writeText(JSON.stringify(value, null, 2)).then(() => setNotice(t('studio.copied'))).catch(() => setNotice(t('studio.copyFailed')))}>{t('studio.copyJson')}</Button>
+        <Button type="button" className="button secondary" onClick={() => downloadJson(value, t('studio.exportFilename'))}>{t('studio.export')}</Button>
+        <Button type="button" className="button secondary" onClick={() => fileInput.current?.click()}>{t('studio.import')}</Button>
         <input hidden type="file" accept="application/json,.json" ref={fileInput} onChange={async event => {
           const file = event.target.files?.[0]; if (!file) return;
           if (limits && file.size > limits.maximumImportBytes) { setNotice(t('studio.fileTooLarge')); return; }
@@ -110,7 +173,7 @@ export default function MessageStudio({ value = EMPTY_MESSAGE, onChange, resourc
     {notice && <p className="platform-notice" role="status">{notice}</p>}
     <div className="studio-layout">
       <div className="studio-editor">
-        {tab === 'json' ? <><label className="studio-control"><span>{t('studio.json')}</span><textarea className="studio-json" rows={20} value={json} onChange={event => setJson(event.target.value)} spellCheck={false} /></label><button type="button" className="button secondary" onClick={() => imported(json)}>{t('studio.applyJson')}</button></> : <>
+        {tab === 'json' ? <><label className="studio-control"><span>{t('studio.json')}</span><textarea className="studio-json" rows={20} value={json} onChange={event => setJson(event.target.value)} spellCheck={false} /></label><Button type="button" className="button secondary" onClick={() => imported(json)}>{t('studio.applyJson')}</Button></> : <>
           {!embedOnly && <>
             <label className="studio-control"><span>{t('studio.content')}</span><textarea ref={contentRef} rows={5} value={value.content} onChange={event => update({ ...value, content: event.target.value })} /><small className={value.content.length > L.content ? 'error-text' : 'muted'}>{t('studio.characterCount', { count: value.content.length, limit: L.content })}</small></label>
             <div className="platform-actions">
@@ -119,8 +182,8 @@ export default function MessageStudio({ value = EMPTY_MESSAGE, onChange, resourc
               <select aria-label={t('studio.roleMention')} value="" onChange={event => event.target.value && insert(`<@&${event.target.value}>`)}><option value="">{t('studio.roleMention')}</option>{resources.roles?.map(role => <option key={role.id} value={role.id}>{role.name}</option>)}</select>
             </div>
           </>}
-          <div className="studio-section-heading"><h3>{t('studio.embeds')}</h3><button type="button" className="button secondary" disabled={value.embeds.length >= (embedOnly ? 1 : L.embeds)} onClick={() => { update({ ...value, embeds: [...value.embeds, {}] }); setSelected(value.embeds.length); }}>{t('studio.addEmbed')}</button></div>
-          {!!value.embeds.length && <div className="platform-tabs">{value.embeds.map((_, index) => <button type="button" key={index} aria-pressed={current === index} onClick={() => setSelected(index)}>{t('studio.embedNumber', { number: index + 1 })}</button>)}</div>}
+          <div className="studio-section-heading"><h3>{t('studio.embeds')}</h3><Button type="button" className="button secondary" disabled={value.embeds.length >= (embedOnly ? 1 : L.embeds)} onClick={() => { update({ ...value, embeds: [...value.embeds, {}] }); setSelected(value.embeds.length); }}>{t('studio.addEmbed')}</Button></div>
+          {!!value.embeds.length && <div className="platform-tabs">{value.embeds.map((_, index) => <Button type="button" key={index} aria-pressed={current === index} onClick={() => setSelected(index)}>{t('studio.embedNumber', { number: index + 1 })}</Button>)}</div>}
           {embed && <div className="studio-embed-editor">
             <TextControl label="title" value={embed.title} maximum={L.title} onChange={title => changeEmbed({ title })} />
             <TextControl label="description" value={embed.description} maximum={L.description} multiline onChange={description => changeEmbed({ description })} />
@@ -139,28 +202,28 @@ export default function MessageStudio({ value = EMPTY_MESSAGE, onChange, resourc
               <TextControl label="footerIcon" value={embed.footer?.icon_url} type="url" onChange={url => nested('footer', 'icon_url', url)} />
               <TextControl label="timestamp" value={embed.timestamp ? new Date(embed.timestamp).toISOString().slice(0, 16) : ''} type="datetime-local" onChange={value => { const next = { ...embed }; if (value) next.timestamp = new Date(`${value}Z`).toISOString(); else delete next.timestamp; update({ ...last.current, embeds: last.current.embeds.map((item, index) => index === current ? next : item) }); }} />
             </div></details>
-            <div className="studio-section-heading"><h4>{t('studio.fields')}</h4><button type="button" className="button secondary" disabled={fields.length >= L.fields} onClick={() => changeEmbed({ fields: [...fields, { name: '', value: '', inline: false }] })}>{t('studio.addField')}</button></div>
+            <div className="studio-section-heading"><h4>{t('studio.fields')}</h4><Button type="button" className="button secondary" disabled={fields.length >= L.fields} onClick={() => changeEmbed({ fields: [...fields, { name: '', value: '', inline: false }] })}>{t('studio.addField')}</Button></div>
             {fields.map((field, index) => <div className="studio-field" key={index} draggable onDragStart={() => { dragIndex.current = index; }} onDragOver={event => event.preventDefault()} onDrop={event => { event.preventDefault(); reorder(dragIndex.current, index); }}>
-              <div className="studio-field-top"><strong>{t('studio.fieldNumber', { number: index + 1 })}</strong><div className="platform-actions"><button type="button" aria-label={t('studio.moveUp')} disabled={!index} onClick={() => reorder(index, index - 1)}>↑</button><button type="button" aria-label={t('studio.moveDown')} disabled={index === fields.length - 1} onClick={() => reorder(index, index + 1)}>↓</button><button type="button" onClick={() => changeEmbed({ fields: fields.filter((_, position) => position !== index) })}>{t('studio.remove')}</button></div></div>
+              <div className="studio-field-top"><strong>{t('studio.fieldNumber', { number: index + 1 })}</strong><div className="platform-actions"><Button type="button" aria-label={t('studio.moveUp')} disabled={!index} onClick={() => reorder(index, index - 1)}>↑</Button><Button type="button" aria-label={t('studio.moveDown')} disabled={index === fields.length - 1} onClick={() => reorder(index, index + 1)}>↓</Button><Button type="button" onClick={() => changeEmbed({ fields: fields.filter((_, position) => position !== index) })}>{t('studio.remove')}</Button></div></div>
               <TextControl label="fieldName" value={field.name} maximum={L.fieldName} onChange={name => changeEmbed({ fields: fields.map((item, position) => position === index ? { ...item, name } : item) })} />
               <TextControl label="fieldValue" value={field.value} maximum={L.fieldValue} multiline onChange={value => changeEmbed({ fields: fields.map((item, position) => position === index ? { ...item, value } : item) })} />
               <label className="platform-check"><input type="checkbox" checked={field.inline === true} onChange={event => changeEmbed({ fields: fields.map((item, position) => position === index ? { ...item, inline: event.target.checked } : item) })} />{t('studio.inline')}</label>
             </div>)}
-            <div className="platform-actions"><button type="button" className="button secondary" disabled={embedOnly || value.embeds.length >= L.embeds} onClick={() => { update({ ...value, embeds: [...value.embeds, structuredClone(embed)] }); setSelected(value.embeds.length); }}>{t('studio.duplicateEmbed')}</button><button type="button" className="button secondary" onClick={() => update({ ...value, embeds: value.embeds.filter((_, index) => index !== current) })}>{t('studio.removeEmbed')}</button></div>
+            <div className="platform-actions"><Button type="button" className="button secondary" disabled={embedOnly || value.embeds.length >= L.embeds} onClick={() => { update({ ...value, embeds: [...value.embeds, structuredClone(embed)] }); setSelected(value.embeds.length); }}>{t('studio.duplicateEmbed')}</Button><Button type="button" className="button secondary" onClick={() => update({ ...value, embeds: value.embeds.filter((_, index) => index !== current) })}>{t('studio.removeEmbed')}</Button></div>
           </div>}
           {!embedOnly && <details className="studio-details"><summary>{t('studio.componentsMentions')}</summary>
             <p className="muted">{t('studio.interactiveHelp')}</p>
-            {(value.components ?? []).flatMap((row, rowIndex) => row.components.map((button, buttonIndex) => <div className="studio-field" key={`${rowIndex}:${buttonIndex}`}><TextControl label="buttonLabel" value={button.label} maximum={L.buttonLabel} onChange={label => update({ ...value, components: value.components.map((item, index) => index === rowIndex ? { ...item, components: item.components.map((component, current) => current === buttonIndex ? { ...component, label } : component) } : item) })} /><TextControl label="buttonUrl" value={button.url} type="url" onChange={url => update({ ...value, components: value.components.map((item, index) => index === rowIndex ? { ...item, components: item.components.map((component, current) => current === buttonIndex ? { ...component, url } : component) } : item) })} /><button className="button secondary" type="button" onClick={() => update({ ...value, components: value.components.map((item, index) => index === rowIndex ? { ...item, components: item.components.filter((_, current) => current !== buttonIndex) } : item).filter(item => item.components.length) })}>{t('studio.remove')}</button></div>))}
-            <button type="button" className="button secondary" disabled={value.components.length >= L.rows} onClick={() => update({ ...value, components: [...value.components, { type: 1, components: [{ type: 2, style: 5, label: '', url: '' }] }] })}>{t('studio.addLink')}</button>
+            {(value.components ?? []).flatMap((row, rowIndex) => row.components.map((button, buttonIndex) => <div className="studio-field" key={`${rowIndex}:${buttonIndex}`}><TextControl label="buttonLabel" value={button.label} maximum={L.buttonLabel} onChange={label => update({ ...value, components: value.components.map((item, index) => index === rowIndex ? { ...item, components: item.components.map((component, current) => current === buttonIndex ? { ...component, label } : component) } : item) })} /><TextControl label="buttonUrl" value={button.url} type="url" onChange={url => update({ ...value, components: value.components.map((item, index) => index === rowIndex ? { ...item, components: item.components.map((component, current) => current === buttonIndex ? { ...component, url } : component) } : item) })} /><Button className="button secondary" type="button" onClick={() => update({ ...value, components: value.components.map((item, index) => index === rowIndex ? { ...item, components: item.components.filter((_, current) => current !== buttonIndex) } : item).filter(item => item.components.length) })}>{t('studio.remove')}</Button></div>))}
+            <Button type="button" className="button secondary" disabled={value.components.length >= L.rows} onClick={() => update({ ...value, components: [...value.components, { type: 1, components: [{ type: 2, style: 5, label: '', url: '' }] }] })}>{t('studio.addLink')}</Button>
             <p className="muted">{t('studio.mentionsHelp')}</p>
             <label className="platform-check"><input type="checkbox" checked={value.allowed_mentions?.parse?.includes('everyone') ?? false} onChange={event => update({ ...value, allowed_mentions: { ...value.allowed_mentions, parse: event.target.checked ? ['everyone'] : [] } })} />{t('studio.everyone')}</label>
             <label className="studio-control"><span>{t('studio.allowedRoles')}</span><select multiple value={value.allowed_mentions?.roles ?? []} onChange={event => update({ ...value, allowed_mentions: { ...value.allowed_mentions, roles: [...event.target.selectedOptions].map(option => option.value) } })}>{resources.roles?.map(role => <option key={role.id} value={role.id}>{role.name}</option>)}</select></label>
             <TextControl label="allowedUsers" value={value.allowed_mentions?.users?.join(', ') ?? ''} onChange={users => update({ ...value, allowed_mentions: { ...value.allowed_mentions, users: users.split(/[\s,]+/u).filter(Boolean) } })} />
           </details>}
-          <button type="button" className="button secondary" onClick={() => update(structuredClone(EMPTY_MESSAGE))}>{t('studio.reset')}</button>
+          <Button type="button" className="button secondary" onClick={() => update(structuredClone(EMPTY_MESSAGE))}>{t('studio.reset')}</Button>
         </>}
       </div>
-      <aside className="studio-preview-column"><div className="studio-section-heading"><strong>{t('studio.livePreview')}</strong><button type="button" className="button secondary" aria-pressed={mobile} onClick={() => setMobile(!mobile)}>{t(mobile ? 'studio.mobile' : 'studio.desktop')}</button></div><MessagePreview value={value} resources={resources} mobile={mobile} /><p className="muted">{t('studio.previewHelp')}</p><p className={value.embeds.reduce((sum, embed) => sum + embedTextLength(embed), 0) > L.embedText ? 'error-text' : 'muted'}>{t('studio.embedCharacters', { count: value.embeds.reduce((sum, embed) => sum + embedTextLength(embed), 0), limit: L.embedText })}</p>
+      <aside className="studio-preview-column"><div className="studio-section-heading"><strong>{t('studio.livePreview')}</strong><Button type="button" className="button secondary" aria-pressed={mobile} onClick={() => setMobile(!mobile)}>{t(mobile ? 'studio.mobile' : 'studio.desktop')}</Button></div><MessagePreview value={value} resources={resources} mobile={mobile} /><p className="muted">{t('studio.previewHelp')}</p><p className={value.embeds.reduce((sum, embed) => sum + embedTextLength(embed), 0) > L.embedText ? 'error-text' : 'muted'}>{t('studio.embedCharacters', { count: value.embeds.reduce((sum, embed) => sum + embedTextLength(embed), 0), limit: L.embedText })}</p>
         {!!issues.length && <ul className="studio-issues" role="status">{issues.map((issue, index) => <li key={index}>{t(`studio.issue.${issue.code}`, { path: issue.path, limit: issue.limit })}</li>)}</ul>}
       </aside>
     </div>
