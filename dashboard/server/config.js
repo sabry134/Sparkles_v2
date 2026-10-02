@@ -1,6 +1,6 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import dotenv from 'dotenv';
 
 const dashboardDirectory = path.resolve(
@@ -53,6 +53,19 @@ function resolveOptionalPath(name, fallback, baseDirectory = dashboardDirectory)
   return path.isAbsolute(value) ? value : path.resolve(baseDirectory, value);
 }
 
+function resolveSharedPath(name, fallback) {
+  const value = process.env[name]?.trim() || fallback;
+  if (path.isAbsolute(value)) return value;
+
+  const repositoryPath = path.resolve(repositoryDirectory, value);
+  if (existsSync(repositoryPath)) return repositoryPath;
+
+  const legacyDashboardPath = path.resolve(dashboardDirectory, value);
+  if (existsSync(legacyDashboardPath)) return legacyDashboardPath;
+
+  return repositoryPath;
+}
+
 function parsePort() {
   const value = Number.parseInt(required('DASHBOARD_PORT'), 10);
   if (!Number.isInteger(value) || value < 1 || value > 65_535) {
@@ -83,11 +96,7 @@ if (!/^\d+$/.test(botPermissions)) {
   throw new Error('DISCORD_BOT_PERMISSIONS must be a Discord permission integer');
 }
 
-const botConfigFile = resolveOptionalPath(
-  'BOT_CONFIG_PATH',
-  './config/bot.json',
-  repositoryDirectory,
-);
+const botConfigFile = resolveSharedPath('BOT_CONFIG_PATH', './config/bot.json');
 let botDefaults;
 try {
   botDefaults = JSON.parse(readFileSync(botConfigFile, 'utf8'));
