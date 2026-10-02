@@ -15,7 +15,7 @@ A React + Vite control panel backed by an Express server. It signs administrator
 - automatic roles, verification roles, and live channel/category/manageable-role selectors
 - reaction-role creation and removal, including adding the bot reaction to the Discord message
 - custom-command creation, editing, listing, and removal
-- atomic JSON updates that preserve unrelated bot data
+- shared MongoDB persistence with field-level updates that preserve unrelated bot data
 - responsive React interface with all displayed copy routed through `src/i18n`
 
 ## Development setup
@@ -35,7 +35,7 @@ Requirements: Node.js 20.11 or newer, a Discord application, and the Sparkles bo
    Copy-Item .env.example .env
    ```
 
-3. Fill in `.env`. Generate a unique session secret instead of reusing a bot or OAuth secret. One PowerShell option is:
+3. Configure `MONGODB_URI` and `MONGODB_DB_NAME` in the repository root `../.env`. The dashboard loads the root file first so it always shares the bot database. Fill in the remaining dashboard-specific values in `dashboard/.env`. Generate a unique session secret instead of reusing a bot or OAuth secret. One PowerShell option is:
 
    ```powershell
    $bytes = New-Object byte[] 64
@@ -71,7 +71,7 @@ npm start
 
 In production, set both dashboard URLs to the public HTTPS origin. Express serves the compiled `dist/` application. Terminate TLS at a trusted reverse proxy, set `TRUST_PROXY=1` only for that topology, and do not expose the Express port directly.
 
-The process account needs read/write permission for `BOT_STORE_PATH` and `SESSION_STORE_PATH`. Keep the session file and `.env` out of source control and backups that are not encrypted.
+The dashboard needs network access to the MongoDB deployment configured by `MONGODB_URI` and read/write access to the selected database. The process account still needs read/write permission for `SESSION_STORE_PATH`. Keep the session file and all `.env` files out of source control and backups that are not encrypted.
 
 ## Discord permissions
 
@@ -83,9 +83,9 @@ Set `DISCORD_BOT_PERMISSIONS` to the permission integer you deliberately chose i
 
 ## Shared data safety
 
-Dashboard writes use a same-directory temporary file, atomic rename, strict file permissions, a serialized write queue, and a short-lived lock file. Each mutation reads the latest file immediately before applying its narrow, allow-listed change; unrelated guild data, warnings, tags, economy balances, and suggestions are preserved.
+The bot and dashboard share the same MongoDB database. Dashboard mutations update only the allow-listed fields that changed instead of replacing whole guild documents. The bot keeps its fast in-memory state API but watches a MongoDB revision document and merges external dashboard changes before writes, preventing unrelated settings from being overwritten.
 
-Every process that writes `data/store.json` should participate in the same lock/reload strategy. A bot process that holds an old in-memory copy and later writes it wholesale can overwrite newer dashboard changes. The Sparkles bot store must therefore reload external changes before a write (or use the dashboard lock protocol) when the two processes run together.
+Sparkles automatically creates indexes for warnings, moderation cases, and dashboard audit history. Runtime data is split across `guilds`, `warnings`, `moderation_cases`, `dashboard_audit`, `counters`, and `metadata` collections.
 
 ## API overview
 
