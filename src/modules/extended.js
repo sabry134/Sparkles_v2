@@ -373,11 +373,15 @@ export async function handleExtendedCommand(commandName, interaction, t, client)
       config.automod.antiSwear = input.action !== 'disable';
       if (config.automod.antiSwear) config.automod.enabled = true;
       if (input.text) {
-        config.automod.blockedWords = input.text
-          .split(',')
-          .map((word) => word.trim().toLowerCase())
-          .filter(Boolean)
-          .slice(0, 100);
+        config.automod.blockedWords = [
+          ...new Set(
+            input.text
+              .split(',')
+              .map((word) => word.trim().toLowerCase().slice(0, 64))
+              .filter(Boolean)
+              .slice(0, 100),
+          ),
+        ];
       }
       await saveStore();
       return completed(interaction, t, t('extended.saved'));
