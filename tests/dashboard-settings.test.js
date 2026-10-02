@@ -152,6 +152,14 @@ test('dashboard validates and persists every exposed guild setting', async () =>
       ignoreChannelIds: ['223456789012345680'],
     },
     disabledCommands: ['weather', 'lyrics'],
+    commandPermissions: {
+      weather: {
+        roleMode: 'deny-all-except',
+        roleIds: ['623456789012345678'],
+        channelMode: 'allow-all-except',
+        channelIds: ['223456789012345680'],
+      },
+    },
     modules: {
       moderation: true,
       automod: true,
@@ -209,6 +217,12 @@ test('dashboard validates and persists every exposed guild setting', async () =>
   assert.equal(settings.starboard.threshold, 4);
   assert.deepEqual(settings.starboard.ignoreChannelIds, ['223456789012345680']);
   assert.deepEqual(settings.disabledCommands, ['weather', 'lyrics']);
+  assert.deepEqual(settings.commandPermissions.weather, {
+    roleMode: 'deny-all-except',
+    roleIds: ['623456789012345678'],
+    channelMode: 'allow-all-except',
+    channelIds: ['223456789012345680'],
+  });
   assert.equal(settings.modules.server, false);
   assert.equal(settings.modules.music, false);
   assert.equal(settings.customCommands.hello, 'Welcome to the server!');
@@ -242,6 +256,12 @@ test('dashboard validates and persists every exposed guild setting', async () =>
   assert.equal(guild.starboard.threshold, 4);
   assert.deepEqual(guild.disabledCommands, ['weather', 'lyrics']);
   assert.equal(guild.modules.server, false);
+  assert.deepEqual(guild.commandPermissions.weather, {
+    roleMode: 'deny-all-except',
+    roleIds: ['623456789012345678'],
+    channelMode: 'allow-all-except',
+    channelIds: ['223456789012345680'],
+  });
   assert.equal(guild.customCommands.hello, 'Welcome to the server!');
 });
 
