@@ -300,6 +300,10 @@ function publicSettings(config, defaults) {
         )
       : {},
     reactionRoles: reactionRoles(config),
+    legacyUserPolicies: {
+      blockedCount: Array.isArray(config.blacklist) ? config.blacklist.length : 0,
+      exemptCount: Array.isArray(config.whitelist) ? config.whitelist.length : 0,
+    },
   };
 }
 
@@ -493,6 +497,14 @@ export class BotStore {
       if (validRoot(config.reactionRoles)) {
         delete config.reactionRoles[key];
       }
+    });
+  }
+
+  clearLegacyUserPolicies(guildId) {
+    return this.#mutate(guildId, (config) => {
+      config.blacklist = [];
+      config.whitelist = [];
+      if (validRoot(config.automod)) delete config.automod.exemptUserIds;
     });
   }
 
