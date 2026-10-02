@@ -219,15 +219,7 @@ function Loading() {
   );
 }
 
-function SettingSection({
-  id,
-  title,
-  children,
-  active = true,
-  moduleKey = null,
-  moduleEnabled = true,
-  onModuleChange = null,
-}) {
+function SettingSection({ id, title, children, active = true }) {
   return (
     <section
       className="settings-section module-page"
@@ -235,38 +227,10 @@ function SettingSection({
       hidden={!active}
       aria-label={title}
     >
-      {moduleKey ? (
-        <div className="settings-card module-master-card">
-          <ToggleField
-            id={`page-module-${moduleKey}`}
-            label={t(`modules.${moduleKey}`)}
-            help={t('modules.pageToggleHelp', {
-              module: t(`modules.${moduleKey}`),
-            })}
-            checked={moduleEnabled}
-            onChange={onModuleChange}
-          />
-        </div>
-      ) : null}
-      {moduleKey && !moduleEnabled ? (
-        <div className="module-disabled-state">
-          <Icon name="settings" size={22} />
-          <div>
-            <strong>{t('modules.pageDisabledTitle')}</strong>
-            <span>
-              {t('modules.pageDisabledBody', {
-                module: t(`modules.${moduleKey}`),
-              })}
-            </span>
-          </div>
-        </div>
-      ) : (
-        children
-      )}
+      {children}
     </section>
   );
 }
-
 function SelectField({
   id,
   label,
@@ -1316,9 +1280,6 @@ function Dashboard({ session, onSessionExpired }) {
               active={activeSection === 'moderation'}
               title={t('moderation.title')}
               description={t('moderation.description')}
-              moduleKey="moderation"
-              moduleEnabled={draft.modules.moderation}
-              onModuleChange={(value) => updateNested('modules', 'moderation', value)}
             >
               <div className="settings-card">
                 <SelectField
@@ -1563,11 +1524,8 @@ function Dashboard({ session, onSessionExpired }) {
               active={activeSection === 'automod'}
               title={t('automod.title')}
               description={t('automod.description')}
-              moduleKey="automod"
-              moduleEnabled={draft.modules.automod}
-              onModuleChange={(value) => updateNested('modules', 'automod', value)}
             >
-              <div className="settings-card automod-card" hidden={!draft.automod.enabled}>
+              <div className="settings-card automod-card">
                 <div className="subsection-heading">
                   <div>
                     <h3>{t('automod.contentTitle')}</h3>
@@ -1952,7 +1910,7 @@ function Dashboard({ session, onSessionExpired }) {
                 />
               </div>
 
-              <div className="settings-card automod-card">
+              <div className="settings-card automod-card" hidden={!draft.automod.enabled}>
                 <div className="subsection-heading">
                   <div>
                     <h3>{t('automod.exemptionsTitle')}</h3>
@@ -2035,9 +1993,6 @@ function Dashboard({ session, onSessionExpired }) {
               active={activeSection === 'roles'}
               title={t('roles.title')}
               description={t('roles.description')}
-              moduleKey="roles"
-              moduleEnabled={draft.modules.roles}
-              onModuleChange={(value) => updateNested('modules', 'roles', value)}
             >
               <div className="settings-card">
                 <SelectField
@@ -2340,9 +2295,6 @@ function Dashboard({ session, onSessionExpired }) {
               active={activeSection === 'community'}
               title={t('community.title')}
               description={t('community.description')}
-              moduleKey="community"
-              moduleEnabled={draft.modules.community}
-              onModuleChange={(value) => updateNested('modules', 'community', value)}
             >
               <div className="settings-card">
                 <SelectField
@@ -2627,9 +2579,6 @@ function Dashboard({ session, onSessionExpired }) {
               active={activeSection === 'economy'}
               title={t('economy.title')}
               description={t('economy.description')}
-              moduleKey="economy"
-              moduleEnabled={draft.modules.economy}
-              onModuleChange={(value) => updateNested('modules', 'economy', value)}
             >
               <div className="settings-card">
                 <InputField
@@ -2679,9 +2628,6 @@ function Dashboard({ session, onSessionExpired }) {
               active={activeSection === 'music'}
               title={t('music.title')}
               description={t('music.description')}
-              moduleKey="music"
-              moduleEnabled={draft.modules.music}
-              onModuleChange={(value) => updateNested('modules', 'music', value)}
             >
               <div className="settings-card">
                 <InputField
