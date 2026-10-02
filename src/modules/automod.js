@@ -175,7 +175,7 @@ export async function filterAutomodMessage(message, t) {
 
 export async function protectNewMember(member, t) {
   const config = guildConfig(member.guild.id);
-  if (config.whitelist?.includes(member.id)) return;
+  if (config.whitelist?.includes(member.id)) return false;
 
   const now = Date.now();
   const guildJoins = (recentJoins.get(member.guild.id) ?? []).filter(
@@ -210,7 +210,11 @@ export async function protectNewMember(member, t) {
     reason = t('modules.raidProtection');
   }
 
-  if (!reason) return;
+  if (!reason) return false;
   await member.send(reason).catch(() => {});
-  if (member.kickable) await member.kick(reason).catch(() => {});
+  if (!member.kickable) return false;
+  return member
+    .kick(reason)
+    .then(() => true)
+    .catch(() => false);
 }
