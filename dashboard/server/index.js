@@ -1,3 +1,4 @@
+import { catalog as dashboardCommandCatalog } from '../../src/catalog.js';
 import { randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import path from 'node:path';
@@ -284,7 +285,13 @@ app.get(
       botStore.getGuildSettings(guildId),
       guildResources(guildId, discordConfig()),
     ]);
-    response.json({ settings, resources });
+    response.json({
+      settings,
+      resources: {
+        ...resources,
+        commands: dashboardCommandCatalog,
+      },
+    });
   }),
 );
 
