@@ -39,7 +39,11 @@ const sessionStore = new EncryptedFileSessionStore({
   file: config.session.file,
   secret: config.session.secret,
 });
-const botStore = new BotStore(config.botStoreFile, config.botDefaults);
+const botStore = new BotStore({
+  uri: config.mongo.uri,
+  dbName: config.mongo.dbName,
+  defaults: config.botDefaults,
+});
 
 if (config.trustProxy) app.set('trust proxy', 1);
 app.disable('x-powered-by');
@@ -519,7 +523,7 @@ await sessionStore.ready();
 
 const server = app.listen(config.port, () => {
   console.log(
-    `Sparkles dashboard listening on ${config.publicUrl.origin}; store ${config.botStoreFile}.`,
+    `Sparkles dashboard listening on ${config.publicUrl.origin}; store MongoDB/${config.mongo.dbName}.`,
   );
 });
 
