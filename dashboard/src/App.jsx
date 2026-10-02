@@ -21,6 +21,19 @@ const NAVIGATION = [
 ];
 
 const PAGE_IDS = new Set(NAVIGATION.map(([id]) => id));
+const PAGE_DESCRIPTION_KEYS = {
+  overview: 'overview.description',
+  moderation: 'moderation.description',
+  automod: 'automod.description',
+  roles: 'roles.description',
+  embeds: 'embeds.description',
+  community: 'community.description',
+  automation: 'automation.description',
+  economy: 'economy.description',
+  music: 'music.description',
+  modules: 'modules.description',
+  custom: 'custom.description',
+};
 
 function routeState() {
   const match = /^\/servers\/(\d{17,20})\/([a-z-]+)\/?$/u.exec(
@@ -206,13 +219,14 @@ function Loading() {
   );
 }
 
-function SettingSection({ id, title, description, children, active = true }) {
+function SettingSection({ id, title, children, active = true }) {
   return (
-    <section className="settings-section module-page" id={id} hidden={!active}>
-      <header className="section-heading">
-        <h2>{title}</h2>
-        <p>{description}</p>
-      </header>
+    <section
+      className="settings-section module-page"
+      id={id}
+      hidden={!active}
+      aria-label={title}
+    >
       {children}
     </section>
   );
@@ -982,6 +996,12 @@ function Dashboard({ session, onSessionExpired }) {
           ),
       )
     : moderationCases;
+  const activeNavigation =
+    NAVIGATION.find(([id]) => id === activeSection) ?? NAVIGATION[0];
+  const activePageTitle = t(activeNavigation[1]);
+  const activePageDescription = t(
+    PAGE_DESCRIPTION_KEYS[activeSection] ?? 'overview.description',
+  );
   const automodActive =
     draft?.automod?.enabled === true &&
     [
@@ -1126,9 +1146,9 @@ function Dashboard({ session, onSessionExpired }) {
               <div className="server-heading">
                 <GuildAvatar guild={selectedGuild} large />
                 <div>
-                  <p className="eyebrow">{t('header.serverSettings')}</p>
-                  <h1>{t('header.title', { server: selectedGuild.name })}</h1>
-                  <p>{t('header.description')}</p>
+                  <p className="eyebrow">{selectedGuild.name}</p>
+                  <h1>{activePageTitle}</h1>
+                  <p>{activePageDescription}</p>
                 </div>
               </div>
               <div className={`save-status ${dirty || saving ? 'dirty' : ''}`}>
