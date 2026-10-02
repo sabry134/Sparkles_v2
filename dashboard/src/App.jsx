@@ -217,7 +217,10 @@ function Toast({ type = 'success', message, onDismiss, duration = 0 }) {
       }}
       anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
     >
-      <div className={`toast mui-toast ${type}`}>
+      <div
+        className={`toast mui-toast ${type}`}
+        style={duration ? { '--toast-duration': `${duration}ms` } : undefined}
+      >
         <span className="toast-icon">
           <Icon name={type === 'error' ? 'alert' : 'check'} />
         </span>
@@ -413,16 +416,17 @@ function MultiSelectField({
         {value.length ? (
           <div className="token-list">
             {value.map((item) => (
-              <span className="token-item" key={item}>
-                <span>{labels.get(item) ?? item}</span>
-                <Button
-                  type="button"
-                  aria-label={t('common.removeItem', { item: labels.get(item) ?? item })}
-                  onClick={() => onChange(value.filter((candidate) => candidate !== item))}
-                >
-                  <Icon name="close" size={14} />
-                </Button>
-              </span>
+              <Chip
+                className="token-item mui-token-item"
+                key={item}
+                label={labels.get(item) ?? item}
+                size="small"
+                variant="outlined"
+                onDelete={() =>
+                  onChange(value.filter((candidate) => candidate !== item))
+                }
+                deleteIcon={<Icon name="close" size={14} />}
+              />
             ))}
           </div>
         ) : (
