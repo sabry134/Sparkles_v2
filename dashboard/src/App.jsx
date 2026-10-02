@@ -278,6 +278,140 @@ function InputField({
   );
 }
 
+function MultiSelectField({
+  id,
+  label,
+  help,
+  value,
+  onChange,
+  options,
+  icon = 'settings',
+}) {
+  const [selected, setSelected] = useState('');
+  const available = options.filter((option) => !value.includes(option.id));
+  const labels = new Map(options.map((option) => [option.id, option.label]));
+
+  function add() {
+    if (!selected || value.includes(selected)) return;
+    onChange([...value, selected]);
+    setSelected('');
+  }
+
+  return (
+    <div className="field-row input-field-row">
+      <div className="field-copy">
+        <label htmlFor={id}>{label}</label>
+        <p>{help}</p>
+      </div>
+      <div className="list-editor">
+        <div className="list-editor-add">
+          <Select
+            id={id}
+            label={label}
+            value={selected}
+            onChange={setSelected}
+            options={available}
+            placeholder={t('common.choose')}
+            icon={icon}
+            variant="field-select"
+          />
+          <button
+            className="button secondary"
+            type="button"
+            disabled={!selected}
+            onClick={add}
+          >
+            {t('common.addItem')}
+          </button>
+        </div>
+        {value.length ? (
+          <div className="token-list">
+            {value.map((item) => (
+              <span className="token-item" key={item}>
+                <span>{labels.get(item) ?? item}</span>
+                <button
+                  type="button"
+                  aria-label={t('common.removeItem', { item: labels.get(item) ?? item })}
+                  onClick={() => onChange(value.filter((candidate) => candidate !== item))}
+                >
+                  <Icon name="close" size={14} />
+                </button>
+              </span>
+            ))}
+          </div>
+        ) : (
+          <span className="list-editor-empty">{t('common.noExemptions')}</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SnowflakeListField({ id, label, help, value, onChange }) {
+  const [input, setInput] = useState('');
+
+  function add() {
+    const normalized = input.trim();
+    if (!/^\d{17,20}$/u.test(normalized) || value.includes(normalized)) return;
+    onChange([...value, normalized]);
+    setInput('');
+  }
+
+  return (
+    <div className="field-row input-field-row">
+      <div className="field-copy">
+        <label htmlFor={id}>{label}</label>
+        <p>{help}</p>
+      </div>
+      <div className="list-editor">
+        <div className="list-editor-add">
+          <input
+            id={id}
+            inputMode="numeric"
+            pattern="[0-9]{17,20}"
+            maxLength="20"
+            value={input}
+            placeholder={t('automod.userIdPlaceholder')}
+            onChange={(event) => setInput(event.target.value.replace(/\D/gu, ''))}
+            onKeyDown={(event) => {
+              if (event.key === 'Enter') {
+                event.preventDefault();
+                add();
+              }
+            }}
+          />
+          <button
+            className="button secondary"
+            type="button"
+            disabled={!/^\d{17,20}$/u.test(input) || value.includes(input)}
+            onClick={add}
+          >
+            {t('common.addItem')}
+          </button>
+        </div>
+        {value.length ? (
+          <div className="token-list">
+            {value.map((item) => (
+              <span className="token-item" key={item}>
+                <span>{item}</span>
+                <button
+                  type="button"
+                  aria-label={t('common.removeItem', { item })}
+                  onClick={() => onChange(value.filter((candidate) => candidate !== item))}
+                >
+                  <Icon name="close" size={14} />
+                </button>
+              </span>
+            ))}
+          </div>
+        ) : (
+          <span className="list-editor-empty">{t('common.noExemptions')}</span>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function MissingBot({ guild, onRefresh }) {
   return (
     <div className="empty-state install-state">
@@ -698,6 +832,10 @@ function Dashboard({ session, onSessionExpired }) {
     id: category.id,
     label: category.name,
   }));
+  const allRoleOptions = (resources?.roles ?? []).map((role) => ({
+    id: role.id,
+    label: t('common.rolePrefix', { name: role.name }),
+  }));
   const roleOptions = (resources?.roles ?? [])
     .filter((role) => role.assignable)
     .map((role) => ({
@@ -954,7 +1092,35 @@ function Dashboard({ session, onSessionExpired }) {
               title={t('automod.title')}
               description={t('automod.description')}
             >
-              <div className="settings-card">
+              {draft.automod.exemptUserIds.includes(session.user.id) ? (
+                <div className="warning-banner automod-self-exempt">
+                  <Icon name="alert" size={18} />
+                  <span>{t('automod.currentUserExempt')}</span>
+                  <button
+                    className="button secondary"
+                    type="button"
+                    onClick={() =>
+                      updateNested(
+                        'automod',
+                        'exemptUserIds',
+                        draft.automod.exemptUserIds.filter(
+                          (userId) => userId !== session.user.id,
+                        ),
+                      )
+                    }
+                  >
+                    {t('automod.removeMyExemption')}
+                  </button>
+                </div>
+              ) : null}
+
+              <div className="settings-card automod-card">
+                <div className="subsection-heading">
+                  <div>
+                    <h3>{t('automod.contentTitle')}</h3>
+                    <p>{t('automod.contentDescription')}</p>
+                  </div>
+                </div>
                 <ToggleField
                   id="automod-master"
                   label={t('automod.master')}
@@ -969,6 +1135,230 @@ function Dashboard({ session, onSessionExpired }) {
                   checked={draft.automod.antiLink}
                   onChange={(value) => updateNested('automod', 'antiLink', value)}
                 />
+                <ToggleField
+                  id="anti-swear"
+                  label={t('automod.antiSwear')}
+                  help={t('automod.antiSwearHelp')}
+                  checked={draft.automod.antiSwear}
+                  onChange={(value) => updateNested('automod', 'antiSwear', value)}
+                />
+                <InputField
+                  id="blocked-words"
+                  label={t('automod.blockedWords')}
+                  help={t('automod.blockedWordsHelp')}
+                  value={draft.automod.blockedWords.join(', ')}
+                  maxLength={6500}
+                  placeholder={t('automod.blockedWordsPlaceholder')}
+                  onChange={(value) =>
+                    updateNested(
+                      'automod',
+                      'blockedWords',
+                      value
+                        .split(',')
+                        .map((word) => word.trim().slice(0, 64))
+                        .filter(Boolean)
+                        .slice(0, 100),
+                    )
+                  }
+                />
+              </div>
+
+              <div className="settings-card automod-card">
+                <div className="subsection-heading">
+                  <div>
+                    <h3>{t('automod.spamTitle')}</h3>
+                    <p>{t('automod.spamDescription')}</p>
+                  </div>
+                </div>
+                <ToggleField
+                  id="anti-spam"
+                  label={t('automod.antiSpam')}
+                  help={t('automod.antiSpamHelp')}
+                  checked={draft.automod.antiSpam}
+                  onChange={(value) => updateNested('automod', 'antiSpam', value)}
+                />
+                <InputField
+                  id="spam-message-threshold"
+                  label={t('automod.spamMessageThreshold')}
+                  help={t('automod.spamMessageThresholdHelp')}
+                  type="number"
+                  min={2}
+                  max={50}
+                  value={draft.automod.spamMessageThreshold}
+                  onChange={(value) =>
+                    updateNested('automod', 'spamMessageThreshold', value)
+                  }
+                />
+                <InputField
+                  id="spam-window"
+                  label={t('automod.spamWindow')}
+                  help={t('automod.spamWindowHelp')}
+                  type="number"
+                  min={1}
+                  max={120}
+                  value={draft.automod.spamWindowSeconds}
+                  onChange={(value) => updateNested('automod', 'spamWindowSeconds', value)}
+                />
+                <InputField
+                  id="duplicate-threshold"
+                  label={t('automod.duplicateThreshold')}
+                  help={t('automod.duplicateThresholdHelp')}
+                  type="number"
+                  min={2}
+                  max={20}
+                  value={draft.automod.duplicateThreshold}
+                  onChange={(value) =>
+                    updateNested('automod', 'duplicateThreshold', value)
+                  }
+                />
+                <InputField
+                  id="duplicate-window"
+                  label={t('automod.duplicateWindow')}
+                  help={t('automod.duplicateWindowHelp')}
+                  type="number"
+                  min={2}
+                  max={300}
+                  value={draft.automod.duplicateWindowSeconds}
+                  onChange={(value) =>
+                    updateNested('automod', 'duplicateWindowSeconds', value)
+                  }
+                />
+                <ToggleField
+                  id="anti-mention-spam"
+                  label={t('automod.antiMentionSpam')}
+                  help={t('automod.antiMentionSpamHelp')}
+                  checked={draft.automod.antiMentionSpam}
+                  onChange={(value) =>
+                    updateNested('automod', 'antiMentionSpam', value)
+                  }
+                />
+                <InputField
+                  id="mention-threshold"
+                  label={t('automod.mentionThreshold')}
+                  help={t('automod.mentionThresholdHelp')}
+                  type="number"
+                  min={2}
+                  max={50}
+                  value={draft.automod.mentionThreshold}
+                  onChange={(value) => updateNested('automod', 'mentionThreshold', value)}
+                />
+                <ToggleField
+                  id="anti-caps"
+                  label={t('automod.antiCaps')}
+                  help={t('automod.antiCapsHelp')}
+                  checked={draft.automod.antiCaps}
+                  onChange={(value) => updateNested('automod', 'antiCaps', value)}
+                />
+                <InputField
+                  id="caps-percentage"
+                  label={t('automod.capsPercentage')}
+                  help={t('automod.capsPercentageHelp')}
+                  type="number"
+                  min={50}
+                  max={100}
+                  value={draft.automod.capsPercentage}
+                  onChange={(value) => updateNested('automod', 'capsPercentage', value)}
+                />
+                <InputField
+                  id="caps-minimum"
+                  label={t('automod.capsMinimum')}
+                  help={t('automod.capsMinimumHelp')}
+                  type="number"
+                  min={4}
+                  max={500}
+                  value={draft.automod.capsMinimumCharacters}
+                  onChange={(value) =>
+                    updateNested('automod', 'capsMinimumCharacters', value)
+                  }
+                />
+                <ToggleField
+                  id="anti-emoji-spam"
+                  label={t('automod.antiEmojiSpam')}
+                  help={t('automod.antiEmojiSpamHelp')}
+                  checked={draft.automod.antiEmojiSpam}
+                  onChange={(value) =>
+                    updateNested('automod', 'antiEmojiSpam', value)
+                  }
+                />
+                <InputField
+                  id="emoji-threshold"
+                  label={t('automod.emojiThreshold')}
+                  help={t('automod.emojiThresholdHelp')}
+                  type="number"
+                  min={3}
+                  max={100}
+                  value={draft.automod.emojiThreshold}
+                  onChange={(value) => updateNested('automod', 'emojiThreshold', value)}
+                />
+                <ToggleField
+                  id="anti-attachment-spam"
+                  label={t('automod.antiAttachmentSpam')}
+                  help={t('automod.antiAttachmentSpamHelp')}
+                  checked={draft.automod.antiAttachmentSpam}
+                  onChange={(value) =>
+                    updateNested('automod', 'antiAttachmentSpam', value)
+                  }
+                />
+                <InputField
+                  id="attachment-threshold"
+                  label={t('automod.attachmentThreshold')}
+                  help={t('automod.attachmentThresholdHelp')}
+                  type="number"
+                  min={2}
+                  max={50}
+                  value={draft.automod.attachmentThreshold}
+                  onChange={(value) =>
+                    updateNested('automod', 'attachmentThreshold', value)
+                  }
+                />
+                <InputField
+                  id="attachment-window"
+                  label={t('automod.attachmentWindow')}
+                  help={t('automod.attachmentWindowHelp')}
+                  type="number"
+                  min={1}
+                  max={120}
+                  value={draft.automod.attachmentWindowSeconds}
+                  onChange={(value) =>
+                    updateNested('automod', 'attachmentWindowSeconds', value)
+                  }
+                />
+                <ToggleField
+                  id="anti-link-spam"
+                  label={t('automod.antiLinkSpam')}
+                  help={t('automod.antiLinkSpamHelp')}
+                  checked={draft.automod.antiLinkSpam}
+                  onChange={(value) => updateNested('automod', 'antiLinkSpam', value)}
+                />
+                <InputField
+                  id="link-threshold"
+                  label={t('automod.linkThreshold')}
+                  help={t('automod.linkThresholdHelp')}
+                  type="number"
+                  min={2}
+                  max={50}
+                  value={draft.automod.linkThreshold}
+                  onChange={(value) => updateNested('automod', 'linkThreshold', value)}
+                />
+                <InputField
+                  id="link-window"
+                  label={t('automod.linkWindow')}
+                  help={t('automod.linkWindowHelp')}
+                  type="number"
+                  min={1}
+                  max={120}
+                  value={draft.automod.linkWindowSeconds}
+                  onChange={(value) => updateNested('automod', 'linkWindowSeconds', value)}
+                />
+              </div>
+
+              <div className="settings-card automod-card">
+                <div className="subsection-heading">
+                  <div>
+                    <h3>{t('automod.joinTitle')}</h3>
+                    <p>{t('automod.joinDescription')}</p>
+                  </div>
+                </div>
                 <ToggleField
                   id="anti-alt"
                   label={t('automod.antiAlt')}
@@ -1014,32 +1404,15 @@ function Dashboard({ session, onSessionExpired }) {
                     updateNested('automod', 'raidJoinThreshold', value)
                   }
                 />
-                <ToggleField
-                  id="anti-swear"
-                  label={t('automod.antiSwear')}
-                  help={t('automod.antiSwearHelp')}
-                  checked={draft.automod.antiSwear}
-                  onChange={(value) => updateNested('automod', 'antiSwear', value)}
-                />
-                <InputField
-                  id="blocked-words"
-                  label={t('automod.blockedWords')}
-                  help={t('automod.blockedWordsHelp')}
-                  value={draft.automod.blockedWords.join(', ')}
-                  maxLength={1000}
-                  placeholder={t('automod.blockedWordsPlaceholder')}
-                  onChange={(value) =>
-                    updateNested(
-                      'automod',
-                      'blockedWords',
-                      value
-                        .split(',')
-                        .map((word) => word.trim().slice(0, 64))
-                        .filter(Boolean)
-                        .slice(0, 100),
-                    )
-                  }
-                />
+              </div>
+
+              <div className="settings-card automod-card">
+                <div className="subsection-heading">
+                  <div>
+                    <h3>{t('automod.enforcementTitle')}</h3>
+                    <p>{t('automod.enforcementDescription')}</p>
+                  </div>
+                </div>
                 <InputField
                   id="warning-threshold"
                   label={t('automod.warningThreshold')}
@@ -1050,26 +1423,83 @@ function Dashboard({ session, onSessionExpired }) {
                   value={draft.automod.warningThreshold}
                   onChange={(value) => updateNested('automod', 'warningThreshold', value)}
                 />
-                <div
-                  className={`inline-status ${
-                    draft.automod.enabled && draft.automod.antiLink ? 'enabled' : ''
-                  }`}
-                >
-                  <span />
-                  <Icon name="link" size={16} />
-                  {draft.automod.enabled && draft.automod.antiLink
-                    ? t('automod.enabled')
-                    : t('automod.disabled')}
-                </div>
-                {!resources.capabilities.canManageMessages ||
-                !resources.capabilities.canKickMembers ||
-                !resources.capabilities.canModerateMembers ? (
-                  <div className="warning-banner">
-                    <Icon name="alert" size={18} />
-                    {t('automod.capabilityWarning')}
-                  </div>
-                ) : null}
+                <InputField
+                  id="timeout-seconds"
+                  label={t('automod.timeoutSeconds')}
+                  help={t('automod.timeoutSecondsHelp')}
+                  type="number"
+                  min={10}
+                  max={2419200}
+                  value={draft.automod.timeoutSeconds}
+                  onChange={(value) => updateNested('automod', 'timeoutSeconds', value)}
+                />
               </div>
+
+              <div className="settings-card automod-card">
+                <div className="subsection-heading">
+                  <div>
+                    <h3>{t('automod.exemptionsTitle')}</h3>
+                    <p>{t('automod.exemptionsDescription')}</p>
+                  </div>
+                </div>
+                <SnowflakeListField
+                  id="automod-exempt-users"
+                  label={t('automod.exemptUsers')}
+                  help={t('automod.exemptUsersHelp')}
+                  value={draft.automod.exemptUserIds}
+                  onChange={(value) => updateNested('automod', 'exemptUserIds', value)}
+                />
+                <MultiSelectField
+                  id="automod-exempt-roles"
+                  label={t('automod.exemptRoles')}
+                  help={t('automod.exemptRolesHelp')}
+                  value={draft.automod.exemptRoleIds}
+                  onChange={(value) => updateNested('automod', 'exemptRoleIds', value)}
+                  options={allRoleOptions}
+                  icon="role"
+                />
+                <MultiSelectField
+                  id="automod-exempt-channels"
+                  label={t('automod.exemptChannels')}
+                  help={t('automod.exemptChannelsHelp')}
+                  value={draft.automod.exemptChannelIds}
+                  onChange={(value) =>
+                    updateNested('automod', 'exemptChannelIds', value)
+                  }
+                  options={channelOptions}
+                  icon="hash"
+                />
+              </div>
+
+              <div
+                className={`inline-status ${
+                  draft.automod.enabled &&
+                  (draft.automod.antiLink ||
+                    draft.automod.antiSwear ||
+                    draft.automod.antiSpam ||
+                    draft.automod.antiMentionSpam ||
+                    draft.automod.antiCaps ||
+                    draft.automod.antiEmojiSpam ||
+                    draft.automod.antiAttachmentSpam ||
+                    draft.automod.antiLinkSpam)
+                    ? 'enabled'
+                    : ''
+                }`}
+              >
+                <span />
+                <Icon name="shield" size={16} />
+                {draft.automod.enabled
+                  ? t('automod.engineRunning')
+                  : t('automod.enginePaused')}
+              </div>
+              {!resources.capabilities.canManageMessages ||
+              !resources.capabilities.canKickMembers ||
+              !resources.capabilities.canModerateMembers ? (
+                <div className="warning-banner">
+                  <Icon name="alert" size={18} />
+                  {t('automod.capabilityWarning')}
+                </div>
+              ) : null}
             </SettingSection>
 
             <SettingSection
