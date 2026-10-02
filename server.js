@@ -1478,7 +1478,7 @@ client.on('interactionCreate', async (interaction) => {
   }
 });
 
-client.once('ready', () => {
+client.once('clientReady', () => {
   restoreGiveaways(client, t);
   console.log(
     `Ready as ${client.user.tag}; registered ${commands.length} commands; store ${storeBackendDescription()}.`,
