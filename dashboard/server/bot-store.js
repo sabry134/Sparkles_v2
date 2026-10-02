@@ -81,7 +81,6 @@ function publicSettings(config, defaults) {
         config.economySettings?.robberySuccessPercent ??
         defaults.economy.robberySuccessPercent,
     },
-    aiChatEnabled: config.aiChatEnabled === true,
     automod: {
       enabled: config.automod?.enabled !== false,
       antiLink: config.automod?.antiLink === true,
@@ -406,7 +405,7 @@ export class BotStore {
       if (Object.hasOwn(patch, 'verificationRoleId')) {
         config.verificationRoleId = patch.verificationRoleId;
       }
-      for (const field of ['rules', 'currency', 'aiChatEnabled']) {
+      for (const field of ['rules', 'currency']) {
         if (Object.hasOwn(patch, field)) config[field] = patch[field];
       }
       if (patch.automod) {
