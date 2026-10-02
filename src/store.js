@@ -6,10 +6,20 @@ const directory = path.dirname(file);
 let state = { guilds: {}, warnings: {} };
 let baselineState = structuredClone(state);
 let writeQueue = Promise.resolve();
-let lastModified = 0;
+let lastFileSignature = null;
 const DELETE_VALUE = Symbol('delete-value');
 const lockFile = `${file}.dashboard.lock`;
 const transientFileErrors = new Set(['EACCES', 'EBUSY', 'EPERM']);
+
+function fileSignature(metadata) {
+  return [
+    metadata.dev,
+    metadata.ino,
+    metadata.size,
+    metadata.mtimeMs,
+    metadata.ctimeMs,
+  ].join(':');
+}
 
 function normalizeStore(parsed) {
   return parsed && typeof parsed === 'object'
@@ -105,7 +115,7 @@ export async function loadStore() {
   try {
     state = await readStoreFile();
     baselineState = structuredClone(state);
-    lastModified = (await stat(file)).mtimeMs;
+    lastFileSignature = fileSignature(await stat(file));
   } catch (error) {
     if (error.code !== 'ENOENT') throw error;
   }
@@ -114,13 +124,14 @@ export async function loadStore() {
 export async function syncStore() {
   try {
     const fileStats = await stat(file);
-    if (fileStats.mtimeMs <= lastModified) return false;
+    const currentSignature = fileSignature(fileStats);
+    if (currentSignature === lastFileSignature) return false;
 
     const externalState = await readStoreFile();
     const pendingChanges = changesBetween(baselineState, state);
     baselineState = structuredClone(externalState);
     state = pendingChanges ? applyChanges(externalState, pendingChanges) : externalState;
-    lastModified = fileStats.mtimeMs;
+    lastFileSignature = currentSignature;
     return true;
   } catch (error) {
     if (error.code === 'ENOENT') return false;
@@ -177,7 +188,7 @@ export function saveStore() {
         await renameWithRetry(temporary, file);
         state = mergedState;
         baselineState = structuredClone(mergedState);
-        lastModified = (await stat(file)).mtimeMs;
+        lastFileSignature = fileSignature(await stat(file));
       } finally {
         await unlink(temporary).catch(() => {});
         await release();
