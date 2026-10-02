@@ -76,6 +76,7 @@ const AUTOMOD_FIELDS = new Set([
   'linkThreshold',
   'linkWindowSeconds',
   'blockedWords',
+  'blacklistedUserIds',
   'exemptUserIds',
   'exemptRoleIds',
   'exemptChannelIds',
@@ -194,7 +195,12 @@ export function settingsPatch(value) {
         patch.automod[field] = integer(value.automod[field], minimum, maximum);
       }
     }
-    for (const field of ['exemptUserIds', 'exemptRoleIds', 'exemptChannelIds']) {
+    for (const field of [
+      'blacklistedUserIds',
+      'exemptUserIds',
+      'exemptRoleIds',
+      'exemptChannelIds',
+    ]) {
       if (!Object.hasOwn(value.automod, field)) continue;
       assert(Array.isArray(value.automod[field]) && value.automod[field].length <= 50, 'INVALID_INPUT');
       patch.automod[field] = [
