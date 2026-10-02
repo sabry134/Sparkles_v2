@@ -109,6 +109,10 @@ export const en = {
   'moderation.attachment': 'Attachment',
   'moderation.noReason': 'No reason provided',
   'moderation.historyEmpty': 'No moderation cases match this view yet.',
+  'moderation.dashboardAuditTitle': 'Dashboard changes',
+  'moderation.dashboardAuditDescription':
+    'Track configuration changes made from the web dashboard, including who changed them and when.',
+  'moderation.dashboardAuditEmpty': 'No dashboard changes have been recorded yet.',
   'moderation.actionLogTitle': 'Action log',
   'moderation.actionLogDescription':
     'Keep a Discord-side audit trail for important server events, separate from punishment cases.',
