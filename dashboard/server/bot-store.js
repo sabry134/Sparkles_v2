@@ -302,7 +302,12 @@ function publicSettings(config, defaults) {
     reactionRoles: reactionRoles(config),
     legacyUserPolicies: {
       blockedCount: Array.isArray(config.blacklist) ? config.blacklist.length : 0,
-      exemptCount: Array.isArray(config.whitelist) ? config.whitelist.length : 0,
+      exemptCount: new Set([
+        ...(Array.isArray(config.whitelist) ? config.whitelist : []),
+        ...(Array.isArray(config.automod?.exemptUserIds)
+          ? config.automod.exemptUserIds
+          : []),
+      ]).size,
     },
   };
 }
