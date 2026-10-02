@@ -184,10 +184,14 @@ export const en = {
   'automod.blockedRoles': 'Blocked roles',
   'automod.blockedRolesHelp':
     'Members with any selected role are always treated as blocked by protected message and join flows.',
-  'automod.exemptRoles': 'Exempt roles',
-  'automod.exemptRolesHelp': 'Members with any selected role bypass automod.',
-  'automod.exemptChannels': 'Exempt channels',
-  'automod.exemptChannelsHelp': 'Messages in these channels bypass message filters.',
+  'automod.exemptRoles': 'Immune roles',
+  'automod.exemptRolesHelp': 'Members with any selected role are immune to automod.',
+  'automod.exemptChannels': 'Immune channels',
+  'automod.exemptChannelsHelp': 'Messages in these channels are immune to message filters.',
+  'automod.legacyPoliciesTitle': 'Legacy user rules detected',
+  'automod.legacyPoliciesBody':
+    '{count} old per-user rule(s) still exist from slash commands. They are hidden because this dashboard now uses roles and channels instead of user IDs.',
+  'automod.clearLegacyPolicies': 'Clear legacy user rules',
   'automod.engineRunning': 'Protection engine active',
   'automod.enginePaused': 'Protection engine paused',
   'automod.warningThreshold': 'Warning threshold',
@@ -360,6 +364,7 @@ export const en = {
   'status.reactionEmbedAdded': 'Embed published and reaction role created.',
   'status.reactionRemoved': 'Reaction role removed.',
   'status.embedPublished': 'Embed published.',
+  'status.legacyPoliciesCleared': 'Legacy user rules cleared.',
   'status.loggedOut': 'You have been signed out.',
 
   'error.title': 'Something needs attention',
