@@ -385,71 +385,6 @@ function MultiSelectField({
   );
 }
 
-function SnowflakeListField({ id, label, help, value, onChange }) {
-  const [input, setInput] = useState('');
-
-  function add() {
-    const normalized = input.trim();
-    if (!/^\d{17,20}$/u.test(normalized) || value.includes(normalized)) return;
-    onChange([...value, normalized]);
-    setInput('');
-  }
-
-  return (
-    <div className="field-row input-field-row">
-      <div className="field-copy">
-        <label htmlFor={id}>{label}</label>
-        <p>{help}</p>
-      </div>
-      <div className="list-editor">
-        <div className="list-editor-add">
-          <input
-            id={id}
-            inputMode="numeric"
-            pattern="[0-9]{17,20}"
-            maxLength="20"
-            value={input}
-            placeholder={t('automod.userIdPlaceholder')}
-            onChange={(event) => setInput(event.target.value.replace(/\D/gu, ''))}
-            onKeyDown={(event) => {
-              if (event.key === 'Enter') {
-                event.preventDefault();
-                add();
-              }
-            }}
-          />
-          <button
-            className="button secondary"
-            type="button"
-            disabled={!/^\d{17,20}$/u.test(input) || value.includes(input)}
-            onClick={add}
-          >
-            {t('common.addItem')}
-          </button>
-        </div>
-        {value.length ? (
-          <div className="token-list">
-            {value.map((item) => (
-              <span className="token-item" key={item}>
-                <span>{item}</span>
-                <button
-                  type="button"
-                  aria-label={t('common.removeItem', { item })}
-                  onClick={() => onChange(value.filter((candidate) => candidate !== item))}
-                >
-                  <Icon name="close" size={14} />
-                </button>
-              </span>
-            ))}
-          </div>
-        ) : (
-          <span className="list-editor-empty">{t('common.noExemptions')}</span>
-        )}
-      </div>
-    </div>
-  );
-}
-
 function MissingBot({ guild, onRefresh }) {
   return (
     <div className="empty-state install-state">
@@ -1200,28 +1135,6 @@ function Dashboard({ session, onSessionExpired }) {
               title={t('automod.title')}
               description={t('automod.description')}
             >
-              {(draft.automod.exemptUserIds ?? []).includes(session.user.id) ? (
-                <div className="warning-banner automod-self-exempt">
-                  <Icon name="alert" size={18} />
-                  <span>{t('automod.currentUserExempt')}</span>
-                  <button
-                    className="button secondary"
-                    type="button"
-                    onClick={() =>
-                      updateNested(
-                        'automod',
-                        'exemptUserIds',
-                        (draft.automod.exemptUserIds ?? []).filter(
-                          (userId) => userId !== session.user.id,
-                        ),
-                      )
-                    }
-                  >
-                    {t('automod.removeMyExemption')}
-                  </button>
-                </div>
-              ) : null}
-
               <div className="settings-card automod-card">
                 <div className="subsection-heading">
                   <div>
@@ -1550,21 +1463,14 @@ function Dashboard({ session, onSessionExpired }) {
                     <p>{t('automod.exemptionsDescription')}</p>
                   </div>
                 </div>
-                <SnowflakeListField
-                  id="automod-blacklisted-users"
-                  label={t('automod.blacklistedUsers')}
-                  help={t('automod.blacklistedUsersHelp')}
-                  value={draft.automod.blacklistedUserIds ?? []}
-                  onChange={(value) =>
-                    updateNested('automod', 'blacklistedUserIds', value)
-                  }
-                />
-                <SnowflakeListField
-                  id="automod-exempt-users"
-                  label={t('automod.exemptUsers')}
-                  help={t('automod.exemptUsersHelp')}
-                  value={draft.automod.exemptUserIds ?? []}
-                  onChange={(value) => updateNested('automod', 'exemptUserIds', value)}
+                <MultiSelectField
+                  id="automod-blocked-roles"
+                  label={t('automod.blockedRoles')}
+                  help={t('automod.blockedRolesHelp')}
+                  value={draft.automod.blockedRoleIds ?? []}
+                  onChange={(value) => updateNested('automod', 'blockedRoleIds', value)}
+                  options={allRoleOptions}
+                  icon="role"
                 />
                 <MultiSelectField
                   id="automod-exempt-roles"
