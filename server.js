@@ -495,7 +495,9 @@ if (!discordDryRun) {
   });
 }
 
-await loadStore();
+if (!discordDryRun) {
+  await loadStore();
+}
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
