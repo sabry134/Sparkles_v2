@@ -1600,6 +1600,10 @@ button:disabled {
     width: min(64vw, 320px);
   }
 
+  .toast {
+    bottom: 82px;
+  }
+
   .dashboard-content {
     width: min(100% - 32px, 760px);
     padding-top: 30px;
