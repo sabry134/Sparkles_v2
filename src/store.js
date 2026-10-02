@@ -3,7 +3,7 @@ import path from 'node:path';
 
 const file = path.resolve(process.env.STORE_PATH ?? path.join('data', 'store.json'));
 const directory = path.dirname(file);
-let state = { guilds: {}, warnings: {} };
+let state = { guilds: {}, warnings: {}, moderationCases: {} };
 let baselineState = structuredClone(state);
 let writeQueue = Promise.resolve();
 let lastFileSignature = null;
@@ -23,8 +23,8 @@ function fileSignature(metadata) {
 
 function normalizeStore(parsed) {
   return parsed && typeof parsed === 'object'
-    ? { guilds: {}, warnings: {}, ...parsed }
-    : { guilds: {}, warnings: {} };
+    ? { guilds: {}, warnings: {}, moderationCases: {}, ...parsed }
+    : { guilds: {}, warnings: {}, moderationCases: {} };
 }
 
 function isRecord(value) {
@@ -164,6 +164,28 @@ export function addWarning(guildId, userId, warning) {
 
 export function clearWarnings(guildId, userId) {
   delete state.warnings[`${guildId}:${userId}`];
+}
+
+export function addModerationCase(guildId, entry) {
+  state.moderationCases[guildId] ??= [];
+  const cases = state.moderationCases[guildId];
+  const id = (cases.at(-1)?.id ?? 0) + 1;
+  const moderationCase = {
+    id,
+    at: new Date().toISOString(),
+    ...entry,
+  };
+  cases.push(moderationCase);
+  if (cases.length > 2_000) cases.splice(0, cases.length - 2_000);
+  return moderationCase;
+}
+
+export function moderationCases(guildId, userId = null) {
+  const cases = state.moderationCases[guildId] ?? [];
+  const filtered = userId
+    ? cases.filter((entry) => entry.targetId === userId)
+    : cases;
+  return structuredClone(filtered);
 }
 
 export function saveStore() {
