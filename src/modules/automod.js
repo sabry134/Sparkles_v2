@@ -97,7 +97,6 @@ function memberRoleIds(member) {
 
 export function isAutomodExempt(message, config) {
   const automod = config.automod ?? {};
-  if ((config.whitelist ?? []).includes(message.author.id)) return true;
   if ((automod.exemptChannelIds ?? []).includes(message.channelId)) return true;
 
   const roles = memberRoleIds(message.member);
@@ -106,7 +105,6 @@ export function isAutomodExempt(message, config) {
 
 function isMemberExempt(member, config) {
   const automod = config.automod ?? {};
-  if ((config.whitelist ?? []).includes(member.id)) return true;
   const roles = memberRoleIds(member);
   return (automod.exemptRoleIds ?? []).some((roleId) => roles.has(roleId));
 }
@@ -383,9 +381,9 @@ export async function filterAutomodMessage(message, t) {
 
   const config = guildConfig(message.guildId);
   const roles = memberRoleIds(message.member);
-  const isBlacklisted =
-    config.blacklist?.includes(message.author.id) ||
-    (config.automod?.blockedRoleIds ?? []).some((roleId) => roles.has(roleId));
+  const isBlacklisted = (config.automod?.blockedRoleIds ?? []).some((roleId) =>
+    roles.has(roleId),
+  );
   if (!isBlacklisted && isAutomodExempt(message, config)) return false;
 
   const automod = config.automod ?? {};
@@ -417,9 +415,9 @@ export async function filterAutomodMessage(message, t) {
 export async function protectNewMember(member, t) {
   const config = guildConfig(member.guild.id);
   const roles = memberRoleIds(member);
-  const blacklisted =
-    config.blacklist?.includes(member.id) ||
-    (config.automod?.blockedRoleIds ?? []).some((roleId) => roles.has(roleId));
+  const blacklisted = (config.automod?.blockedRoleIds ?? []).some((roleId) =>
+    roles.has(roleId),
+  );
   if (!blacklisted && isMemberExempt(member, config)) return false;
 
   const now = Date.now();
