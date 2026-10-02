@@ -995,6 +995,14 @@ function Dashboard({ session, onSessionExpired }) {
                     ? t('automod.enabled')
                     : t('automod.disabled')}
                 </div>
+                {!resources.capabilities.canManageMessages ||
+                !resources.capabilities.canKickMembers ||
+                !resources.capabilities.canModerateMembers ? (
+                  <div className="warning-banner">
+                    <Icon name="alert" size={18} />
+                    {t('automod.capabilityWarning')}
+                  </div>
+                ) : null}
               </div>
             </SettingSection>
 
@@ -1222,6 +1230,12 @@ function Dashboard({ session, onSessionExpired }) {
                   onChange={(value) => updateField('ticketCategoryId', value)}
                   options={categoryOptions}
                 />
+                {!resources.capabilities.canManageChannels ? (
+                  <div className="warning-banner">
+                    <Icon name="alert" size={18} />
+                    {t('community.ticketCapabilityWarning')}
+                  </div>
+                ) : null}
               </div>
               {[
                 ['welcome', 'community.welcome'],
