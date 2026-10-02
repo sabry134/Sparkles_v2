@@ -8,6 +8,7 @@ const URL_PATTERN =
 const HTTP_URL_PATTERN = /\bhttp:\/\/[^\s<]+/iu;
 const HTTPS_URL_PATTERN = /\bhttps:\/\/[^\s<]+/iu;
 const EMOJI_PATTERN = /\p{Extended_Pictographic}/gu;
+const CUSTOM_EMOJI_PATTERN = /<a?:[A-Za-z0-9_]{2,32}:\d{17,20}>/gu;
 const recentJoins = new Map();
 const recentMessages = new Map();
 
@@ -61,7 +62,11 @@ function countLinks(content) {
 
 function countEmoji(content) {
   EMOJI_PATTERN.lastIndex = 0;
-  return [...content.matchAll(EMOJI_PATTERN)].length;
+  CUSTOM_EMOJI_PATTERN.lastIndex = 0;
+  return (
+    [...content.matchAll(EMOJI_PATTERN)].length +
+    [...content.matchAll(CUSTOM_EMOJI_PATTERN)].length
+  );
 }
 
 function capsRatio(content) {
@@ -155,6 +160,10 @@ export function detectSpam(message, automod) {
       settings.linkWindowSeconds,
     ) * 1000;
   const key = historyKey(message);
+  if (!recentMessages.has(key) && recentMessages.size >= 10_000) {
+    const oldest = recentMessages.keys().next().value;
+    if (oldest) recentMessages.delete(oldest);
+  }
   const history = (recentMessages.get(key) ?? []).filter(
     (entry) => now - entry.at <= maximumWindow,
   );
