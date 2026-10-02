@@ -489,9 +489,11 @@ export function validateSettingsResources(patch, resources) {
     }
   }
 
-  for (const roleId of patch.automod?.exemptRoleIds ?? []) {
-    if (!roleIds.has(roleId)) {
-      throw new AppError('INVALID_ROLE', 400);
+  for (const field of ['blockedRoleIds', 'exemptRoleIds']) {
+    for (const roleId of patch.automod?.[field] ?? []) {
+      if (!roleIds.has(roleId)) {
+        throw new AppError('INVALID_ROLE', 400);
+      }
     }
   }
 
