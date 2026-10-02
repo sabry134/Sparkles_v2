@@ -17,7 +17,7 @@ function validRoot(value) {
 }
 
 function emptyStore() {
-  return { guilds: {}, warnings: {}, moderationCases: {} };
+  return { guilds: {}, warnings: {}, moderationCases: {}, dashboardAudit: {} };
 }
 
 function normalizeRoot(value) {
@@ -28,6 +28,7 @@ function normalizeRoot(value) {
   if (!validRoot(value.guilds)) value.guilds = {};
   if (!validRoot(value.warnings)) value.warnings = {};
   if (!validRoot(value.moderationCases)) value.moderationCases = {};
+  if (!validRoot(value.dashboardAudit)) value.dashboardAudit = {};
   return value;
 }
 
@@ -385,6 +386,54 @@ export class BotStore {
             }
           : null,
       }));
+  }
+
+  async getDashboardAudit(guildId, { limit = 100 } = {}) {
+    const store = await readStore(this.#file);
+    const raw = Array.isArray(store.dashboardAudit[guildId])
+      ? store.dashboardAudit[guildId]
+      : [];
+    return raw
+      .slice(-Math.min(250, Math.max(1, limit)))
+      .reverse()
+      .map((entry) => ({
+        id: Number.isSafeInteger(entry?.id) ? entry.id : null,
+        at: typeof entry?.at === 'string' ? entry.at : null,
+        actorId: typeof entry?.actorId === 'string' ? entry.actorId : null,
+        actorTag: typeof entry?.actorTag === 'string' ? entry.actorTag : null,
+        changes: Array.isArray(entry?.changes)
+          ? entry.changes.filter((item) => typeof item === 'string').slice(0, 100)
+          : [],
+      }));
+  }
+
+  appendDashboardAudit(guildId, entry) {
+    const operation = this.#writeQueue.then(async () => {
+      await mkdir(path.dirname(this.#file), { recursive: true });
+      const release = await acquireLock(this.#file);
+
+      try {
+        const store = await readStore(this.#file);
+        store.dashboardAudit[guildId] ??= [];
+        const entries = store.dashboardAudit[guildId];
+        const id = (entries.at(-1)?.id ?? 0) + 1;
+        entries.push({
+          id,
+          at: new Date().toISOString(),
+          actorId: entry.actorId,
+          actorTag: entry.actorTag,
+          changes: [...new Set(entry.changes ?? [])].slice(0, 100),
+        });
+        if (entries.length > 2_000) entries.splice(0, entries.length - 2_000);
+        await atomicWrite(this.#file, store);
+        return id;
+      } finally {
+        await release();
+      }
+    });
+
+    this.#writeQueue = operation.catch(() => {});
+    return operation;
   }
 
   updateGuildSettings(guildId, patch) {
