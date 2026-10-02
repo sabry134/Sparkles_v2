@@ -112,6 +112,9 @@ export function settingsPatch(value) {
       'giveaways',
       'music',
       'economy',
+      'actionLog',
+      'autoresponders',
+      'starboard',
       'modules',
       'customCommands',
     ]),
@@ -282,6 +285,82 @@ export function settingsPatch(value) {
         0,
         100,
       );
+    }
+  }
+
+  if (Object.hasOwn(value, 'actionLog')) {
+    onlyKeys(
+      value.actionLog,
+      new Set([
+        'enabled',
+        'channelId',
+        'messageDelete',
+        'messageEdit',
+        'memberJoin',
+        'memberLeave',
+        'roleChanges',
+      ]),
+    );
+    patch.actionLog = {
+      enabled: boolean(value.actionLog.enabled),
+      channelId: snowflake(value.actionLog.channelId, 'channelId', {
+        nullable: true,
+      }),
+      messageDelete: boolean(value.actionLog.messageDelete),
+      messageEdit: boolean(value.actionLog.messageEdit),
+      memberJoin: boolean(value.actionLog.memberJoin),
+      memberLeave: boolean(value.actionLog.memberLeave),
+      roleChanges: boolean(value.actionLog.roleChanges),
+    };
+    if (patch.actionLog.enabled && !patch.actionLog.channelId) {
+      throw new AppError('INVALID_CHANNEL', 400);
+    }
+  }
+
+  if (Object.hasOwn(value, 'autoresponders')) {
+    assert(Array.isArray(value.autoresponders), 'INVALID_INPUT');
+    assert(value.autoresponders.length <= 50, 'INVALID_INPUT');
+    patch.autoresponders = value.autoresponders.map((entry) => {
+      onlyKeys(entry, new Set(['id', 'trigger', 'response', 'match', 'enabled']));
+      assert(
+        typeof entry.id === 'string' && /^[a-z0-9-]{1,64}$/u.test(entry.id),
+        'INVALID_INPUT',
+      );
+      assert(['contains', 'exact'].includes(entry.match), 'INVALID_INPUT');
+      return {
+        id: entry.id,
+        trigger: text(entry.trigger, 100, { allowEmpty: false }),
+        response: text(entry.response, 1_900, { allowEmpty: false }),
+        match: entry.match,
+        enabled: boolean(entry.enabled),
+      };
+    });
+  }
+
+  if (Object.hasOwn(value, 'starboard')) {
+    onlyKeys(
+      value.starboard,
+      new Set(['enabled', 'channelId', 'threshold', 'emoji', 'ignoreChannelIds']),
+    );
+    assert(Array.isArray(value.starboard.ignoreChannelIds), 'INVALID_INPUT');
+    assert(value.starboard.ignoreChannelIds.length <= 50, 'INVALID_INPUT');
+    patch.starboard = {
+      enabled: boolean(value.starboard.enabled),
+      channelId: snowflake(value.starboard.channelId, 'channelId', {
+        nullable: true,
+      }),
+      threshold: integer(value.starboard.threshold, 1, 100),
+      emoji: emojiInput(value.starboard.emoji).emoji,
+      ignoreChannelIds: [
+        ...new Set(
+          value.starboard.ignoreChannelIds.map((id) =>
+            snowflake(id, 'channelId'),
+          ),
+        ),
+      ],
+    };
+    if (patch.starboard.enabled && !patch.starboard.channelId) {
+      throw new AppError('INVALID_CHANNEL', 400);
     }
   }
 
