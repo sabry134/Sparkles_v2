@@ -513,9 +513,13 @@ export async function handleExtendedCommand(commandName, interaction, t, client)
 
     case 'auto-status': {
       const automod = config.automod ?? {};
-      const values = Object.entries(automod)
-        .map(([key, value]) => `**${key}:** ${JSON.stringify(value)}`)
-        .join('\n');
+      const values = [
+        ...Object.entries(automod).map(
+          ([key, value]) => `**${key}:** ${JSON.stringify(value)}`,
+        ),
+        `**exempt users:** ${(config.whitelist ?? []).length}`,
+        `**blacklisted users:** ${(config.blacklist ?? []).length}`,
+      ].join('\n');
       return completed(
         interaction,
         t,
