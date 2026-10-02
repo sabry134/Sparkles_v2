@@ -12,7 +12,8 @@
     "dashboard:build": "npm --prefix dashboard run build",
     "dashboard:check": "npm --prefix dashboard run check",
     "dashboard:start": "npm --prefix dashboard start",
-    "verify": "npm run check && npm test && npm run dashboard:check"
+    "verify": "npm run check && npm test && npm run dashboard:check",
+    "migrate:mongodb": "node scripts/migrate-store-to-mongodb.js"
   },
   "engines": {
     "node": ">=20.11.0"
@@ -21,7 +22,8 @@
     "@discordjs/voice": "^0.19.2",
     "discord.js": "^14.22.1",
     "dotenv": "^16.6.1",
-    "play-dl": "^1.9.7"
+    "play-dl": "^1.9.7",
+    "mongodb": "^6.20.0"
   },
   "devDependencies": {
     "prettier": "^3.9.6"
