@@ -678,7 +678,6 @@ function Dashboard({ session, onSessionExpired }) {
             rules: settings.rules,
             currency: settings.currency,
             economy: settings.economy,
-            aiChatEnabled: settings.aiChatEnabled,
             automod: settings.automod,
             welcome: settings.welcome,
             goodbye: settings.goodbye,
@@ -2668,13 +2667,6 @@ function Dashboard({ session, onSessionExpired }) {
               description={t('modules.description')}
             >
               <div className="settings-card module-grid">
-                <ToggleField
-                  id="ai-chat"
-                  label={t('modules.ai')}
-                  help={t('modules.aiHelp')}
-                  checked={draft.aiChatEnabled}
-                  onChange={(value) => updateField('aiChatEnabled', value)}
-                />
                 {Object.keys(draft.modules).map((module) => (
                   <ToggleField
                     id={`module-${module}`}
