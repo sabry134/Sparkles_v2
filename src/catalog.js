@@ -7,7 +7,9 @@ anti-alt|Configure minimum account age protection
 anti-bot|View or configure automatic bot blocking
 anti-link|Configure automatic link filtering
 anti-raid|View or configure automatic raid protection
-anti-swear|Configure automatic profanity filtering
+anti-spam|Configure automatic spam and flood protection
+anti-swear|Configure automatic blocked-term filtering
+automod-test|Test text against the current automod configuration
 ask|Chat with the server AI using one complete prompt
 auto-role|Configure the role automatically given to new members
 auto-status|View all automated protection settings
@@ -22,6 +24,10 @@ browse|Open the frequently asked questions browser
 claim|Redeem a premium claim code
 clear|Delete a validated number of recent messages
 clear-warnings|Clear all warnings from a member
+purge-user|Delete recent messages from a selected member
+purge-links|Delete recent messages containing links
+purge-attachments|Delete recent messages containing attachments
+purge-bots|Delete recent messages sent by bots
 control-panel|Open the Sparkles control panel
 create-category|Create a new server category
 create-event|Create a new server event
@@ -112,6 +118,8 @@ ticket|Open the restricted Sparkles management ticket
 timeout|Timeout a member and privately notify them
 translate|Detect and translate text with language controls
 unban|Revoke a ban using a Discord user ID
+unblacklist|Remove a user from the protected server blacklist
+unwhitelist|Remove a user from automod exemptions
 untimeout|Remove a member timeout and notify them
 user-role|List a member's roles in the selected format
 user-warnings|View the number of warnings for a member
