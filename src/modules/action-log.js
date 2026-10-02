@@ -10,6 +10,17 @@ async function logChannel(guild) {
   return channel?.isTextBased() ? channel : null;
 }
 
+function hasIgnoredRole(member, config) {
+  if (!member?.roles?.cache) return false;
+  return (config.actionLog?.ignoreRoleIds ?? []).some((roleId) =>
+    member.roles.cache.has(roleId),
+  );
+}
+
+function ignoredChannel(channelId, config) {
+  return (config.actionLog?.ignoreChannelIds ?? []).includes(channelId);
+}
+
 async function sendLog(guild, title, description) {
   const channel = await logChannel(guild);
   if (!channel) return;
@@ -28,6 +39,7 @@ export async function logMessageDelete(message) {
   if (!message.guild || message.author?.bot) return;
   const config = guildConfig(message.guild.id);
   if (!config.actionLog?.enabled || !config.actionLog.messageDelete) return;
+  if (ignoredChannel(message.channelId, config) || hasIgnoredRole(message.member, config)) return;
   const content = message.content?.slice(0, 1_500) || 'No cached text content';
   await sendLog(
     message.guild,
@@ -40,6 +52,7 @@ export async function logMessageUpdate(before, after) {
   if (!after.guild || after.author?.bot) return;
   const config = guildConfig(after.guild.id);
   if (!config.actionLog?.enabled || !config.actionLog.messageEdit) return;
+  if (ignoredChannel(after.channelId, config) || hasIgnoredRole(after.member, config)) return;
   if (before.content === after.content) return;
   await sendLog(
     after.guild,
@@ -51,6 +64,7 @@ export async function logMessageUpdate(before, after) {
 export async function logMemberJoin(member) {
   const config = guildConfig(member.guild.id);
   if (!config.actionLog?.enabled || !config.actionLog.memberJoin) return;
+  if (hasIgnoredRole(member, config)) return;
   await sendLog(
     member.guild,
     'Member joined',
@@ -61,6 +75,7 @@ export async function logMemberJoin(member) {
 export async function logMemberLeave(member) {
   const config = guildConfig(member.guild.id);
   if (!config.actionLog?.enabled || !config.actionLog.memberLeave) return;
+  if (hasIgnoredRole(member, config)) return;
   await sendLog(
     member.guild,
     'Member left',
@@ -71,6 +86,7 @@ export async function logMemberLeave(member) {
 export async function logRoleChanges(before, after) {
   const config = guildConfig(after.guild.id);
   if (!config.actionLog?.enabled || !config.actionLog.roleChanges) return;
+  if (hasIgnoredRole(after, config) || hasIgnoredRole(before, config)) return;
 
   const beforeIds = new Set(before.roles.cache.keys());
   const afterIds = new Set(after.roles.cache.keys());
