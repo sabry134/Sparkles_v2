@@ -97,13 +97,48 @@ export const en = {
   'moderation.rulesHelp':
     'Members can read this text with /rules. Leave it empty until your rules are ready.',
   'moderation.rulesPlaceholder': 'Be respectful, stay on topic, and follow Discord policies.',
+  'moderation.historyTitle': 'Moderation history',
+  'moderation.historyDescription':
+    'Review punishment cases created by moderators and automod, including stored evidence when available.',
+  'moderation.historySearch': 'Search cases, users, reasons, evidence…',
+  'moderation.target': 'Target',
+  'moderation.moderator': 'Moderator',
+  'moderation.reason': 'Reason',
+  'moderation.source': 'Source',
+  'moderation.evidence': 'Evidence',
+  'moderation.attachment': 'Attachment',
+  'moderation.noReason': 'No reason provided',
+  'moderation.historyEmpty': 'No moderation cases match this view yet.',
+  'moderation.actionLogTitle': 'Action log',
+  'moderation.actionLogDescription':
+    'Keep a Discord-side audit trail for important server events, separate from punishment cases.',
+  'moderation.actionLogEnabled': 'Enable action log',
+  'moderation.actionLogEnabledHelp':
+    'Post selected server events into the configured action-log channel.',
+  'moderation.actionLogChannel': 'Action log channel',
+  'moderation.actionLogChannelHelp':
+    'Channel used for message, member, and role event logs.',
+  'moderation.logMessageDelete': 'Message deletions',
+  'moderation.logMessageDeleteHelp':
+    'Log deleted cached messages and their text when available.',
+  'moderation.logMessageEdit': 'Message edits',
+  'moderation.logMessageEditHelp':
+    'Log before and after text when cached message content changes.',
+  'moderation.logMemberJoin': 'Member joins',
+  'moderation.logMemberJoinHelp':
+    'Log new members and their account creation date.',
+  'moderation.logMemberLeave': 'Member departures',
+  'moderation.logMemberLeaveHelp': 'Log members when they leave the server.',
+  'moderation.logRoleChanges': 'Role changes',
+  'moderation.logRoleChangesHelp':
+    'Log roles added to or removed from members.',
 
   'automod.title': 'Auto moderation',
   'automod.description':
     'Configure content filters, spam protection, join protection, enforcement, and explicit exemptions.',
   'automod.antiLink': 'Anti-link protection',
   'automod.antiLinkHelp':
-    'Delete HTTP, HTTPS, www, and Discord invite links from non-whitelisted members.',
+    'Delete HTTP, HTTPS, www, and Discord invite links from members without an immune role.',
   'automod.master': 'Protection engine',
   'automod.masterHelp': 'Pause or activate every automatic moderation rule at once.',
   'automod.antiAlt': 'New-account protection',
