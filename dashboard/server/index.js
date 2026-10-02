@@ -184,6 +184,30 @@ function validatedGuild(request) {
   return validatedGuildId(request.params.guildId);
 }
 
+function patchPaths(value, prefix = '') {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return prefix ? [prefix] : [];
+  }
+
+  return Object.entries(value).flatMap(([key, nested]) => {
+    const pathName = prefix ? `${prefix}.${key}` : key;
+    if (nested && typeof nested === 'object' && !Array.isArray(nested)) {
+      return patchPaths(nested, pathName);
+    }
+    return [pathName];
+  });
+}
+
+function dashboardActor(request) {
+  return {
+    actorId: request.session.user.id,
+    actorTag:
+      request.session.user.globalName ??
+      request.session.user.username ??
+      request.session.user.id,
+  };
+}
+
 app.get('/health', (_request, response) => {
   response.json({ status: 'ok' });
 });
@@ -314,6 +338,22 @@ app.get(
   }),
 );
 
+app.get(
+  '/api/guilds/:guildId/dashboard-audit',
+  authenticated,
+  asyncRoute(async (request, response) => {
+    const guildId = validatedGuild(request);
+    await authorizeGuild(request, guildId, discordConfig());
+    const parsedLimit = Number.parseInt(request.query.limit ?? '100', 10);
+    const limit = Number.isSafeInteger(parsedLimit)
+      ? Math.min(250, Math.max(1, parsedLimit))
+      : 100;
+    response.json({
+      entries: await botStore.getDashboardAudit(guildId, { limit }),
+    });
+  }),
+);
+
 app.patch(
   '/api/guilds/:guildId/settings',
   authenticated,
@@ -325,6 +365,10 @@ app.patch(
     const resources = await guildResources(guildId, discordConfig());
     validateSettingsResources(patch, resources);
     const settings = await botStore.updateGuildSettings(guildId, patch);
+    await botStore.appendDashboardAudit(guildId, {
+      ...dashboardActor(request),
+      changes: patchPaths(patch),
+    });
     response.json({ settings });
   }),
 );
@@ -337,6 +381,10 @@ app.delete(
     const guildId = validatedGuild(request);
     await authorizeGuild(request, guildId, discordConfig());
     const settings = await botStore.clearLegacyUserPolicies(guildId);
+    await botStore.appendDashboardAudit(guildId, {
+      ...dashboardActor(request),
+      changes: ['automod.legacyUserPolicies'],
+    });
     response.json({ settings });
   }),
 );
@@ -352,6 +400,10 @@ app.post(
     const resources = await guildResources(guildId, discordConfig());
     await validateAndAddReaction(guildId, mapping, resources, discordConfig());
     const settings = await botStore.setReactionRole(guildId, mapping);
+    await botStore.appendDashboardAudit(guildId, {
+      ...dashboardActor(request),
+      changes: ['roles.reactionRoles'],
+    });
     response.status(201).json({ settings });
   }),
 );
@@ -372,6 +424,10 @@ app.post(
       discordConfig(),
     );
     const settings = await botStore.setReactionRole(guildId, created.mapping);
+    await botStore.appendDashboardAudit(guildId, {
+      ...dashboardActor(request),
+      changes: ['roles.reactionRoles', 'embeds.published'],
+    });
     response.status(201).json({
       settings,
       messageLink: created.messageLink,
@@ -394,6 +450,10 @@ app.post(
       resources,
       discordConfig(),
     );
+    await botStore.appendDashboardAudit(guildId, {
+      ...dashboardActor(request),
+      changes: ['embeds.published'],
+    });
     response.status(201).json(message);
   }),
 );
@@ -411,6 +471,10 @@ app.delete(
     if (!mapping) throw new AppError('REACTION_ROLE_NOT_FOUND', 404);
 
     const settings = await botStore.removeReactionRole(guildId, key);
+    await botStore.appendDashboardAudit(guildId, {
+      ...dashboardActor(request),
+      changes: ['roles.reactionRoles'],
+    });
     await removeBotReaction(mapping, discordConfig());
     response.json({ settings });
   }),
