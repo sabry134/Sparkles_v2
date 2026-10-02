@@ -310,10 +310,8 @@ export function settingsPatch(value) {
   return patch;
 }
 
-export function reactionRoleInput(value) {
-  onlyKeys(value, new Set(['channelId', 'messageId', 'roleId', 'emoji']));
-
-  const emoji = typeof value.emoji === 'string' ? value.emoji.trim() : '';
+function emojiInput(value) {
+  const emoji = typeof value === 'string' ? value.trim() : '';
   const emojiLength = [...emoji].length;
   assert(emojiLength >= 1 && emojiLength <= 64, 'INVALID_EMOJI');
   assert(!/[\r\n\0]/u.test(emoji), 'INVALID_EMOJI');
@@ -325,15 +323,167 @@ export function reactionRoleInput(value) {
     [...graphemeSegmenter.segment(emoji)].length === 1 &&
     UNICODE_EMOJI_PATTERN.test(emoji);
   assert(Boolean(customMatch) || unicodeEmojiIsValid, 'INVALID_EMOJI');
-  const emojiKey = customMatch?.[1] ?? emoji;
 
   return {
-    channelId: snowflake(value.channelId, 'channelId'),
-    messageId: snowflake(value.messageId, 'messageId'),
+    emoji,
+    emojiKey: customMatch?.[1] ?? emoji,
+  };
+}
+
+function webUrl(value, field, { nullable = true } = {}) {
+  if (nullable && (value === null || value === '')) return null;
+  assert(typeof value === 'string' && value.length <= 2_048, 'INVALID_INPUT');
+  let url;
+  try {
+    url = new URL(value);
+  } catch {
+    throw new AppError('INVALID_INPUT', 400);
+  }
+  assert(['http:', 'https:'].includes(url.protocol), 'INVALID_INPUT');
+  return url.toString();
+}
+
+function messageLink(value, expectedGuildId) {
+  assert(typeof value === 'string' && value.length <= 256, 'INVALID_MESSAGE_LINK');
+  let url;
+  try {
+    url = new URL(value.trim());
+  } catch {
+    throw new AppError('INVALID_MESSAGE_LINK', 400);
+  }
+
+  assert(
+    ['discord.com', 'ptb.discord.com', 'canary.discord.com'].includes(url.hostname),
+    'INVALID_MESSAGE_LINK',
+  );
+  const match = /^\/channels\/(\d{17,20})\/(\d{17,20})\/(\d{17,20})\/?$/u.exec(
+    url.pathname,
+  );
+  assert(Boolean(match), 'INVALID_MESSAGE_LINK');
+  if (expectedGuildId) assert(match[1] === expectedGuildId, 'INVALID_MESSAGE_LINK');
+  return {
+    guildId: match[1],
+    channelId: match[2],
+    messageId: match[3],
+  };
+}
+
+function embedPayload(value) {
+  onlyKeys(
+    value,
+    new Set([
+      'title',
+      'description',
+      'color',
+      'url',
+      'authorName',
+      'authorIconUrl',
+      'thumbnailUrl',
+      'imageUrl',
+      'footerText',
+      'footerIconUrl',
+      'fields',
+    ]),
+  );
+
+  const result = {};
+  if (Object.hasOwn(value, 'title')) result.title = text(value.title, 256);
+  if (Object.hasOwn(value, 'description')) {
+    result.description = text(value.description, 4_096);
+  }
+  if (Object.hasOwn(value, 'url')) result.url = webUrl(value.url, 'url');
+  if (Object.hasOwn(value, 'color')) {
+    assert(
+      typeof value.color === 'string' && /^#?[0-9a-f]{6}$/iu.test(value.color),
+      'INVALID_INPUT',
+    );
+    result.color = Number.parseInt(value.color.replace('#', ''), 16);
+  }
+  if (Object.hasOwn(value, 'authorName') && value.authorName.trim()) {
+    result.author = {
+      name: text(value.authorName, 256, { allowEmpty: false }),
+    };
+    const iconUrl = webUrl(value.authorIconUrl ?? null, 'authorIconUrl');
+    if (iconUrl) result.author.icon_url = iconUrl;
+  }
+  const thumbnail = webUrl(value.thumbnailUrl ?? null, 'thumbnailUrl');
+  if (thumbnail) result.thumbnail = { url: thumbnail };
+  const image = webUrl(value.imageUrl ?? null, 'imageUrl');
+  if (image) result.image = { url: image };
+  if (Object.hasOwn(value, 'footerText') && value.footerText.trim()) {
+    result.footer = {
+      text: text(value.footerText, 2_048, { allowEmpty: false }),
+    };
+    const iconUrl = webUrl(value.footerIconUrl ?? null, 'footerIconUrl');
+    if (iconUrl) result.footer.icon_url = iconUrl;
+  }
+  if (Object.hasOwn(value, 'fields')) {
+    assert(Array.isArray(value.fields) && value.fields.length <= 25, 'INVALID_INPUT');
+    result.fields = value.fields.map((field) => {
+      onlyKeys(field, new Set(['name', 'value', 'inline']));
+      return {
+        name: text(field.name, 256, { allowEmpty: false }),
+        value: text(field.value, 1_024, { allowEmpty: false }),
+        inline: field.inline === true,
+      };
+    });
+  }
+
+  assert(
+    Boolean(
+      result.title ||
+        result.description ||
+        result.author ||
+        result.thumbnail ||
+        result.image ||
+        result.footer ||
+        result.fields?.length,
+    ),
+    'INVALID_INPUT',
+  );
+  return result;
+}
+
+export function reactionRoleInput(value, expectedGuildId) {
+  onlyKeys(value, new Set(['messageLink', 'roleId', 'emoji']));
+  const target = messageLink(value.messageLink, expectedGuildId);
+  const { emoji, emojiKey } = emojiInput(value.emoji);
+
+  return {
+    channelId: target.channelId,
+    messageId: target.messageId,
     roleId: snowflake(value.roleId, 'roleId'),
     emoji,
     emojiKey,
-    key: `${value.messageId}:${emojiKey}`,
+    key: `${target.messageId}:${emojiKey}`,
+  };
+}
+
+export function reactionRoleEmbedInput(value) {
+  onlyKeys(value, new Set(['channelId', 'roleId', 'emoji', 'content', 'embed']));
+  const { emoji, emojiKey } = emojiInput(value.emoji);
+  return {
+    channelId: snowflake(value.channelId, 'channelId'),
+    roleId: snowflake(value.roleId, 'roleId'),
+    emoji,
+    emojiKey,
+    content:
+      value.content == null || value.content === ''
+        ? ''
+        : text(value.content, 2_000),
+    embed: embedPayload(value.embed),
+  };
+}
+
+export function dashboardEmbedInput(value) {
+  onlyKeys(value, new Set(['channelId', 'content', 'embed']));
+  return {
+    channelId: snowflake(value.channelId, 'channelId'),
+    content:
+      value.content == null || value.content === ''
+        ? ''
+        : text(value.content, 2_000),
+    embed: embedPayload(value.embed),
   };
 }
 
