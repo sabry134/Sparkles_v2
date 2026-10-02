@@ -232,7 +232,14 @@ function publicSettings(config, defaults) {
         ? config.automod.blockedWords
         : [],
       blacklistedUserIds: Array.isArray(config.blacklist) ? config.blacklist : [],
-      exemptUserIds: Array.isArray(config.whitelist) ? config.whitelist : [],
+      exemptUserIds: [
+        ...new Set([
+          ...(Array.isArray(config.whitelist) ? config.whitelist : []),
+          ...(Array.isArray(config.automod?.exemptUserIds)
+            ? config.automod.exemptUserIds
+            : []),
+        ]),
+      ],
       exemptRoleIds: Array.isArray(config.automod?.exemptRoleIds)
         ? config.automod.exemptRoleIds
         : [],
@@ -364,6 +371,7 @@ export class BotStore {
           const blacklisted = new Set(blacklist);
           config.blacklist = blacklist;
           config.whitelist = whitelist.filter((id) => !blacklisted.has(id));
+          delete config.automod.exemptUserIds;
         }
         if (Object.hasOwn(patch.automod, 'antiLink')) {
           delete config.automod.linkProtocols;
