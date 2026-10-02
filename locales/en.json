@@ -140,7 +140,12 @@
     "languageArabic": "Arabic",
     "languageJapanese": "Japanese",
     "languageKorean": "Korean",
-    "languageChinese": "Chinese"
+    "languageChinese": "Chinese",
+    "spamMessages": "Maximum messages in the spam window",
+    "spamWindow": "Spam detection window in seconds",
+    "duplicateMessages": "Identical messages before duplicate spam triggers",
+    "automodTestText": "Text to test against the current automod settings",
+    "purgeAmount": "Maximum number of matching recent messages to delete"
   },
   "modules": {
     "missingPermissionTitle": "Missing permission",
@@ -203,7 +208,7 @@
     "antiLinkLogBody": "Removed a link from **{user}** in {channel}.",
     "userIdFooter": "User ID: {id}",
     "automodRemovedTitle": "Automod action",
-    "automodRemovedBody": "{user}, that message violated this server's automod rules.",
+    "automodRemovedBody": "{user}, that message violated this server's automod rules: **{reason}**.",
     "blacklistedMember": "You are blacklisted from this server.",
     "automaticBotBlocked": "This server does not allow automatically invited bots.",
     "accountTooNew": "Your Discord account is too new to join this server.",
@@ -214,7 +219,9 @@
     "welcomeMessage": "Welcome {user} to **{server}**!",
     "welcomeTitle": "Welcome to the server",
     "goodbyeMessage": "{user} has left **{server}**.",
-    "goodbyeTitle": "Member departure"
+    "goodbyeTitle": "Member departure",
+    "automodLogTitle": "Automod action",
+    "automodLogBody": "Removed a message from **{user}** in {channel}. Trigger: **{reason}**."
   },
   "extended": {
     "completedTitle": "/{command} completed",
@@ -269,7 +276,10 @@
     "customSaved": "Saved custom command `{name}`.",
     "customDeleted": "Deleted custom command `{name}`.",
     "giveawayFooter": "{time} · ID {id}",
-    "relayTitle": "{user} · relayed by {moderator}"
+    "relayTitle": "{user} · relayed by {moderator}",
+    "textChannelRequired": "This command must be used in a text channel.",
+    "purgeEmpty": "No matching recent messages were found.",
+    "purgeCompleted": "Deleted {count} matching recent message(s)."
   },
   "responses": {
     "ping": "Pong! API: {api}ms • WebSocket: {ws}ms",
