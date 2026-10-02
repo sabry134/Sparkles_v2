@@ -26,6 +26,7 @@ export default function Select({
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(0);
   const [menuStyle, setMenuStyle] = useState({});
+  const [invalid, setInvalid] = useState(false);
   const selected = options.findIndex((option) => option.id === (value ?? ''));
   const current = options[selected];
 
@@ -37,6 +38,7 @@ export default function Select({
     const option = options[index];
     if (!option || option.disabled) return;
     onChange(option.id);
+    setInvalid(false);
     close();
     trigger.current?.focus({ preventScroll: true });
   }
@@ -198,6 +200,7 @@ export default function Select({
         aria-controls={open ? listId : undefined}
         aria-activedescendant={open && options[active] ? `${listId}-${active}` : undefined}
         aria-required={required || undefined}
+        aria-invalid={invalid || undefined}
         disabled={disabled || !options.length}
         onKeyDown={onKeyDown}
         onClick={() => {
@@ -229,6 +232,7 @@ export default function Select({
           onChange={(event) => onChange(event.target.value)}
           onInvalid={(event) => {
             event.preventDefault();
+            setInvalid(true);
             setOpen(true);
             trigger.current?.focus();
           }}
@@ -240,6 +244,11 @@ export default function Select({
             </option>
           ))}
         </select>
+      ) : null}
+      {invalid ? (
+        <span className="field-error" role="alert">
+          {t('select.required')}
+        </span>
       ) : null}
     </div>
   );
