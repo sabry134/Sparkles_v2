@@ -269,6 +269,12 @@ function publicSettings(config, defaults) {
       memberJoin: config.actionLog?.memberJoin !== false,
       memberLeave: config.actionLog?.memberLeave !== false,
       roleChanges: config.actionLog?.roleChanges !== false,
+      ignoreRoleIds: Array.isArray(config.actionLog?.ignoreRoleIds)
+        ? config.actionLog.ignoreRoleIds
+        : [],
+      ignoreChannelIds: Array.isArray(config.actionLog?.ignoreChannelIds)
+        ? config.actionLog.ignoreChannelIds
+        : [],
     },
     autoresponders: Array.isArray(config.autoresponders)
       ? config.autoresponders
