@@ -207,3 +207,59 @@ test('dashboard configuration changes are auditable', () => {
   assert.match(sources['dashboard/server/index.js'], /appendDashboardAudit/u);
   assert.match(sources['dashboard/src/App.jsx'], /dashboardAudit/u);
 });
+
+
+test('disabled dashboard features hide settings that only apply while enabled', () => {
+  const app = sources['dashboard/src/App.jsx'];
+
+  assert.match(
+    app,
+    /draft\.actionLog\.enabled \? \([\s\S]*?action-log-channel[\s\S]*?action-log-ignore-channels/u,
+  );
+  assert.match(
+    app,
+    /draft\.automod\.enabled \? \([\s\S]*?id="anti-link"[\s\S]*?id="anti-swear"/u,
+  );
+  assert.match(
+    app,
+    /draft\.automod\.enabled && draft\.automod\.antiSwear \? \([\s\S]*?id="blocked-words"/u,
+  );
+  for (const [condition, id] of [
+    ['antiSpam', 'spam-message-threshold'],
+    ['antiSpam', 'duplicate-window'],
+    ['antiMentionSpam', 'mention-threshold'],
+    ['antiCaps', 'caps-percentage'],
+    ['antiCaps', 'caps-minimum'],
+    ['antiEmojiSpam', 'emoji-threshold'],
+    ['antiAttachmentSpam', 'attachment-threshold'],
+    ['antiAttachmentSpam', 'attachment-window'],
+    ['antiLinkSpam', 'link-threshold'],
+    ['antiLinkSpam', 'link-window'],
+    ['antiAlt', 'minimum-account-age'],
+    ['antiRaid', 'raid-threshold'],
+  ]) {
+    assert.match(
+      app,
+      new RegExp(
+        `draft\\.automod\\.${condition} \\? \\([\\s\\S]*?id="${id}"`,
+        'u',
+      ),
+    );
+  }
+  assert.match(
+    app,
+    /draft\[section\]\.enabled \? \([\s\S]*?\$\{section\}-channel[\s\S]*?\$\{section\}-message/u,
+  );
+  assert.match(
+    app,
+    /draft\.starboard\.enabled \? \([\s\S]*?starboard-channel[\s\S]*?starboard-ignore-channels/u,
+  );
+  assert.match(
+    app,
+    /\{enabled \? \([\s\S]*?modules\.commandConfigure[\s\S]*?\) : null\}/u,
+  );
+  assert.match(
+    app,
+    /selectedCommandRule &&[\s\S]*?!draft\.disabledCommands\.includes\(selectedCommand\.name\)/u,
+  );
+});
