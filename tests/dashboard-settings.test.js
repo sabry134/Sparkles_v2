@@ -1,10 +1,9 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
-import os from 'node:os';
-import path from 'node:path';
 import test from 'node:test';
 import { BotStore } from '../dashboard/server/bot-store.js';
 import { settingsPatch } from '../dashboard/server/validation.js';
+import { COLLECTIONS } from '../src/mongodb.js';
+import { FakeMongoDatabase } from './helpers/fake-mongo.js';
 
 const defaults = {
   automod: {
@@ -40,25 +39,16 @@ const defaults = {
 };
 
 test('dashboard validates and persists every exposed guild setting', async () => {
-  const directory = await mkdtemp(path.join(os.tmpdir(), 'sparkles-dashboard-'));
-  const file = path.join(directory, 'store.json');
   const guildId = '123456789012345678';
+  const db = new FakeMongoDatabase().seed(COLLECTIONS.guilds, [
+    {
+      _id: guildId,
+      tags: {},
+      automod: { linkProtocols: ['http'] },
+    },
+  ]);
 
-  await writeFile(
-    file,
-    JSON.stringify({
-      guilds: {
-        [guildId]: {
-          tags: {},
-          automod: { linkProtocols: ['http'] },
-        },
-      },
-      warnings: {},
-    }),
-    'utf8',
-  );
-
-  const store = new BotStore(file, defaults);
+  const store = new BotStore({ database: db, defaults });
   const patch = settingsPatch({
     logsChannelId: '223456789012345678',
     suggestionsChannelId: '223456789012345679',
@@ -228,8 +218,7 @@ test('dashboard validates and persists every exposed guild setting', async () =>
   assert.equal(settings.customCommands.hello, 'Welcome to the server!');
   assert.equal(settings.customCommands['rules-short'], 'Read the rules channel.');
 
-  const persisted = JSON.parse(await readFile(file, 'utf8'));
-  const guild = persisted.guilds[guildId];
+  const guild = await db.collection(COLLECTIONS.guilds).findOne({ _id: guildId });
 
   assert.equal(guild.logsChannelId, '223456789012345678');
   assert.equal(guild.suggestionsChannelId, '223456789012345679');
@@ -322,29 +311,20 @@ test('dashboard rejects unknown and unsafe settings', () => {
 
 
 test('dashboard exposes legacy user policies only as counts and can clear them', async () => {
-  const directory = await mkdtemp(path.join(os.tmpdir(), 'sparkles-dashboard-legacy-'));
-  const file = path.join(directory, 'store.json');
   const guildId = '823456789012345678';
-
-  await writeFile(
-    file,
-    JSON.stringify({
-      guilds: {
-        [guildId]: {
-          tags: {},
-          blacklist: ['923456789012345678'],
-          whitelist: ['923456789012345679', '923456789012345680'],
-          automod: {
-            exemptUserIds: ['923456789012345681'],
-          },
-        },
+  const db = new FakeMongoDatabase().seed(COLLECTIONS.guilds, [
+    {
+      _id: guildId,
+      tags: {},
+      blacklist: ['923456789012345678'],
+      whitelist: ['923456789012345679', '923456789012345680'],
+      automod: {
+        exemptUserIds: ['923456789012345681'],
       },
-      warnings: {},
-    }),
-    'utf8',
-  );
+    },
+  ]);
 
-  const store = new BotStore(file, defaults);
+  const store = new BotStore({ database: db, defaults });
   const settings = await store.getGuildSettings(guildId);
   assert.deepEqual(settings.legacyUserPolicies, {
     blockedCount: 1,
@@ -359,8 +339,10 @@ test('dashboard exposes legacy user policies only as counts and can clear them',
     exemptCount: 0,
   });
 
-  const persisted = JSON.parse(await readFile(file, 'utf8'));
-  assert.deepEqual(persisted.guilds[guildId].blacklist, []);
-  assert.deepEqual(persisted.guilds[guildId].whitelist, []);
-  assert.equal(persisted.guilds[guildId].automod.exemptUserIds, undefined);
+  const persisted = await db
+    .collection(COLLECTIONS.guilds)
+    .findOne({ _id: guildId });
+  assert.deepEqual(persisted.blacklist, []);
+  assert.deepEqual(persisted.whitelist, []);
+  assert.equal(persisted.automod.exemptUserIds, undefined);
 });
