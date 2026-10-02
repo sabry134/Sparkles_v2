@@ -178,21 +178,14 @@ export const en = {
   'automod.timeoutSecondsHelp': 'Timeout length in seconds after the warning threshold is reached.',
   'automod.exemptionsTitle': 'Exemptions',
   'automod.exemptionsDescription':
-    'Users, roles, and channels listed here bypass message and join protection where applicable.',
-  'automod.blacklistedUsers': 'Blocked users',
-  'automod.blacklistedUsersHelp':
-    'Discord user IDs that are always blocked by protected message and join flows. Existing /blacklist entries appear here.',
-  'automod.exemptUsers': 'Exempt users',
-  'automod.exemptUsersHelp':
-    'Discord user IDs that bypass automod. Existing /whitelist entries appear here.',
-  'automod.userIdPlaceholder': 'Discord user ID',
+    'Keep policy understandable by selecting roles and channels instead of maintaining raw Discord IDs.',
+  'automod.blockedRoles': 'Blocked roles',
+  'automod.blockedRolesHelp':
+    'Members with any selected role are always treated as blocked by protected message and join flows.',
   'automod.exemptRoles': 'Exempt roles',
   'automod.exemptRolesHelp': 'Members with any selected role bypass automod.',
   'automod.exemptChannels': 'Exempt channels',
   'automod.exemptChannelsHelp': 'Messages in these channels bypass message filters.',
-  'automod.currentUserExempt':
-    'Your Discord account is currently exempt from automod. Your own test messages will not be filtered.',
-  'automod.removeMyExemption': 'Remove my exemption',
   'automod.engineRunning': 'Protection engine active',
   'automod.enginePaused': 'Protection engine paused',
   'automod.warningThreshold': 'Warning threshold',
