@@ -16,7 +16,12 @@ function escapePattern(value) {
 }
 
 function normalizeContent(value) {
-  return value.normalize('NFKC').toLocaleLowerCase('en-US').trim();
+  return value
+    .normalize('NFKC')
+    .replace(/[\u200B-\u200D\uFEFF]/gu, '')
+    .replace(/\s+/gu, ' ')
+    .toLocaleLowerCase('en-US')
+    .trim();
 }
 
 function blockedTermPattern(term) {
