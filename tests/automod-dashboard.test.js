@@ -73,13 +73,13 @@ test('custom blocked terms support words phrases unicode and wildcards', () => {
   assert.equal(containsBlockedWord('nothing blocked', ['spam', 'scam']), false);
 });
 
-test('automod exemptions are explicit for users roles and channels', () => {
+test('automod exemptions use only configured roles and channels', () => {
   assert.equal(
     isAutomodExempt(message({ userId: '523456789012345678' }), {
       whitelist: ['523456789012345678'],
-      automod: {},
+      automod: { exemptUserIds: ['523456789012345678'] },
     }),
-    true,
+    false,
   );
   assert.equal(
     isAutomodExempt(message({ roleIds: ['623456789012345678'] }), {
@@ -197,4 +197,13 @@ test('moderator permissions do not silently bypass dashboard automod', () => {
     filterAutomodMessage.toString(),
     /message\.member\?\.permissions\.has\(PermissionFlagsBits\.ManageMessages\)/u,
   );
+});
+
+
+test('legacy user allowlists and blocklists cannot override role based automod', () => {
+  const source = filterAutomodMessage.toString();
+  const exemptionSource = isAutomodExempt.toString();
+  assert.doesNotMatch(source, /config\.blacklist/u);
+  assert.doesNotMatch(exemptionSource, /config\.whitelist/u);
+  assert.doesNotMatch(exemptionSource, /exemptUserIds/u);
 });
