@@ -134,15 +134,26 @@ async function accessToken(request, config) {
 
   if (oauth.expiresAt > Date.now() + 60_000) return oauth.accessToken;
 
-  const refreshed = await sharePending(pendingRefreshes, oauth.refreshToken, () =>
-    tokenRequest(
-      {
-        grant_type: 'refresh_token',
-        refresh_token: oauth.refreshToken,
-      },
-      config,
-    ),
-  );
+  let refreshed;
+  try {
+    refreshed = await sharePending(pendingRefreshes, oauth.refreshToken, () =>
+      tokenRequest(
+        {
+          grant_type: 'refresh_token',
+          refresh_token: oauth.refreshToken,
+        },
+        config,
+      ),
+    );
+  } catch (error) {
+    if (
+      error instanceof AppError &&
+      ['DISCORD_API_ERROR', 'DISCORD_FORBIDDEN'].includes(error.code)
+    ) {
+      throw new AppError('DISCORD_SESSION_EXPIRED', 401, { cause: error });
+    }
+    throw error;
+  }
 
   request.session.oauth = storedToken(refreshed);
   await saveSession(request);
