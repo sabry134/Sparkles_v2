@@ -35,6 +35,25 @@ function dashboardPath(guildId, page) {
   return guildId ? `/servers/${guildId}/${PAGE_IDS.has(page) ? page : 'overview'}` : '/';
 }
 
+function emptyReactionForm() {
+  return {
+    messageLink: '',
+    channelId: '',
+    emoji: '👍',
+    roleId: '',
+    content: '',
+    embed: structuredClone(EMPTY_EMBED),
+  };
+}
+
+function emptyEmbedForm() {
+  return {
+    channelId: '',
+    content: '',
+    embed: structuredClone(EMPTY_EMBED),
+  };
+}
+
 function translatedError(error) {
   if (!(error instanceof ApiError)) return t('error.client');
 
@@ -504,19 +523,8 @@ function Dashboard({ session, onSessionExpired }) {
   const [saving, setSaving] = useState(false);
   const [reactionPending, setReactionPending] = useState(false);
   const [reactionMode, setReactionMode] = useState('existing');
-  const [reactionForm, setReactionForm] = useState({
-    messageLink: '',
-    channelId: '',
-    emoji: '👍',
-    roleId: '',
-    content: '',
-    embed: structuredClone(EMPTY_EMBED),
-  });
-  const [embedForm, setEmbedForm] = useState({
-    channelId: '',
-    content: '',
-    embed: structuredClone(EMPTY_EMBED),
-  });
+  const [reactionForm, setReactionForm] = useState(emptyReactionForm);
+  const [embedForm, setEmbedForm] = useState(emptyEmbedForm);
   const [embedPending, setEmbedPending] = useState(false);
   const [lastPublishedEmbed, setLastPublishedEmbed] = useState(null);
   const [customForm, setCustomForm] = useState({ name: '', response: '' });
@@ -807,14 +815,36 @@ function Dashboard({ session, onSessionExpired }) {
     if (!selectedGuild) return;
     setReactionPending(true);
     try {
-      const result = await api(`/api/guilds/${selectedGuild.id}/reaction-roles`, {
+      const endpoint =
+        reactionMode === 'embed'
+          ? `/api/guilds/${selectedGuild.id}/reaction-role-embeds`
+          : `/api/guilds/${selectedGuild.id}/reaction-roles`;
+      const body =
+        reactionMode === 'embed'
+          ? {
+              channelId: reactionForm.channelId,
+              roleId: reactionForm.roleId,
+              emoji: reactionForm.emoji,
+              content: reactionForm.content,
+              embed: reactionForm.embed,
+            }
+          : {
+              messageLink: reactionForm.messageLink,
+              roleId: reactionForm.roleId,
+              emoji: reactionForm.emoji,
+            };
+      const result = await api(endpoint, {
         method: 'POST',
         csrfToken: session.csrfToken,
-        body: reactionForm,
+        body,
       });
       mergeReactionSettings(result.settings);
-      setReactionForm({ channelId: '', messageId: '', emoji: '', roleId: '' });
-      showSuccess(t('status.reactionAdded'));
+      setReactionForm(emptyReactionForm());
+      showSuccess(
+        result.messageLink
+          ? t('status.reactionEmbedAdded', { link: result.messageLink })
+          : t('status.reactionAdded'),
+      );
     } catch (error) {
       showError(error);
     } finally {
@@ -837,6 +867,26 @@ function Dashboard({ session, onSessionExpired }) {
       showError(error);
     } finally {
       setReactionPending(false);
+    }
+  }
+
+  async function publishEmbed(event) {
+    event.preventDefault();
+    if (!selectedGuild || !embedForm.channelId) return;
+    setEmbedPending(true);
+    try {
+      const result = await api(`/api/guilds/${selectedGuild.id}/embeds`, {
+        method: 'POST',
+        csrfToken: session.csrfToken,
+        body: embedForm,
+      });
+      setLastPublishedEmbed(result);
+      setEmbedForm(emptyEmbedForm());
+      showSuccess(t('status.embedPublished'));
+    } catch (error) {
+      showError(error);
+    } finally {
+      setEmbedPending(false);
     }
   }
 
