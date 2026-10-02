@@ -1,6 +1,6 @@
 # Sparkles
 
-Sparkles is a production-oriented Discord.js moderation and community bot with a React dashboard. Its 141-command catalog covers moderation, automod, roles, server building, suggestions, economy, profiles, events, tournaments, music, fun, utilities, AI adapters, and administration.
+Sparkles is a production-oriented Discord.js moderation and community bot with a React dashboard. Its 143-command catalog covers moderation, automod, roles, server building, suggestions, economy, profiles, events, tournaments, music, fun, utilities, and administration.
 
 Discord limits applications to 100 top-level chat-input commands. Frequently used commands such as `/ban`, `/help`, `/anti-link`, `/suggest`, and `/setup` remain easy to reach, while the rest use short groups including `/moderation`, `/automod`, `/roles`, `/server`, `/economy`, `/music`, `/events`, `/tools`, and `/premium-tools`. Every catalog entry has an explicit switch case, a typed option schema, and a real handler; generic `action/text/amount/user/role/channel/id` bundles are not used.
 
@@ -12,13 +12,13 @@ Discord limits applications to 100 top-level chat-input commands. Frequently use
 - Ban, kick, soft-ban, timeout, warnings, message clearing, role management, channel locking, logs, and audit-safe relays
 - Anti-link, blocked-word, anti-alt, anti-bot, anti-raid, blacklist, whitelist, and warning-threshold enforcement
 - Automatic roles, reaction roles, verification, tickets, tags, rules, polls, announcements, and reviewed suggestions
-- Persistent wallets, banks, rewards, profiles, boxes, purchases, robbery, voting rewards, levels, and tournaments
+- Persistent wallets, banks, rewards, profiles, boxes, purchases, robbery, levels, and tournaments
 - Recoverable giveaways that select winners after restarts
 - Voice playback, queues, search, skipping, volume, and now-playing support
-- Weather, dictionary, lyrics, translation, paste, website-health, and provider-backed AI commands
+- Weather, dictionary, lyrics, translation, website-health, and practical utility commands
 - Configurable operational values in `config/bot.json`
 - Secured React/Vite and Express dashboard with live channel, category, and manageable-role selectors
-- Dashboard controls for moderation, rules, full automod, roles, verification, reaction roles, community flows, economy, music, AI, modules, and custom commands
+- Dashboard controls for moderation, rules, full automod, roles, verification, reaction roles, community flows, economy, music, modules, and custom commands
 
 ## Bot setup
 
@@ -52,9 +52,8 @@ npm run migrate:mongodb
 
 Use `npm run migrate:mongodb -- --replace` only when you intentionally want the migrated JSON data to replace the current Sparkles MongoDB collections.
 
-Optional integrations are documented in [.env.example](./.env.example). `/ask`, voting rewards, and Tanki ratings require their corresponding provider credentials. They contain working provider adapters and return an actionable credential error when the provider is not configured.
 
-Examples of the simplified grouped routes are `/music join`, `/music play query:...`, `/music now`, `/roles list`, `/server module`, and `/tools ask`. Discord displays only the fields relevant to the selected command.
+Examples of the simplified grouped routes are `/music join`, `/music play query:...`, `/music now`, `/roles list`, `/server module`, and `/tools weather`. Discord displays only the fields relevant to the selected command.
 
 ## Dashboard setup
 
