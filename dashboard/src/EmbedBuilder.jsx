@@ -6,11 +6,13 @@ export const EMPTY_EMBED = {
   color: '#8b7cf6',
   url: '',
   authorName: '',
+  authorUrl: '',
   authorIconUrl: '',
   thumbnailUrl: '',
   imageUrl: '',
   footerText: '',
   footerIconUrl: '',
+  timestamp: false,
   fields: [],
 };
 
@@ -83,6 +85,18 @@ export default function EmbedBuilder({ value, onChange }) {
             />
           </label>
           <label>
+            <span>Author URL</span>
+            <input
+              type="url"
+              maxLength="2048"
+              value={value.authorUrl}
+              placeholder="https://"
+              onChange={(event) =>
+                onChange({ ...value, authorUrl: event.target.value })
+              }
+            />
+          </label>
+          <label>
             <span>Author icon URL</span>
             <input
               type="url"
@@ -137,6 +151,16 @@ export default function EmbedBuilder({ value, onChange }) {
               placeholder="https://"
               onChange={(event) =>
                 onChange({ ...value, footerIconUrl: event.target.value })
+              }
+            />
+          </label>
+          <label className="embed-toggle-row">
+            <span>Timestamp</span>
+            <input
+              type="checkbox"
+              checked={value.timestamp}
+              onChange={(event) =>
+                onChange({ ...value, timestamp: event.target.checked })
               }
             />
           </label>
@@ -197,21 +221,68 @@ export default function EmbedBuilder({ value, onChange }) {
                 />
                 Inline
               </label>
-              <button
-                className="icon-button"
-                type="button"
-                aria-label="Remove field"
-                onClick={() =>
-                  onChange({
-                    ...value,
-                    fields: value.fields.filter((_, current) => current !== index),
-                  })
-                }
-              >
-                <Icon name="trash" size={16} />
-              </button>
+              <div className="embed-field-actions">
+                <button
+                  className="icon-button"
+                  type="button"
+                  aria-label="Move field up"
+                  disabled={index === 0}
+                  onClick={() => {
+                    const fields = [...value.fields];
+                    [fields[index - 1], fields[index]] = [fields[index], fields[index - 1]];
+                    onChange({ ...value, fields });
+                  }}
+                >
+                  ↑
+                </button>
+                <button
+                  className="icon-button"
+                  type="button"
+                  aria-label="Move field down"
+                  disabled={index === value.fields.length - 1}
+                  onClick={() => {
+                    const fields = [...value.fields];
+                    [fields[index], fields[index + 1]] = [fields[index + 1], fields[index]];
+                    onChange({ ...value, fields });
+                  }}
+                >
+                  ↓
+                </button>
+                <button
+                  className="icon-button"
+                  type="button"
+                  aria-label="Remove field"
+                  onClick={() =>
+                    onChange({
+                      ...value,
+                      fields: value.fields.filter((_, current) => current !== index),
+                    })
+                  }
+                >
+                  <Icon name="trash" size={16} />
+                </button>
+              </div>
             </div>
           ))}
+        </div>
+        <div className="embed-editor-footer">
+          <span>
+            {[
+              value.title,
+              value.description,
+              value.authorName,
+              value.footerText,
+              ...value.fields.flatMap((field) => [field.name, field.value]),
+            ].reduce((total, item) => total + (item?.length ?? 0), 0).toLocaleString()}
+            /6,000 text characters
+          </span>
+          <button
+            className="button secondary"
+            type="button"
+            onClick={() => onChange(structuredClone(EMPTY_EMBED))}
+          >
+            Reset embed
+          </button>
         </div>
       </div>
 
@@ -224,7 +295,13 @@ export default function EmbedBuilder({ value, onChange }) {
           {value.authorName ? (
             <div className="discord-embed-author">
               {value.authorIconUrl ? <img src={value.authorIconUrl} alt="" /> : null}
-              <span>{value.authorName}</span>
+              {value.authorUrl ? (
+                <a href={value.authorUrl} target="_blank" rel="noreferrer">
+                  {value.authorName}
+                </a>
+              ) : (
+                <span>{value.authorName}</span>
+              )}
             </div>
           ) : null}
           {value.title ? (
@@ -260,10 +337,14 @@ export default function EmbedBuilder({ value, onChange }) {
           {value.imageUrl ? (
             <img className="discord-embed-image" src={value.imageUrl} alt="" />
           ) : null}
-          {value.footerText ? (
+          {value.footerText || value.timestamp ? (
             <div className="discord-embed-footer">
               {value.footerIconUrl ? <img src={value.footerIconUrl} alt="" /> : null}
-              <span>{value.footerText}</span>
+              <span>
+                {value.footerText}
+                {value.footerText && value.timestamp ? ' • ' : ''}
+                {value.timestamp ? new Date().toLocaleString() : ''}
+              </span>
             </div>
           ) : null}
           {!value.title &&
