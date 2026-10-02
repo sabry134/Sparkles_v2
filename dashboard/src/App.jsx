@@ -401,27 +401,27 @@ function MultiSelectField({
             icon={icon}
             variant="field-select"
           />
-          <button
+          <Button
             className="button secondary"
             type="button"
             disabled={!selected}
             onClick={add}
           >
             {t('common.addItem')}
-          </button>
+          </Button>
         </div>
         {value.length ? (
           <div className="token-list">
             {value.map((item) => (
               <span className="token-item" key={item}>
                 <span>{labels.get(item) ?? item}</span>
-                <button
+                <Button
                   type="button"
                   aria-label={t('common.removeItem', { item: labels.get(item) ?? item })}
                   onClick={() => onChange(value.filter((candidate) => candidate !== item))}
                 >
                   <Icon name="close" size={14} />
-                </button>
+                </Button>
               </span>
             ))}
           </div>
@@ -451,10 +451,10 @@ function MissingBot({ guild, onRefresh }) {
           {t('guild.install')}
           <Icon name="external" size={17} />
         </a>
-        <button className="button secondary" type="button" onClick={onRefresh}>
+        <Button className="button secondary" type="button" onClick={onRefresh}>
           <Icon name="refresh" size={17} />
           {t('guild.refresh')}
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -468,10 +468,10 @@ function NoGuilds({ onRefresh }) {
       </span>
       <h1>{t('guild.noServersTitle')}</h1>
       <p>{t('guild.noServersBody')}</p>
-      <button className="button secondary" type="button" onClick={onRefresh}>
+      <Button className="button secondary" type="button" onClick={onRefresh}>
         <Icon name="refresh" size={17} />
         {t('guild.refresh')}
-      </button>
+      </Button>
     </div>
   );
 }
@@ -484,10 +484,10 @@ function LoadFailure({ message, onRetry }) {
       </span>
       <h1>{t('error.title')}</h1>
       <p>{message}</p>
-      <button className="button secondary" type="button" onClick={onRetry}>
+      <Button className="button secondary" type="button" onClick={onRetry}>
         <Icon name="refresh" size={17} />
         {t('common.retry')}
-      </button>
+      </Button>
     </div>
   );
 }
@@ -1152,14 +1152,14 @@ function Dashboard({ session, onSessionExpired }) {
             <strong>{session.user.globalName}</strong>
             <span>{session.user.username}</span>
           </div>
-          <button
+          <Button
             className="icon-button"
             type="button"
             onClick={signOut}
             aria-label={t('nav.signOut')}
           >
             <Icon name="logout" size={18} />
-          </button>
+          </Button>
         </div>
       </aside>
 
@@ -1175,14 +1175,14 @@ function Dashboard({ session, onSessionExpired }) {
               variant="mobile-guild-select"
             />
           </div>
-          <button
+          <Button
             className="icon-button"
             type="button"
             onClick={signOut}
             aria-label={t('nav.signOut')}
           >
             <Icon name="logout" size={18} />
-          </button>
+          </Button>
         </header>
         {loadingGuilds ? <Loading /> : null}
         {!loadingGuilds && guildsError ? (
@@ -1362,8 +1362,9 @@ function Dashboard({ session, onSessionExpired }) {
                     <h3>{t('moderation.historyTitle')}</h3>
                     <p>{t('moderation.historyDescription')}</p>
                   </div>
-                  <input
+                  <TextField
                     className="moderation-history-search"
+                    size="small"
                     value={moderationCaseQuery}
                     placeholder={t('moderation.historySearch')}
                     onChange={(event) => setModerationCaseQuery(event.target.value)}
@@ -1915,13 +1916,13 @@ function Dashboard({ session, onSessionExpired }) {
                         })}
                       </span>
                     </div>
-                    <button
+                    <Button
                       className="button secondary"
                       type="button"
                       onClick={clearLegacyUserPolicies}
                     >
                       {t('automod.clearLegacyPolicies')}
-                    </button>
+                    </Button>
                   </div>
                 ) : null}
                 <MultiSelectField
@@ -2048,7 +2049,7 @@ function Dashboard({ session, onSessionExpired }) {
                             })}
                           </span>
                         </div>
-                        <button
+                        <Button
                           className="button danger ghost"
                           type="button"
                           disabled={reactionPending}
@@ -2056,7 +2057,7 @@ function Dashboard({ session, onSessionExpired }) {
                         >
                           <Icon name="trash" size={16} />
                           {t('common.remove')}
-                        </button>
+                        </Button>
                       </div>
                     ))}
                   </div>
@@ -2071,7 +2072,7 @@ function Dashboard({ session, onSessionExpired }) {
                 )}
 
                 <div className="reaction-mode-switch" role="tablist" aria-label={t('roles.sourceMode')}>
-                  <button
+                  <Button
                     className={reactionMode === 'existing' ? 'selected' : ''}
                     type="button"
                     role="tab"
@@ -2079,8 +2080,8 @@ function Dashboard({ session, onSessionExpired }) {
                     onClick={() => setReactionMode('existing')}
                   >
                     {t('roles.existingMessage')}
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     className={reactionMode === 'embed' ? 'selected' : ''}
                     type="button"
                     role="tab"
@@ -2088,20 +2089,21 @@ function Dashboard({ session, onSessionExpired }) {
                     onClick={() => setReactionMode('embed')}
                   >
                     {t('roles.newEmbed')}
-                  </button>
+                  </Button>
                 </div>
 
                 <form className="reaction-form reaction-form-v2" onSubmit={addReactionRole}>
                   {reactionMode === 'existing' ? (
                     <div className="compact-field reaction-wide-field">
                       <label htmlFor="reaction-message-link">{t('roles.messageLink')}</label>
-                      <input
+                      <TextField
                         id="reaction-message-link"
                         required
+                        fullWidth
                         type="url"
-                        maxLength="256"
                         value={reactionForm.messageLink}
                         placeholder={t('roles.messageLinkPlaceholder')}
+                        inputProps={{ maxLength: 256 }}
                         onChange={(event) =>
                           setReactionForm((current) => ({
                             ...current,
@@ -2134,12 +2136,14 @@ function Dashboard({ session, onSessionExpired }) {
                       </div>
                       <div className="compact-field reaction-wide-field">
                         <label htmlFor="reaction-content">{t('embeds.content')}</label>
-                        <textarea
+                        <TextField
                           id="reaction-content"
-                          maxLength="2000"
-                          rows="2"
+                          fullWidth
+                          multiline
+                          minRows={2}
                           value={reactionForm.content}
                           placeholder={t('embeds.contentPlaceholder')}
+                          inputProps={{ maxLength: 2000 }}
                           onChange={(event) =>
                             setReactionForm((current) => ({
                               ...current,
@@ -2190,7 +2194,7 @@ function Dashboard({ session, onSessionExpired }) {
                     />
                   </div>
 
-                  <button
+                  <Button
                     className="button primary reaction-submit"
                     type="submit"
                     disabled={
@@ -2207,7 +2211,7 @@ function Dashboard({ session, onSessionExpired }) {
                       : reactionMode === 'embed'
                         ? t('roles.publishAndCreate')
                         : t('common.add')}
-                  </button>
+                  </Button>
                 </form>
               </div>
               </details>
@@ -2340,7 +2344,7 @@ function Dashboard({ session, onSessionExpired }) {
                   <div className="automation-list">
                     {draft.autoresponders.map((entry) => (
                       <article className="automation-item" key={entry.id}>
-                        <button
+                        <Button
                           className={entry.enabled ? 'status-dot enabled' : 'status-dot'}
                           type="button"
                           aria-label={
@@ -2363,14 +2367,14 @@ function Dashboard({ session, onSessionExpired }) {
                           </span>
                           <p>{entry.response}</p>
                         </div>
-                        <button
+                        <Button
                           className="button danger ghost"
                           type="button"
                           onClick={() => removeAutoresponder(entry.id)}
                         >
                           <Icon name="trash" size={15} />
                           {t('common.remove')}
-                        </button>
+                        </Button>
                       </article>
                     ))}
                   </div>
@@ -2389,12 +2393,13 @@ function Dashboard({ session, onSessionExpired }) {
                     <label htmlFor="autoresponder-trigger">
                       {t('automation.trigger')}
                     </label>
-                    <input
+                    <TextField
                       id="autoresponder-trigger"
                       required
-                      maxLength="100"
+                      fullWidth
                       value={autoresponderForm.trigger}
                       placeholder={t('automation.triggerPlaceholder')}
+                      inputProps={{ maxLength: 100 }}
                       onChange={(event) =>
                         setAutoresponderForm((current) => ({
                           ...current,
@@ -2427,13 +2432,15 @@ function Dashboard({ session, onSessionExpired }) {
                     <label htmlFor="autoresponder-response">
                       {t('automation.response')}
                     </label>
-                    <textarea
+                    <TextField
                       id="autoresponder-response"
                       required
-                      maxLength="1900"
-                      rows="3"
+                      fullWidth
+                      multiline
+                      minRows={3}
                       value={autoresponderForm.response}
                       placeholder={t('automation.responsePlaceholder')}
+                      inputProps={{ maxLength: 1900 }}
                       onChange={(event) =>
                         setAutoresponderForm((current) => ({
                           ...current,
@@ -2442,10 +2449,10 @@ function Dashboard({ session, onSessionExpired }) {
                       }
                     />
                   </div>
-                  <button className="button primary" type="submit">
+                  <Button className="button primary" type="submit">
                     <Icon name="spark" size={16} />
                     {t('automation.addResponder')}
-                  </button>
+                  </Button>
                 </form>
               </div>
 
@@ -2614,8 +2621,9 @@ function Dashboard({ session, onSessionExpired }) {
                     <h3>{t('modules.commandManagerTitle')}</h3>
                     <p>{t('modules.commandManagerDescription')}</p>
                   </div>
-                  <input
+                  <TextField
                     className="command-search"
+                    size="small"
                     value={commandQuery}
                     placeholder={t('modules.commandSearch')}
                     onChange={(event) => setCommandQuery(event.target.value)}
@@ -2632,7 +2640,7 @@ function Dashboard({ session, onSessionExpired }) {
                         </div>
                         <div className="command-manager-actions">
                           {enabled ? (
-                            <button
+                            <Button
                               className={
                                 selectedCommandName === command.name
                                   ? 'button secondary selected'
@@ -2646,9 +2654,9 @@ function Dashboard({ session, onSessionExpired }) {
                               }
                             >
                               {t('modules.commandConfigure')}
-                            </button>
+                            </Button>
                           ) : null}
-                          <button
+                          <Button
                             id={`command-${command.name}`}
                             className={enabled ? 'toggle checked' : 'toggle'}
                             type="button"
@@ -2667,7 +2675,7 @@ function Dashboard({ session, onSessionExpired }) {
                           >
                             <span>{enabled ? t('common.on') : t('common.off')}</span>
                             <i />
-                          </button>
+                          </Button>
                         </div>
                       </div>
                     );
@@ -2682,7 +2690,7 @@ function Dashboard({ session, onSessionExpired }) {
                         <h3>{t('modules.commandAccessTitle', { command: selectedCommand.name })}</h3>
                         <p>{t('modules.commandAccessDescription')}</p>
                       </div>
-                      <button
+                      <Button
                         className="button secondary"
                         type="button"
                         onClick={() => {
@@ -2694,7 +2702,7 @@ function Dashboard({ session, onSessionExpired }) {
                         }}
                       >
                         {t('modules.commandAccessReset')}
-                      </button>
+                      </Button>
                     </div>
                     <div className="field-row">
                       <div className="field-copy">
@@ -2819,14 +2827,14 @@ function Dashboard({ session, onSessionExpired }) {
                           <strong>{name}</strong>
                           <span>{response}</span>
                         </div>
-                        <button
+                        <Button
                           className="button danger ghost"
                           type="button"
                           onClick={() => removeCustomCommand(name)}
                         >
                           <Icon name="trash" size={16} />
                           {t('common.remove')}
-                        </button>
+                        </Button>
                       </div>
                     ))}
                   </div>
@@ -2842,13 +2850,16 @@ function Dashboard({ session, onSessionExpired }) {
                 <form className="custom-command-form" onSubmit={saveCustomCommand}>
                   <div className="compact-field">
                     <label htmlFor="custom-name">{t('custom.name')}</label>
-                    <input
+                    <TextField
                       id="custom-name"
                       required
-                      maxLength="32"
-                      pattern="[a-z0-9-]{1,32}"
+                      fullWidth
                       value={customForm.name}
                       placeholder={t('custom.namePlaceholder')}
+                      inputProps={{
+                        maxLength: 32,
+                        pattern: '[a-z0-9-]{1,32}',
+                      }}
                       onChange={(event) =>
                         setCustomForm((current) => ({
                           ...current,
@@ -2861,12 +2872,15 @@ function Dashboard({ session, onSessionExpired }) {
                   </div>
                   <div className="compact-field custom-response-field">
                     <label htmlFor="custom-response">{t('custom.response')}</label>
-                    <textarea
+                    <TextField
                       id="custom-response"
                       required
-                      maxLength="1900"
+                      fullWidth
+                      multiline
+                      minRows={3}
                       value={customForm.response}
                       placeholder={t('custom.responsePlaceholder')}
+                      inputProps={{ maxLength: 1900 }}
                       onChange={(event) =>
                         setCustomForm((current) => ({
                           ...current,
@@ -2875,10 +2889,10 @@ function Dashboard({ session, onSessionExpired }) {
                       }
                     />
                   </div>
-                  <button className="button secondary" type="submit">
+                  <Button className="button secondary" type="submit">
                     <Icon name="spark" size={17} />
                     {t('custom.stage')}
-                  </button>
+                  </Button>
                 </form>
               </div>
               </details>
