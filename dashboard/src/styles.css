@@ -34,6 +34,14 @@
   --radius-sm: 6px;
   --radius-md: 8px;
   --radius-lg: 10px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
   --control-height: 40px;
   --sidebar-width: 256px;
   --content-width: 1040px;
@@ -96,7 +104,7 @@ button:disabled {
   padding: 0 15px;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: var(--space-2);
   color: var(--text);
   border: 1px solid transparent;
   border-radius: var(--radius-md);
@@ -200,11 +208,6 @@ button:disabled {
 .login-shell {
   min-height: 100vh;
   background: var(--bg);
-}
-
-.ambient,
-.login-shell::before {
-  display: none;
 }
 
 .login-header {
@@ -315,7 +318,6 @@ button:disabled {
 }
 
 .feature-icon,
-.section-icon,
 .empty-icon {
   display: inline-grid;
   flex: 0 0 auto;
@@ -394,7 +396,7 @@ button:disabled {
   display: flex;
   width: var(--sidebar-width);
   height: 100vh;
-  padding: 20px 16px 16px;
+  padding: var(--space-5) var(--space-4) var(--space-4);
   overflow-y: auto;
   flex-direction: column;
   border-right: 1px solid var(--border);
@@ -582,7 +584,7 @@ button:disabled {
 
 .dashboard-header {
   display: flex;
-  padding-bottom: 28px;
+  padding-bottom: var(--space-8);
   align-items: flex-start;
   justify-content: space-between;
   gap: 32px;
@@ -640,24 +642,12 @@ button:disabled {
 
 .settings-section {
   scroll-margin-top: 32px;
-  padding-top: 46px;
+  padding-top: var(--space-12);
 }
 
 .section-heading {
   display: block;
   margin-bottom: 16px;
-}
-
-.section-icon {
-  width: 24px;
-  height: 24px;
-  margin-top: 1px;
-  color: var(--text-tertiary);
-}
-
-.section-icon .icon {
-  width: 19px;
-  height: 19px;
 }
 
 .section-heading h2 {
@@ -755,7 +745,7 @@ button:disabled {
 .field-row {
   display: grid;
   min-height: 88px;
-  padding: 18px 20px;
+  padding: 18px var(--space-5);
   grid-template-columns: minmax(0, 1fr) minmax(230px, 310px);
   align-items: center;
   gap: 28px;
@@ -933,7 +923,7 @@ button:disabled {
 }
 
 .reaction-card {
-  padding: 20px;
+  padding: var(--space-5);
 }
 
 .subsection-heading {
