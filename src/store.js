@@ -9,6 +9,7 @@ let writeQueue = Promise.resolve();
 let lastModified = 0;
 const DELETE_VALUE = Symbol('delete-value');
 const lockFile = `${file}.dashboard.lock`;
+const transientFileErrors = new Set(['EACCES', 'EBUSY', 'EPERM']);
 
 function normalizeStore(parsed) {
   return parsed && typeof parsed === 'object'
@@ -76,6 +77,18 @@ async function acquireLock() {
     }
   }
   throw new Error('Timed out waiting for the shared store lock');
+}
+
+async function renameWithRetry(source, destination) {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      await rename(source, destination);
+      return;
+    } catch (error) {
+      if (!transientFileErrors.has(error.code) || attempt >= 5) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 40 * 2 ** attempt));
+    }
+  }
 }
 
 async function readStoreFile() {
@@ -161,7 +174,7 @@ export function saveStore() {
           encoding: 'utf8',
           mode: 0o600,
         });
-        await rename(temporary, file);
+        await renameWithRetry(temporary, file);
         state = mergedState;
         baselineState = structuredClone(mergedState);
         lastModified = (await stat(file)).mtimeMs;
