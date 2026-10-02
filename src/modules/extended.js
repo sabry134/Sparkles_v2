@@ -472,43 +472,6 @@ export async function handleExtendedCommand(commandName, interaction, t, client)
       return completed(interaction, t, t('extended.list', { values }));
     }
 
-    case 'ask': {
-      if (!input.text) return missing(interaction, t, 'text');
-      if (!config.aiChatEnabled) {
-        return interaction.reply(
-          errorMessage(t('extended.permissionTitle'), t('extended.aiDisabled')),
-        );
-      }
-      if (!process.env.OPENAI_API_KEY) {
-        return interaction.reply(
-          errorMessage(
-            t('extended.providerTitle'),
-            t('extended.provider', { variable: 'OPENAI_API_KEY' }),
-          ),
-        );
-      }
-      const response = await fetchJson('https://api.openai.com/v1/responses', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: process.env.OPENAI_MODEL ?? 'gpt-5-mini',
-          input: input.text,
-          max_output_tokens: 700,
-        }),
-      });
-      const result = response.output
-        ?.flatMap((item) => item.content ?? [])
-        .find((item) => item.type === 'output_text')?.text;
-      return completed(
-        interaction,
-        t,
-        t('extended.externalResult', { result: result ?? t('extended.notFound') }),
-      );
-    }
-
     case 'auto-status': {
       const automod = config.automod ?? {};
       const values = [
@@ -1104,41 +1067,6 @@ export async function handleExtendedCommand(commandName, interaction, t, client)
       return completed(interaction, t, t('extended.list', { values }));
     }
 
-    case 'pastebin': {
-      if (!input.text) return missing(interaction, t, 'text');
-      if (!process.env.PASTEBIN_API_KEY || !process.env.PASTEBIN_USER_KEY) {
-        return interaction.reply(
-          errorMessage(
-            t('extended.providerTitle'),
-            t('extended.provider', {
-              variable: 'PASTEBIN_API_KEY and PASTEBIN_USER_KEY',
-            }),
-          ),
-        );
-      }
-      const body = new URLSearchParams({
-        api_dev_key: process.env.PASTEBIN_API_KEY,
-        api_option: 'paste',
-        api_paste_code: input.text,
-        api_paste_expire_date: '1W',
-        api_paste_name: `Sparkles ${interaction.user.id}`,
-        api_paste_private: '2',
-        api_user_key: process.env.PASTEBIN_USER_KEY,
-      });
-      const response = await fetch('https://pastebin.com/api/api_post.php', {
-        method: 'POST',
-        body,
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        signal: AbortSignal.timeout(10_000),
-      });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const result = (await response.text()).trim();
-      if (!result.startsWith('https://pastebin.com/')) {
-        throw new Error('Pastebin rejected the request');
-      }
-      return completed(interaction, t, t('extended.externalResult', { result }));
-    }
-
     case 'play': {
       return enqueueTrack(interaction, t, input.text);
     }
@@ -1212,28 +1140,6 @@ export async function handleExtendedCommand(commandName, interaction, t, client)
       return completed(interaction, t, t('extended.externalResult', { result }));
     }
 
-    case 'ratings': {
-      if (!input.text) return missing(interaction, t, 'text');
-      if (!process.env.TANKI_RATINGS_API_URL) {
-        return interaction.reply(
-          errorMessage(
-            t('extended.providerTitle'),
-            t('extended.provider', { variable: 'TANKI_RATINGS_API_URL' }),
-          ),
-        );
-      }
-      const result = await fetchJson(
-        `${process.env.TANKI_RATINGS_API_URL}?player=${encodeURIComponent(input.text)}`,
-      );
-      return completed(
-        interaction,
-        t,
-        t('extended.externalResult', {
-          result: `\`\`\`json\n${JSON.stringify(result, null, 2).slice(0, 3_000)}\n\`\`\``,
-        }),
-      );
-    }
-
     case 'redeem-code': {
       if (!input.id) return missing(interaction, t, 'id');
       config.claimCodes ??= {};
@@ -1299,38 +1205,6 @@ export async function handleExtendedCommand(commandName, interaction, t, client)
         }),
       );
       return completed(interaction, t, t('extended.messageSent'));
-    }
-
-    case 'reward': {
-      if (!process.env.TOPGG_TOKEN) {
-        return interaction.reply(
-          errorMessage(
-            t('extended.providerTitle'),
-            t('extended.provider', { variable: 'TOPGG_TOKEN' }),
-          ),
-        );
-      }
-      const vote = await fetchJson(
-        `https://top.gg/api/bots/${client.user.id}/check?userId=${interaction.user.id}`,
-        { headers: { Authorization: process.env.TOPGG_TOKEN } },
-      );
-      if (vote.voted !== 1) return completed(interaction, t, t('extended.notFound'));
-      const account = economyAccount(interaction, interaction.user.id);
-      const lastReward = account.cooldowns.vote ?? 0;
-      if (Date.now() - lastReward < botConfig.economy.voteCooldownMs) {
-        return completed(interaction, t, t('extended.notFound'));
-      }
-      account.balance += botConfig.economy.voteReward;
-      account.cooldowns.vote = Date.now();
-      await saveStore();
-      return completed(
-        interaction,
-        t,
-        t('extended.added', {
-          target: interaction.user,
-          value: botConfig.economy.voteReward,
-        }),
-      );
     }
 
     case 'rob': {
@@ -1462,12 +1336,6 @@ export async function handleExtendedCommand(commandName, interaction, t, client)
       return searchTracks(interaction, t, input.text);
     }
 
-    case 'start': {
-      config.aiChatEnabled = true;
-      await saveStore();
-      return completed(interaction, t, t('extended.enabled'));
-    }
-
     case 'status': {
       const values = [
         `**Premium:** ${config.premium?.guild ? 'Yes' : 'No'}`,
@@ -1475,12 +1343,6 @@ export async function handleExtendedCommand(commandName, interaction, t, client)
         `**Blacklisted:** ${config.blacklist?.includes(interaction.user.id) ? 'Yes' : 'No'}`,
       ].join('\n');
       return completed(interaction, t, t('extended.list', { values }));
-    }
-
-    case 'stop': {
-      config.aiChatEnabled = false;
-      await saveStore();
-      return completed(interaction, t, t('extended.disabled'));
     }
 
     case 'sudo': {
