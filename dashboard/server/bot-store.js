@@ -291,6 +291,9 @@ function publicSettings(config, defaults) {
         : [],
     },
     modules: moduleSettings(config),
+    disabledCommands: Array.isArray(config.disabledCommands)
+      ? [...new Set(config.disabledCommands.filter((name) => typeof name === 'string'))]
+      : [],
     customCommands: validRoot(config.customCommands)
       ? Object.fromEntries(
           Object.entries(config.customCommands).filter(
@@ -479,6 +482,9 @@ export class BotStore {
       }
       if (patch.modules) {
         config.modules = { ...(config.modules ?? {}), ...patch.modules };
+      }
+      if (patch.disabledCommands) {
+        config.disabledCommands = [...patch.disabledCommands];
       }
       if (patch.customCommands) {
         config.customCommands = { ...patch.customCommands };
