@@ -365,7 +365,8 @@ export class BotStore {
     const operation = this.#writeQueue.then(async () => {
       const db = await this.#database();
       const id = await nextCounter(db, `dashboardAudit:${guildId}`);
-      await db.collection(COLLECTIONS.dashboardAudit).insertOne({
+      const auditCollection = db.collection(COLLECTIONS.dashboardAudit);
+      await auditCollection.insertOne({
         _id: `${guildId}:${id}`,
         guildId,
         id,
@@ -374,6 +375,9 @@ export class BotStore {
         actorTag: entry.actorTag,
         changes: [...new Set(entry.changes ?? [])].slice(0, 100),
       });
+      if (id > 2_000) {
+        await auditCollection.deleteOne({ guildId, id: id - 2_000 });
+      }
       await bumpRevision(db);
       return id;
     });
