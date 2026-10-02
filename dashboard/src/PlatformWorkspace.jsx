@@ -292,21 +292,66 @@ function ChangeList({ changes }) {
   return !changes?.length ? <p className="muted">{t('platform.noChanges')}</p> : <div className="platform-diff">{changes.map((change, index) => <details key={index}><summary>{change.path}</summary><div><pre className="diff-before">{textValue(change.before)}</pre><pre className="diff-after">{textValue(change.after)}</pre></div></details>)}</div>;
 }
 function ImpactDialog({ preview, resources, onClose, onConfirm, busy }) {
-  const dialog = useRef(null);
-  useEffect(() => { dialog.current?.showModal(); }, []);
-  return <dialog className="platform-dialog" ref={dialog} onCancel={event => { event.preventDefault(); if (!busy) onClose(); }}><div className="platform-dialog-body"><h2>{t('platform.impactPreview')}</h2><p>{t('platform.impactHelp')}</p>
-    {preview.impact.name && <h3>{preview.impact.name}</h3>}
-    {preview.impact.action && <p>{t('platform.actionValue', { action: t(`action.${preview.impact.action}`) })}</p>}
-    {preview.impact.channelId && <p>{t('platform.destinationValue', { channel: resources.channels.find(channel => channel.id === preview.impact.channelId)?.name ?? preview.impact.channelId })}</p>}
-    {preview.impact.runAt && <p>{t('platform.scheduledFor', { time: time(preview.impact.runAt) })}</p>}
-    {preview.impact.targets && <><p>{t('platform.targetsCount', { count: preview.impact.targets.length })}</p><ul>{preview.impact.targets.map(target => <li key={target.id}>{target.name} <code>{target.id}</code></li>)}</ul><p>{preview.impact.reason}</p></>}
-    {preview.impact.draftOnly && <p>{t('blueprints.draftOnly', { count: preview.impact.count })}</p>}
-    {preview.impact.message && <MessagePreview value={preview.impact.message} resources={resources} />}
-    <ChangeList changes={preview.impact.changes} />
-    <div className="platform-dialog-footer"><button type="button" className="button secondary" disabled={busy} onClick={onClose}>{t('common.cancel')}</button><button type="button" className="button primary" disabled={busy} onClick={onConfirm}>{t(busy ? 'common.saving' : 'platform.confirmExecution')}</button></div>
-  </div></dialog>;
+  return (
+    <Dialog open onClose={busy ? undefined : onClose} fullWidth maxWidth="md">
+      <DialogTitle>{t('platform.impactPreview')}</DialogTitle>
+      <DialogContent dividers>
+        <DialogContentText sx={{ mb: 2 }}>
+          {t('platform.impactHelp')}
+        </DialogContentText>
+        {preview.impact.name ? <h3>{preview.impact.name}</h3> : null}
+        {preview.impact.action ? (
+          <p>
+            {t('platform.actionValue', {
+              action: t(`action.${preview.impact.action}`),
+            })}
+          </p>
+        ) : null}
+        {preview.impact.channelId ? (
+          <p>
+            {t('platform.destinationValue', {
+              channel:
+                resources.channels.find(
+                  (channel) => channel.id === preview.impact.channelId,
+                )?.name ?? preview.impact.channelId,
+            })}
+          </p>
+        ) : null}
+        {preview.impact.runAt ? (
+          <p>{t('platform.scheduledFor', { time: time(preview.impact.runAt) })}</p>
+        ) : null}
+        {preview.impact.targets ? (
+          <>
+            <p>{t('platform.targetsCount', { count: preview.impact.targets.length })}</p>
+            <ul>
+              {preview.impact.targets.map((target) => (
+                <li key={target.id}>
+                  {target.name} <code>{target.id}</code>
+                </li>
+              ))}
+            </ul>
+            <p>{preview.impact.reason}</p>
+          </>
+        ) : null}
+        {preview.impact.draftOnly ? (
+          <p>{t('blueprints.draftOnly', { count: preview.impact.count })}</p>
+        ) : null}
+        {preview.impact.message ? (
+          <MessagePreview value={preview.impact.message} resources={resources} />
+        ) : null}
+        <ChangeList changes={preview.impact.changes} />
+      </DialogContent>
+      <DialogActions>
+        <Button variant="text" disabled={busy} onClick={onClose}>
+          {t('common.close')}
+        </Button>
+        <Button variant="contained" disabled={busy} onClick={onConfirm}>
+          {t(busy ? 'common.saving' : 'platform.confirmExecution')}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
 }
-
 function RunList({ items, request, onRefresh }) {
   const [error, setError] = useState(null);
   const [pending, setPending] = useState(false);
