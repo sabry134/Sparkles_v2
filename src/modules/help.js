@@ -166,7 +166,6 @@ export const DEFAULT_HELP_CATEGORIES = Object.freeze([
       'open',
       'profile',
       'purchase',
-      'reward',
       'rob',
       'set-currency',
       'set-profile',
@@ -206,14 +205,13 @@ export const DEFAULT_HELP_CATEGORIES = Object.freeze([
       'leaderboard',
       'list',
       'organize',
-      'ratings',
       'remove-points',
     ],
   },
   {
-    id: 'tools-ai',
-    emoji: '🧠',
-    commands: ['ask', 'define', 'pastebin', 'translate', 'weather', 'start', 'stop'],
+    id: 'tools',
+    emoji: '🧰',
+    commands: ['define', 'translate', 'weather'],
   },
   {
     id: 'custom-premium',
@@ -306,9 +304,8 @@ export const HELP_TRANSLATION_DEFAULTS = Object.freeze({
   'help.category.music.description': 'Voice playback, queues, tracks, and lyrics',
   'help.category.events.name': 'Events & tournaments',
   'help.category.events.description': 'Events, competitions, points, and leaderboards',
-  'help.category.tools-ai.name': 'Tools & AI',
-  'help.category.tools-ai.description':
-    'AI chat, language, weather, and practical utilities',
+  'help.category.tools.name': 'Tools',
+  'help.category.tools.description': 'Language, weather, and practical utilities',
   'help.category.custom-premium.name': 'Custom & premium',
   'help.category.custom-premium.description':
     'Custom commands, premium features, and staff tools',
