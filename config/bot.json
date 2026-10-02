@@ -4,7 +4,20 @@
     "defaultRaidJoinThreshold": 8,
     "defaultWarningThreshold": 3,
     "noticeDeleteMs": 5000,
-    "timeoutMs": 600000
+    "timeoutMs": 600000,
+    "defaultSpamMessageThreshold": 5,
+    "defaultSpamWindowSeconds": 5,
+    "defaultDuplicateThreshold": 3,
+    "defaultDuplicateWindowSeconds": 20,
+    "defaultMentionThreshold": 5,
+    "defaultCapsPercentage": 80,
+    "defaultCapsMinimumCharacters": 12,
+    "defaultEmojiThreshold": 10,
+    "defaultAttachmentThreshold": 4,
+    "defaultAttachmentWindowSeconds": 10,
+    "defaultLinkThreshold": 4,
+    "defaultLinkWindowSeconds": 10,
+    "defaultTimeoutSeconds": 600
   },
   "economy": {
     "boxPrice": 500,
@@ -13,9 +26,18 @@
     "boxXp": 25,
     "currency": "coins",
     "rewards": {
-      "beg": { "amount": 25, "cooldownMs": 60000 },
-      "daily": { "amount": 250, "cooldownMs": 86400000 },
-      "weekly": { "amount": 1500, "cooldownMs": 604800000 }
+      "beg": {
+        "amount": 25,
+        "cooldownMs": 60000
+      },
+      "daily": {
+        "amount": 250,
+        "cooldownMs": 86400000
+      },
+      "weekly": {
+        "amount": 1500,
+        "cooldownMs": 604800000
+      }
     },
     "robberySuccessPercent": 45,
     "robberyFailureDivisor": 2,
