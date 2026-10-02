@@ -5,6 +5,32 @@ import { botConfig } from '../config.js';
 
 const URL_PATTERN =
   /(?:https?:\/\/|www\.)[^\s<]+|discord(?:app)?\.com\/invite\/[^\s<]+|discord\.gg\/[^\s<]+/iu;
+const HTTP_URL_PATTERN = /\bhttp:\/\/[^\s<]+/iu;
+const HTTPS_URL_PATTERN = /\bhttps:\/\/[^\s<]+/iu;
+
+export function containsBlockedWord(content, blockedWords) {
+  return blockedWords.some((word) => {
+    const escaped = word.replace(/[.*+?^$(){}|[\]\\]/g, '\\const URL_PATTERN =
+  /(?:https?:\/\/|www\.)[^\s<]+|discord(?:app)?\.com\/invite\/[^\s<]+|discord\.gg\/[^\s<]+/iu;
+');
+    return new RegExp(
+      '(?<![\\p{L}\\p{N}_])' + escaped + '(?![\\p{L}\\p{N}_])',
+      'iu',
+    ).test(content);
+  });
+}
+
+export function hasBlockedLink(content, linkProtocols) {
+  if (!Array.isArray(linkProtocols) || linkProtocols.length === 0) {
+    return URL_PATTERN.test(content);
+  }
+
+  const protocols = new Set(linkProtocols);
+  return (
+    (protocols.has('http') && HTTP_URL_PATTERN.test(content)) ||
+    (protocols.has('https') && HTTPS_URL_PATTERN.test(content))
+  );
+}
 const recentJoins = new Map();
 
 export async function configureLinkFilter(interaction, t) {
