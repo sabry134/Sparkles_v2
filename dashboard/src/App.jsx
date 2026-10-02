@@ -1328,6 +1328,12 @@ function Dashboard({ session, onSessionExpired }) {
                       onChange={(value) => updateNested('actionLog', 'channelId', value)}
                       options={channelOptions}
                     />
+                    {!draft.actionLog.channelId ? (
+                      <div className="warning-banner compact-warning">
+                        <Icon name="alert" size={16} />
+                        {t('common.channelRequiredToActivate')}
+                      </div>
+                    ) : null}
                     {[
                       ['messageDelete', 'moderation.logMessageDelete'],
                       ['messageEdit', 'moderation.logMessageEdit'],
@@ -2366,6 +2372,12 @@ function Dashboard({ session, onSessionExpired }) {
                         onChange={(value) => updateNested(section, 'channelId', value)}
                         options={channelOptions}
                       />
+                      {!draft[section].channelId ? (
+                        <div className="warning-banner compact-warning">
+                          <Icon name="alert" size={16} />
+                          {t('common.channelRequiredToActivate')}
+                        </div>
+                      ) : null}
                       <InputField
                         id={`${section}-message`}
                         label={t(`${prefix}Message`)}
@@ -2535,6 +2547,12 @@ function Dashboard({ session, onSessionExpired }) {
                       onChange={(value) => updateNested('starboard', 'channelId', value)}
                       options={channelOptions}
                     />
+                    {!draft.starboard.channelId ? (
+                      <div className="warning-banner compact-warning">
+                        <Icon name="alert" size={16} />
+                        {t('common.channelRequiredToActivate')}
+                      </div>
+                    ) : null}
                     <InputField
                       id="starboard-threshold"
                       label={t('automation.starboardThreshold')}
