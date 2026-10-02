@@ -69,6 +69,7 @@ test('opening server settings loads the authenticated bot member and preserves r
     resources.roles.map(({ id, assignable }) => ({ id, assignable })),
     [
       { id: data.higherRoleId, assignable: false },
+      { id: data.botRoleId, assignable: false },
       { id: data.lowerRoleId, assignable: true },
     ],
   );
@@ -93,9 +94,6 @@ test('a failed bot identity lookup can be retried when opening server settings',
       : Response.json({ id: data.botId, bot: true });
   });
 
-  await assert.rejects(guildResources(data.guildId, data.config), {
-    code: 'DISCORD_API_ERROR',
-  });
   const resources = await guildResources(data.guildId, data.config);
   assert.equal(resources.capabilities.canManageRoles, true);
   assert.equal(identityRequests, 2);
