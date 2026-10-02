@@ -17,7 +17,6 @@ avatar|Display a member's full-size avatar
 backup|Download this server's complete Sparkles configuration
 ban|Ban a member from the server
 beg|Request a small random coin reward
-blacklist|Block a user from protected server features
 bot-info|Display information and statistics about Sparkles
 browse|Open the frequently asked questions browser
 claim|Redeem a premium claim code
@@ -112,8 +111,6 @@ ticket|Open the restricted Sparkles management ticket
 timeout|Timeout a member and privately notify them
 translate|Detect and translate text with language controls
 unban|Revoke a ban using a Discord user ID
-unblacklist|Remove a user from the protected server blacklist
-unwhitelist|Remove a user from automod exemptions
 untimeout|Remove a member timeout and notify them
 user-role|List a member's roles in the selected format
 user-warnings|View the number of warnings for a member
@@ -124,7 +121,6 @@ warn|Warn, notify, log, and enforce policy for a member
 weather|View current weather for a city or location
 web-status|Check whether a public website is reachable
 weekly|Claim your weekly economy reward
-whitelist|Allow a user to bypass protected server filters
 withdraw|Move banked coins into your wallet
 lock|Lock a text channel so members cannot send messages
 unlock|Unlock a previously locked text channel
