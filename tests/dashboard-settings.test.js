@@ -265,20 +265,46 @@ test('dashboard validates and persists every exposed guild setting', async () =>
   assert.equal(guild.customCommands.hello, 'Welcome to the server!');
 });
 
-test('dashboard rejects lifecycle features enabled without a channel', () => {
-  assert.throws(
-    () =>
-      settingsPatch({
-        welcome: { enabled: true, channelId: null, message: 'Welcome!' },
-      }),
-    /INVALID_CHANNEL/u,
+test('dashboard allows enabled features to autosave before a channel is selected', () => {
+  assert.deepEqual(
+    settingsPatch({
+      welcome: { enabled: true, channelId: null, message: 'Welcome!' },
+    }).welcome,
+    { enabled: true, channelId: null, message: 'Welcome!' },
   );
-  assert.throws(
-    () =>
-      settingsPatch({
-        goodbye: { enabled: true, channelId: null, message: 'Goodbye!' },
-      }),
-    /INVALID_CHANNEL/u,
+  assert.deepEqual(
+    settingsPatch({
+      goodbye: { enabled: true, channelId: null, message: 'Goodbye!' },
+    }).goodbye,
+    { enabled: true, channelId: null, message: 'Goodbye!' },
+  );
+  assert.equal(
+    settingsPatch({
+      actionLog: {
+        enabled: true,
+        channelId: null,
+        messageDelete: true,
+        messageEdit: true,
+        memberJoin: true,
+        memberLeave: true,
+        roleChanges: true,
+        ignoreRoleIds: [],
+        ignoreChannelIds: [],
+      },
+    }).actionLog.channelId,
+    null,
+  );
+  assert.equal(
+    settingsPatch({
+      starboard: {
+        enabled: true,
+        channelId: null,
+        threshold: 3,
+        emoji: '⭐',
+        ignoreChannelIds: [],
+      },
+    }).starboard.channelId,
+    null,
   );
 });
 
