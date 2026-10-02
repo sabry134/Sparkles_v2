@@ -53,7 +53,6 @@ test('every dashboard setting has a bot runtime consumer', () => {
     ['src/modules/extended.js', 'giveawayChannelId'],
     ['src/modules/extended.js', 'ticketCategoryId'],
     ['src/modules/extended.js', 'verificationRoleId'],
-    ['src/modules/extended.js', 'aiChatEnabled'],
     ['src/modules/extended.js', 'economySettings?.boxPrice'],
     ['src/modules/extended.js', 'economySettings?.robberySuccessPercent'],
     ['src/modules/economy.js', 'economySettings?.['],
@@ -291,4 +290,37 @@ test('bot and dashboard persist shared state in MongoDB instead of store.json', 
     sources['dashboard/server/bot-store.js'],
     /readFile|writeFile|store\.json/u,
   );
+});
+
+
+test('removed provider commands and credentials stay removed', () => {
+  const removedCommands = ['ask', 'pastebin', 'ratings', 'reward', 'start', 'stop'];
+  const catalogSource = sources['server.js'];
+  const extendedSource = sources['src/modules/extended.js'];
+  const routesSource = sources['src/command-routes.js'];
+  const environmentNames = [
+    'OPENAI_API_KEY',
+    'OPENAI_MODEL',
+    'TOPGG_TOKEN',
+    'TANKI_RATINGS_API_URL',
+    'PASTEBIN_API_KEY',
+    'PASTEBIN_USER_KEY',
+  ];
+
+  for (const command of removedCommands) {
+    assert.doesNotMatch(
+      extendedSource,
+      new RegExp(`case ['"]${command}['"]`, 'u'),
+    );
+    assert.doesNotMatch(
+      routesSource,
+      new RegExp(`(?:^|\\n)\\s*['"]?${command}['"]?\\s*:`, 'u'),
+    );
+  }
+
+  for (const variable of environmentNames) {
+    assert.doesNotMatch(extendedSource, new RegExp(variable, 'u'));
+  }
+
+  assert.doesNotMatch(catalogSource, /aiChatEnabled/u);
 });
