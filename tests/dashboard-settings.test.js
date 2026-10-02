@@ -99,6 +99,7 @@ test('dashboard validates and persists every exposed guild setting', async () =>
       linkThreshold: 3,
       linkWindowSeconds: 15,
       blockedWords: [' Spam ', 'spam', 'Scam', 'free nitro'],
+      blacklistedUserIds: ['523456789012345677'],
       exemptUserIds: ['523456789012345678'],
       exemptRoleIds: ['623456789012345678'],
       exemptChannelIds: ['723456789012345678'],
@@ -166,6 +167,7 @@ test('dashboard validates and persists every exposed guild setting', async () =>
   assert.equal(settings.automod.antiMentionSpam, true);
   assert.equal(settings.automod.spamMessageThreshold, 6);
   assert.equal(settings.automod.timeoutSeconds, 900);
+  assert.deepEqual(settings.automod.blacklistedUserIds, ['523456789012345677']);
   assert.deepEqual(settings.automod.exemptUserIds, ['523456789012345678']);
   assert.deepEqual(settings.automod.exemptRoleIds, ['623456789012345678']);
   assert.deepEqual(settings.automod.exemptChannelIds, ['723456789012345678']);
@@ -197,6 +199,7 @@ test('dashboard validates and persists every exposed guild setting', async () =>
   assert.equal(guild.automod.antiMentionSpam, true);
   assert.equal(guild.automod.spamMessageThreshold, 6);
   assert.equal(guild.automod.timeoutSeconds, 900);
+  assert.deepEqual(guild.blacklist, ['523456789012345677']);
   assert.deepEqual(guild.whitelist, ['523456789012345678']);
   assert.deepEqual(guild.automod.exemptRoleIds, ['623456789012345678']);
   assert.deepEqual(guild.automod.exemptChannelIds, ['723456789012345678']);
