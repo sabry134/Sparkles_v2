@@ -149,7 +149,11 @@ export async function filterAutomodMessage(message, t) {
 
     const threshold =
       config.automod?.warningThreshold ?? botConfig.automod.defaultWarningThreshold;
-    if (config.automod?.enabled && count >= threshold && message.member?.moderatable) {
+    if (
+      config.automod?.enabled !== false &&
+      count >= threshold &&
+      message.member?.moderatable
+    ) {
       await message.member
         .timeout(botConfig.automod.timeoutMs, 'Automod warning threshold')
         .catch(() => {});
