@@ -9,6 +9,7 @@ import {
   DialogTitle,
   TextField,
   ThemeProvider,
+  StyledEngineProvider,
   createTheme,
 } from '@mui/material';
 
@@ -167,8 +168,9 @@ export default function SparklesMuiProvider({ children }) {
   const contextValue = useMemo(() => ({ confirm, prompt }), [confirm, prompt]);
 
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
+    <StyledEngineProvider injectFirst>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
       <DialogContext.Provider value={contextValue}>
         {children}
         <Dialog
@@ -229,6 +231,7 @@ export default function SparklesMuiProvider({ children }) {
           ) : null}
         </Dialog>
       </DialogContext.Provider>
-    </ThemeProvider>
+      </ThemeProvider>
+    </StyledEngineProvider>
   );
 }
