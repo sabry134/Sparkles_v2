@@ -231,6 +231,7 @@ function publicSettings(config, defaults) {
       blockedWords: Array.isArray(config.automod?.blockedWords)
         ? config.automod.blockedWords
         : [],
+      blacklistedUserIds: Array.isArray(config.blacklist) ? config.blacklist : [],
       exemptUserIds: Array.isArray(config.whitelist) ? config.whitelist : [],
       exemptRoleIds: Array.isArray(config.automod?.exemptRoleIds)
         ? config.automod.exemptRoleIds
@@ -349,6 +350,9 @@ export class BotStore {
         }
         if (Object.hasOwn(patch.automod, 'antiBot')) {
           config.features.antiBot = patch.automod.antiBot;
+        }
+        if (Object.hasOwn(patch.automod, 'blacklistedUserIds')) {
+          config.blacklist = [...patch.automod.blacklistedUserIds];
         }
         if (Object.hasOwn(patch.automod, 'exemptUserIds')) {
           config.whitelist = [...patch.automod.exemptUserIds];
