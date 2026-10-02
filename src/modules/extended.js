@@ -450,8 +450,6 @@ export async function handleExtendedCommand(commandName, interaction, t, client)
       }
       const automod = config.automod ?? {};
       const exempt =
-        (config.whitelist ?? []).includes(interaction.user.id) ||
-        (automod.exemptUserIds ?? []).includes(interaction.user.id) ||
         (automod.exemptChannelIds ?? []).includes(interaction.channelId) ||
         (automod.exemptRoleIds ?? []).some((roleId) =>
           interaction.member.roles.cache.has(roleId),
