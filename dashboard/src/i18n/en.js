@@ -19,6 +19,8 @@ export const en = {
   'common.rolePrefix': '@{name}',
   'common.separator': ' · ',
   'common.chooseChannel': 'Choose a channel',
+  'common.channelRequiredToActivate':
+    'Choose a channel to finish activating this feature.',
   'common.choose': 'Choose…',
   'common.addItem': 'Add',
   'common.removeItem': 'Remove {item}',
