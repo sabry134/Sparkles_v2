@@ -14,7 +14,9 @@ dotenv.config({ path: path.join(dashboardDirectory, '.env'), override: true });
 function required(name) {
   const value = process.env[name]?.trim();
   if (!value || value.startsWith('your-') || value.startsWith('replace-')) {
-    throw new Error(`${name} must be configured in dashboard/.env`);
+    throw new Error(
+      `${name} must be configured in the root .env or dashboard/.env`,
+    );
   }
   return value;
 }
