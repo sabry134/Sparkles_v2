@@ -43,6 +43,16 @@ export async function connectMongo({ uri, dbName }) {
   return clients.get(key);
 }
 
+export async function closeMongoConnections() {
+  const connections = await Promise.allSettled([...clients.values()]);
+  await Promise.allSettled(
+    connections
+      .filter((result) => result.status === 'fulfilled')
+      .map((result) => result.value.client.close()),
+  );
+  clients.clear();
+}
+
 export async function ensureMongoIndexes(db) {
   await Promise.all([
     db
