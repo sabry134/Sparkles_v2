@@ -185,7 +185,6 @@ export const GROUPED_COMMAND_OPTIONS = Object.freeze({
     }),
   ],
   backup: [],
-  blacklist: [user(true)],
   browse: [],
   claim: [string('id', 'code', 'options.accessCode', true, { maxLength: 64 })],
   'control-panel': [],
@@ -374,8 +373,6 @@ export const GROUPED_COMMAND_OPTIONS = Object.freeze({
       choices: choices.language,
     }),
   ],
-  'unblacklist': [user(true)],
-  'unwhitelist': [user(true)],
   'user-role': [user(false)],
   verify: [],
   view: [],
@@ -391,7 +388,6 @@ export const GROUPED_COMMAND_OPTIONS = Object.freeze({
   'web-status': [
     string('text', 'website', 'options.websiteUrl', true, { maxLength: 500 }),
   ],
-  whitelist: [user(true)],
   withdraw: [
     integer('amount', 'coins', 'options.coinAmount', true, {
       minValue: 1,
