@@ -7,6 +7,7 @@ const configuredStorePath = process.env.STORE_PATH?.trim() || 'data/store.json';
 const file = path.isAbsolute(configuredStorePath)
   ? configuredStorePath
   : path.resolve(projectDirectory, configuredStorePath);
+export const storeFilePath = file;
 const directory = path.dirname(file);
 let state = { guilds: {}, warnings: {}, moderationCases: {} };
 let baselineState = structuredClone(state);
