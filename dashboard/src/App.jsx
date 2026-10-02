@@ -146,17 +146,12 @@ function Loading() {
   );
 }
 
-function SettingSection({ id, icon, title, description, children }) {
+function SettingSection({ id, title, description, children }) {
   return (
     <section className="settings-section" id={id}>
       <header className="section-heading">
-        <span className="section-icon">
-          <Icon name={icon} />
-        </span>
-        <div>
-          <h2>{title}</h2>
-          <p>{description}</p>
-        </div>
+        <h2>{title}</h2>
+        <p>{description}</p>
       </header>
       {children}
     </section>
@@ -382,6 +377,7 @@ function Dashboard({ session, onSessionExpired }) {
   }, [loadGuilds]);
 
   const selectedGuild = guilds.find((guild) => guild.id === selectedGuildId) ?? null;
+  const sectionsReady = Boolean(draft && resources);
 
   const loadSettings = useCallback(
     async (guild) => {
@@ -417,7 +413,7 @@ function Dashboard({ session, onSessionExpired }) {
   }, [selectedGuildId, selectedGuild, loadSettings]);
 
   useEffect(() => {
-    if (loadingSettings || settingsError || !draft || !resources) return;
+    if (loadingSettings || settingsError || !sectionsReady) return;
     const sections = NAVIGATION.map(([id]) => document.getElementById(id)).filter(Boolean);
     if (!sections.length) return;
 
@@ -436,7 +432,19 @@ function Dashboard({ session, onSessionExpired }) {
 
     sections.forEach((section) => observer.observe(section));
     return () => observer.disconnect();
-  }, [selectedGuildId, loadingSettings, settingsError, draft, resources]);
+  }, [selectedGuildId, loadingSettings, settingsError, sectionsReady]);
+
+  useEffect(() => {
+    if (!window.matchMedia('(max-width: 900px)').matches) return;
+    const activeButton = document.querySelector(
+      '.sidebar nav button[aria-current="page"]',
+    );
+    activeButton?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'nearest',
+      inline: 'center',
+    });
+  }, [activeSection]);
 
   const editableSettings = useCallback(
     (settings) =>
@@ -641,6 +649,7 @@ function Dashboard({ session, onSessionExpired }) {
               key={id}
               type="button"
               aria-current={activeSection === id ? 'page' : undefined}
+              data-section={id}
               onClick={() => {
                 setActiveSection(id);
                 document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
