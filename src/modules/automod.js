@@ -36,7 +36,8 @@ export async function configureLinkFilter(interaction, t) {
   config.automod ??= {};
 
   if (action === 'status') {
-    const enabled = config.automod.antiLink === true;
+    const enabled =
+      config.automod.enabled !== false && config.automod.antiLink === true;
     return interaction.reply(
       componentMessage({
         title: t('modules.antiLinkTitle'),
