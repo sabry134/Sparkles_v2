@@ -82,7 +82,10 @@ async function renameWithRetry(source, destination) {
       await rename(source, destination);
       return;
     } catch (error) {
-      if (!TRANSIENT_FILE_ERRORS.has(error.code) || attempt >= 5) throw error;
+      if (!TRANSIENT_FILE_ERRORS.has(error.code)) throw error;
+      if (attempt >= 5) {
+        throw new AppError('STORE_BUSY', 503, { cause: error });
+      }
       await delay(40 * 2 ** attempt);
     }
   }
