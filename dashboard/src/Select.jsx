@@ -225,6 +225,11 @@ export default function Select({
           disabled={disabled}
           value={value ?? ''}
           onChange={(event) => onChange(event.target.value)}
+          onInvalid={(event) => {
+            event.preventDefault();
+            setOpen(true);
+            trigger.current?.focus();
+          }}
         >
           <option value="" />
           {options.map((option) => (
