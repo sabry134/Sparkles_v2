@@ -22,9 +22,10 @@ A React + Vite control panel backed by an Express server. It signs administrator
 
 Requirements: Node.js 20.11 or newer, a Discord application, and the Sparkles bot installed in at least one test server.
 
-1. Install the dashboard dependencies:
+1. Install the root dependencies first because the dashboard shares the root MongoDB module, then install the dashboard dependencies:
 
    ```powershell
+   npm install
    cd dashboard
    npm install
    ```
