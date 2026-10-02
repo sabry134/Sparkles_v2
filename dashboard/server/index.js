@@ -518,7 +518,9 @@ app.use((error, request, response, _next) => {
 await sessionStore.ready();
 
 const server = app.listen(config.port, () => {
-  console.log(`Sparkles dashboard listening on ${config.publicUrl.origin}`);
+  console.log(
+    `Sparkles dashboard listening on ${config.publicUrl.origin}; store ${config.botStoreFile}.`,
+  );
 });
 
 function shutdown(signal) {
