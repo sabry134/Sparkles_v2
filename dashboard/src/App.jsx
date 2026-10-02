@@ -1129,7 +1129,12 @@ function Dashboard({ session, onSessionExpired }) {
                   <button
                     className="button secondary reaction-submit"
                     type="submit"
-                    disabled={reactionPending || !resources.capabilities.canManageRoles}
+                    disabled={
+                      reactionPending ||
+                      !resources.capabilities.canManageRoles ||
+                      !channelOptions.length ||
+                      !roleOptions.length
+                    }
                   >
                     <Icon name="spark" size={17} />
                     {reactionPending ? t('common.adding') : t('common.add')}
