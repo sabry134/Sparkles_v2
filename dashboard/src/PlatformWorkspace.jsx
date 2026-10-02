@@ -353,19 +353,52 @@ function ImpactDialog({ preview, resources, onClose, onConfirm, busy }) {
   );
 }
 function RunList({ items, request, onRefresh }) {
+  const dialogs = useUiDialog();
   const [error, setError] = useState(null);
   const [pending, setPending] = useState(false);
   const cancel = async id => { setPending(true); try { await request(`/jobs/${id}/cancel`, { method: 'POST', body: {} }); onRefresh(); } catch (error) { setError(error); } finally { setPending(false); } };
-  const resolve = async job => {
-    const note = window.prompt(t('jobs.reviewNote')); if (!note?.trim()) return;
-    const messageId = job.snapshot?.channelId ? window.prompt(t('jobs.recoveredMessage')) : '';
-    if (messageId === null) return;
-    setPending(true); try { await request(`/jobs/${job.id}/resolve`, { method: 'POST', body: { note, messageId: messageId || '' } }); onRefresh(); } catch (error) { setError(error); } finally { setPending(false); }
+  const resolve = async (job) => {
+    const note = await dialogs.prompt({
+      title: t('jobs.review'),
+      message: t('jobs.reviewNote'),
+      label: t('jobs.reviewNote'),
+      required: true,
+      multiline: true,
+      confirmLabel: t('platform.confirmExecution'),
+      cancelLabel: t('common.close'),
+    });
+    if (!note?.trim()) return;
+
+    let messageId = '';
+    if (job.snapshot?.channelId) {
+      messageId = await dialogs.prompt({
+        title: t('jobs.review'),
+        message: t('jobs.recoveredMessage'),
+        label: t('jobs.recoveredMessage'),
+        confirmLabel: t('platform.confirmExecution'),
+        cancelLabel: t('common.close'),
+      });
+      if (messageId === null) return;
+    }
+
+    setPending(true);
+    try {
+      await request(`/jobs/${job.id}/resolve`, {
+        method: 'POST',
+        body: { note, messageId: messageId || '' },
+      });
+      onRefresh();
+    } catch (error) {
+      setError(error);
+    } finally {
+      setPending(false);
+    }
   };
   return <><PlatformErrorView error={error} />{items.length ? <div className="platform-table-wrap"><table className="platform-table"><thead><tr>{['action', 'status', 'scheduled', 'result'].map(key => <th key={key}>{t(`platform.${key}`)}</th>)}<th>{t('platform.actions')}</th></tr></thead><tbody>{items.map(job => <tr key={job.id}><td><strong>{t(`action.${job.action}`)}</strong><small>{job.snapshot?.name ?? job.input?.reason ?? job.resourceId}</small></td><td><Status value={job.status} /></td><td>{time(job.runAt)}<small>{time(job.finishedAt)}</small></td><td>{job.error ? <span className="error-text">{t(`error.${job.error}`)}</span> : job.result?.messageId ? <a href={`https://discord.com/channels/${job.guildId}/${job.result.channelId}/${job.result.messageId}`} target="_blank" rel="noreferrer">{t('platform.openMessage')}</a> : job.result?.skipped ? t('platform.skipped') : t('platform.notAvailable')}<details><summary>{t('platform.details')}</summary><pre>{JSON.stringify({ steps: job.steps, result: job.result, details: job.details }, null, 2)}</pre></details></td><td>{job.status === 'queued' && <button className="button secondary" disabled={pending} type="button" onClick={() => cancel(job.id)}>{t('jobs.cancel')}</button>}{job.status === 'needs_review' && <button className="button secondary" disabled={pending} type="button" onClick={() => resolve(job)}>{t('jobs.review')}</button>}</td></tr>)}</tbody></table></div> : <Empty text="jobs.empty" />}</>;
 }
 
 function ResourcePage({ kind, request, bootstrap, selectedId, onNavigate }) {
+  const dialogs = useUiDialog();
   const { limits, resources } = bootstrap;
   const [listing, setListing] = useState({ items: [], nextCursor: null });
   const [query, setQuery] = useState(''); const [cursor, setCursor] = useState(null);
@@ -412,7 +445,39 @@ function ResourcePage({ kind, request, bootstrap, selectedId, onNavigate }) {
     const result = document?.id ? await request(`${endpoint}/${document.id}`, { method: 'PUT', body: { revision: document.revision, value } }) : await request(endpoint, { method: 'POST', body: value });
     setDocument(result.resource); setValue(structuredClone(result.resource.draft)); setNotice(t('platform.draftSaved')); load(); return result.resource;
   });
-  const start = () => { if (dirty && !window.confirm(t('platform.unsavedConfirm'))) return; setDocument(null); setValue(emptyResource(kind, limits)); setTab('configure'); setError(null); setNotice(''); };
+  const start = async () => {
+    if (
+      dirty &&
+      !(await dialogs.confirm({
+        title: t('platform.unsavedTitle'),
+        message: t('platform.unsavedConfirm'),
+        confirmLabel: t('platform.leaveAnyway'),
+        cancelLabel: t('platform.keepEditing'),
+      }))
+    ) {
+      return;
+    }
+    setDocument(null);
+    setValue(emptyResource(kind, limits));
+    setTab('configure');
+    setError(null);
+    setNotice('');
+  };
+
+  const openSafely = async (id) => {
+    if (
+      dirty &&
+      !(await dialogs.confirm({
+        title: t('platform.unsavedTitle'),
+        message: t('platform.unsavedConfirm'),
+        confirmLabel: t('platform.leaveAnyway'),
+        cancelLabel: t('platform.keepEditing'),
+      }))
+    ) {
+      return;
+    }
+    open(id);
+  };
   const publish = action => run(async () => { setPreview(await request(`${endpoint}/${document.id}/preview`, { method: 'POST', body: { revision: document.revision, action } })); });
   const activeValue = document?.live?.revision === document?.revision ? 'published' : document?.live ? 'changed' : 'draft';
   const showMessage = FEATURES[kind].publish === 'message' || ['commands', 'feeds'].includes(kind);
@@ -422,7 +487,7 @@ function ResourcePage({ kind, request, bootstrap, selectedId, onNavigate }) {
     <PlatformErrorView error={error} />{notice && <p role="status" className="platform-notice">{notice}</p>}
     <div className="platform-resource-layout">
       <aside className="platform-resource-index"><input className="platform-search" type="search" aria-label={t('platform.search')} placeholder={t('platform.search')} value={query} onChange={event => { setQuery(event.target.value); setCursor(null); }} />
-        {loading ? <Busy /> : listing.items.length ? <div className="platform-resource-list">{listing.items.map(item => <button key={item.id} type="button" aria-pressed={document?.id === item.id} onClick={() => { if (!dirty || window.confirm(t('platform.unsavedConfirm'))) open(item.id); }}><strong>{item.draft.name}</strong><span><Status value={item.live?.enabled ? item.live.revision === item.revision ? 'published' : 'changed' : 'draft'} /><small>{t('platform.versionShort', { version: item.revision })}</small></span></button>)}</div> : <Empty text="platform.noResources" />}
+        {loading ? <Busy /> : listing.items.length ? <div className="platform-resource-list">{listing.items.map(item => <button key={item.id} type="button" aria-pressed={document?.id === item.id} onClick={() => openSafely(item.id)}><strong>{item.draft.name}</strong><span><Status value={item.live?.enabled ? item.live.revision === item.revision ? 'published' : 'changed' : 'draft'} /><small>{t('platform.versionShort', { version: item.revision })}</small></span></button>)}</div> : <Empty text="platform.noResources" />}
         <Pager cursor={listing.nextCursor} onNext={setCursor} onFirst={() => setCursor(null)} busy={loading} />
       </aside>
       <div className="platform-resource-editor">
@@ -479,6 +544,7 @@ function CommandCenter({ request, bootstrap, onNavigate }) {
 }
 
 function Records({ table, request, bootstrap }) {
+  const dialogs = useUiDialog();
   const [data, setData] = useState({ items: [], nextCursor: null }); const [query, setQuery] = useState(''); const [status, setStatus] = useState(''); const [cursor, setCursor] = useState(null);
   const [error, setError] = useState(null); const [busy, setBusy] = useState(false); const [transcript, setTranscript] = useState(null);
   const statuses = table === 'tickets' ? ['open', 'pending', 'closed', 'needs_review'] : table === 'submissions' ? ['pending', 'accepted', 'rejected', 'archived'] : table === 'jobs' ? ['queued', 'running', 'completed', 'failed', 'needs_review', 'cancelled', 'reviewed'] : [];
@@ -487,6 +553,34 @@ function Records({ table, request, bootstrap }) {
   }, [request, table, query, status, cursor]);
   useEffect(() => { const timeout = setTimeout(load, query ? bootstrap.limits.searchDebounceMs : 0); return () => clearTimeout(timeout); }, [load, bootstrap.limits.searchDebounceMs, query]);
   const act = async (path, body, method = 'POST') => { setBusy(true); try { await request(path, { method, body }); await load(); } catch (error) { setError(error); } finally { setBusy(false); } };
+  const ticketAction = async (entry, action) => {
+    if (
+      action === 'close' &&
+      !(await dialogs.confirm({
+        title: t('tickets.close'),
+        message: t('tickets.closeImpact'),
+        confirmLabel: t('tickets.close'),
+        cancelLabel: t('common.close'),
+      }))
+    ) {
+      return;
+    }
+    await act(`/tickets/${entry.id}/actions`, { action });
+  };
+  const addTicketNote = async (entry) => {
+    const text = await dialogs.prompt({
+      title: t('tickets.addNote'),
+      message: t('tickets.notePrompt'),
+      label: t('tickets.notePrompt'),
+      multiline: true,
+      required: true,
+      confirmLabel: t('tickets.addNote'),
+      cancelLabel: t('common.close'),
+    });
+    if (text?.trim()) {
+      await act(`/tickets/${entry.id}/actions`, { action: 'note', text });
+    }
+  };
   return <section className="platform-module"><div className="platform-section-heading"><div><h2>{t(`records.${table}`)}</h2><p>{t(`records.${table}.help`)}</p></div><button type="button" className="button secondary" onClick={load} disabled={busy}>{t('platform.refresh')}</button></div><PlatformErrorView error={error} />
     <div className="platform-filterbar"><input aria-label={t('platform.search')} type="search" placeholder={t('platform.search')} value={query} onChange={event => { setQuery(event.target.value); setCursor(null); }} />{!!statuses.length && <select aria-label={t('platform.status')} value={status} onChange={event => { setStatus(event.target.value); setCursor(null); }}><option value="">{t('platform.allStatuses')}</option>{statuses.map(status => <option key={status} value={status}>{t(`status.${status}`)}</option>)}</select>}</div>
     {busy && !data.items.length ? <Busy /> : table === 'jobs' ? <RunList items={data.items} request={request} onRefresh={load} /> : !data.items.length ? <Empty /> : <div className="platform-record-list">{data.items.map(entry => <article key={entry.id} className="platform-record"><div className="platform-record-heading"><strong>{entry.event ? t(`event.${entry.event}`) : entry.userId ?? entry.resourceId}</strong>{entry.status && <Status value={entry.status} />}<time>{time(entry.at)}</time></div>
@@ -494,7 +588,7 @@ function Records({ table, request, bootstrap }) {
       {entry.details?.changes ? <ChangeList changes={entry.details.changes} /> : entry.details && <pre>{JSON.stringify(entry.details, null, 2)}</pre>}
       {entry.answers && <dl className="platform-answers">{entry.answers.map((answer, index) => <div key={index}><dt>{answer.label}</dt><dd>{answer.value}</dd></div>)}</dl>}
       {table === 'submissions' && <div className="platform-actions">{statuses.filter(status => status !== entry.status).map(status => <button key={status} type="button" className="button secondary" disabled={busy} onClick={() => act(`/submissions/${entry.id}`, { status }, 'PATCH')}>{t(`status.${status}`)}</button>)}</div>}
-      {table === 'tickets' && <><p>{t('tickets.assignee', { user: entry.assigneeId ?? t('tickets.unassigned') })}</p><div className="platform-actions">{entry.channelId && <a className="button secondary" href={`https://discord.com/channels/${entry.guildId}/${entry.channelId}`} target="_blank" rel="noreferrer">{t('tickets.openChannel')}</a>}{['claim', entry.status === 'closed' ? 'reopen' : 'close'].map(action => <button key={action} type="button" className="button secondary" disabled={busy} onClick={() => { if (action !== 'close' || window.confirm(t('tickets.closeImpact'))) act(`/tickets/${entry.id}/actions`, { action }); }}>{t(`tickets.${action}`)}</button>)}<button type="button" className="button secondary" disabled={busy} onClick={() => { const text = window.prompt(t('tickets.notePrompt')); if (text?.trim()) act(`/tickets/${entry.id}/actions`, { action: 'note', text }); }}>{t('tickets.addNote')}</button>{entry.status === 'closed' && <button type="button" className="button secondary" onClick={() => request(`/tickets/${entry.id}/transcript`).then(result => setTranscript(result.transcript)).catch(setError)}>{t('tickets.transcript')}</button>}</div>{entry.notes?.map((note, index) => <p key={index}>{note.text}<small>{note.actorId} · {time(note.at)}</small></p>)}</>}
+      {table === 'tickets' && <><p>{t('tickets.assignee', { user: entry.assigneeId ?? t('tickets.unassigned') })}</p><div className="platform-actions">{entry.channelId && <a className="button secondary" href={`https://discord.com/channels/${entry.guildId}/${entry.channelId}`} target="_blank" rel="noreferrer">{t('tickets.openChannel')}</a>}{['claim', entry.status === 'closed' ? 'reopen' : 'close'].map(action => <button key={action} type="button" className="button secondary" disabled={busy} onClick={() => ticketAction(entry, action)}>{t(`tickets.${action}`)}</button>)}<button type="button" className="button secondary" disabled={busy} onClick={() => addTicketNote(entry)}>{t('tickets.addNote')}</button>{entry.status === 'closed' && <button type="button" className="button secondary" onClick={() => request(`/tickets/${entry.id}/transcript`).then(result => setTranscript(result.transcript)).catch(setError)}>{t('tickets.transcript')}</button>}</div>{entry.notes?.map((note, index) => <p key={index}>{note.text}<small>{note.actorId} · {time(note.at)}</small></p>)}</>}
     </article>)}</div>}
     <Pager cursor={data.nextCursor} onNext={setCursor} onFirst={() => setCursor(null)} busy={busy} />
     {transcript && <section className="platform-transcript"><div className="platform-section-heading"><h3>{t('tickets.transcript')}</h3><button type="button" className="button secondary" onClick={() => downloadJson(transcript, `transcript-${transcript.id}`)}>{t('studio.export')}</button><button type="button" className="button secondary" onClick={() => setTranscript(null)}>{t('common.close')}</button></div>{transcript.capped && <p>{t('tickets.transcriptCapped')}</p>}{transcript.messages.map(message => <article key={message.id}><strong>{message.authorName ?? message.authorId}</strong><time>{time(message.at)}</time><p>{message.content}</p></article>)}</section>}
@@ -502,6 +596,7 @@ function Records({ table, request, bootstrap }) {
 }
 
 function Moderation({ request, bootstrap, membersOnly = false }) {
+  const dialogs = useUiDialog();
   const [query, setQuery] = useState(''); const [members, setMembers] = useState([]); const [profile, setProfile] = useState(null);
   const [cases, setCases] = useState({ items: [], nextCursor: null }); const [error, setError] = useState(null); const [busy, setBusy] = useState(false); const [preview, setPreview] = useState(null); const [notice, setNotice] = useState('');
   const [input, setInput] = useState({ type: 'warn', targetIds: [], reason: '', durationSeconds: 0, points: 1 });
@@ -513,26 +608,91 @@ function Moderation({ request, bootstrap, membersOnly = false }) {
     return () => { current = false; clearTimeout(timer); };
   }, [request, query, bootstrap.limits.searchDebounceMs]);
   const run = async operation => { setBusy(true); setError(null); try { await operation(); } catch (error) { setError(error); } finally { setBusy(false); } };
+  const editCaseReason = async (entry) => {
+    const reason = await dialogs.prompt({
+      title: t('cases.editReason'),
+      label: t('cases.editReason'),
+      defaultValue: entry.reason ?? '',
+      required: true,
+      multiline: true,
+      confirmLabel: t('cases.editReason'),
+      cancelLabel: t('common.close'),
+    });
+    if (!reason?.trim()) return;
+    await run(async () => {
+      await request(`/cases/${entry.id}`, {
+        method: 'PATCH',
+        body: { reason },
+      });
+      setNotice(t('platform.queued'));
+      await loadCases();
+    });
+  };
+  const addCaseNote = async (entry) => {
+    const note = await dialogs.prompt({
+      title: t('cases.addNote'),
+      label: t('cases.addNote'),
+      required: true,
+      multiline: true,
+      confirmLabel: t('cases.addNote'),
+      cancelLabel: t('common.close'),
+    });
+    if (!note?.trim()) return;
+    await run(async () => {
+      await request(`/cases/${entry.id}`, {
+        method: 'PATCH',
+        body: { note },
+      });
+      setNotice(t('platform.queued'));
+      await loadCases();
+    });
+  };
   return <section className="platform-module"><div className="platform-section-heading"><div><h2>{t(membersOnly ? 'members.title' : 'cases.title')}</h2><p>{t('cases.help')}</p></div><button type="button" className="button secondary" onClick={() => loadCases()}>{t('platform.refresh')}</button></div><PlatformErrorView error={error} />{notice && <p role="status" className="platform-notice">{notice}</p>}
     <label className="platform-field"><span>{t('members.search')}</span><input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder={t('members.searchHelp')} /></label>
     {!!members.length && <div className="platform-member-results">{members.map(member => <div key={member.id}><label className="platform-check"><input type="checkbox" checked={input.targetIds.includes(member.id)} onChange={event => setInput({ ...input, targetIds: event.target.checked ? [...input.targetIds, member.id] : input.targetIds.filter(id => id !== member.id) })} /><strong>{member.name}</strong><small>{member.id}</small></label><button type="button" className="button secondary" onClick={() => run(async () => setProfile(await request(`/members/${member.id}`)))}>{t('members.profile')}</button></div>)}</div>}
     {!!input.targetIds.length && <p>{t('cases.selected', { count: input.targetIds.length })}<button type="button" className="button secondary" onClick={() => setInput({ ...input, targetIds: [] })}>{t('cases.clearSelection')}</button></p>}
     {!membersOnly && <div className="platform-moderation-form"><div className="platform-form-grid"><SchemaField name="type" spec={{ type: 'select', options: ['warn', 'note', 'timeout', 'untimeout', 'kick', 'ban', 'unban'] }} value={input.type} onChange={type => setInput({ ...input, type })} resources={bootstrap.resources} limits={bootstrap.limits} /><SchemaField name="reason" spec={{ type: 'text', required: true, multiline: true }} value={input.reason} onChange={reason => setInput({ ...input, reason })} resources={bootstrap.resources} limits={bootstrap.limits} />{['timeout', 'ban'].includes(input.type) && <SchemaField name="durationSeconds" spec={{ type: 'number', min: 0 }} value={input.durationSeconds} onChange={durationSeconds => setInput({ ...input, durationSeconds })} resources={bootstrap.resources} limits={bootstrap.limits} />}{input.type === 'warn' && <SchemaField name="points" spec={{ type: 'number', min: 1 }} value={input.points} onChange={points => setInput({ ...input, points })} resources={bootstrap.resources} limits={bootstrap.limits} />}</div><details><summary>{t('members.manualId')}</summary><input aria-label={t('members.manualId')} value={input.targetIds.join(', ')} onChange={event => setInput({ ...input, targetIds: event.target.value.split(/[\s,]+/u).filter(Boolean) })} /></details><button type="button" className="button primary" disabled={busy || !input.targetIds.length || !input.reason.trim()} onClick={() => run(async () => setPreview(await request('/moderation/preview', { method: 'POST', body: input })))}>{t('cases.previewAction')}</button></div>}
     {profile && <section className="platform-profile"><div className="platform-section-heading"><h3>{profile.member.name}</h3><code>{profile.member.id}</code><button type="button" className="button secondary" onClick={() => setProfile(null)}>{t('common.close')}</button></div><dl><dt>{t('members.created')}</dt><dd>{time(profile.member.accountCreatedAt)}</dd><dt>{t('members.joined')}</dt><dd>{time(profile.member.joinedAt)}</dd><dt>{t('members.roles')}</dt><dd>{profile.member.roles.map(id => bootstrap.resources.roles.find(role => role.id === id)?.name ?? id).join(', ')}</dd><dt>{t('members.timeout')}</dt><dd>{time(profile.member.timeoutUntil)}</dd><dt>{t('members.tickets')}</dt><dd>{profile.tickets.length}</dd></dl>{profile.cases.map(entry => <p key={entry.id}>{t('cases.caseNumber', { number: entry.id })} · {entry.action} · {entry.reason}</p>)}</section>}
-    {!membersOnly && <><div className="platform-table-wrap"><table className="platform-table"><thead><tr>{['case', 'target', 'moderator', 'reason', 'date', 'actions'].map(key => <th key={key}>{t(`cases.${key}`)}</th>)}</tr></thead><tbody>{cases.items.map(entry => <tr key={entry.id}><td><strong>#{entry.id}</strong><span>{choice(entry.action)}</span><Status value={entry.status ?? 'active'} /></td><td><button type="button" onClick={() => run(async () => setProfile(await request(`/members/${entry.targetId}`)))}>{entry.targetTag ?? entry.targetId}</button></td><td>{entry.actorTag ?? entry.actorId}</td><td>{entry.reason}{entry.note && <small>{entry.note}</small>}{entry.evidence && <details><summary>{t('cases.evidence')}</summary><pre>{JSON.stringify(entry.evidence, null, 2)}</pre></details>}</td><td>{time(entry.at)}</td><td><button type="button" className="button secondary" disabled={busy} onClick={() => { const reason = window.prompt(t('cases.editReason'), entry.reason ?? ''); if (reason?.trim()) run(async () => { await request(`/cases/${entry.id}`, { method: 'PATCH', body: { reason } }); setNotice(t('platform.queued')); }); }}>{t('cases.editReason')}</button><button type="button" className="button secondary" disabled={busy} onClick={() => { const note = window.prompt(t('cases.addNote')); if (note?.trim()) run(async () => { await request(`/cases/${entry.id}`, { method: 'PATCH', body: { note } }); setNotice(t('platform.queued')); }); }}>{t('cases.addNote')}</button>{['ban', 'timeout'].includes(entry.action) && <button type="button" className="button secondary" onClick={() => setInput({ ...input, type: entry.action === 'ban' ? 'unban' : 'untimeout', targetIds: [entry.targetId], reason: t('cases.reversalReason', { number: entry.id }) })}>{t('cases.reverse')}</button>}</td></tr>)}</tbody></table></div>{!cases.items.length && <Empty text="cases.empty" />}<Pager cursor={cases.nextCursor} onNext={loadCases} onFirst={() => loadCases()} busy={busy} /></>}
+    {!membersOnly && <><div className="platform-table-wrap"><table className="platform-table"><thead><tr>{['case', 'target', 'moderator', 'reason', 'date', 'actions'].map(key => <th key={key}>{t(`cases.${key}`)}</th>)}</tr></thead><tbody>{cases.items.map(entry => <tr key={entry.id}><td><strong>#{entry.id}</strong><span>{choice(entry.action)}</span><Status value={entry.status ?? 'active'} /></td><td><button type="button" onClick={() => run(async () => setProfile(await request(`/members/${entry.targetId}`)))}>{entry.targetTag ?? entry.targetId}</button></td><td>{entry.actorTag ?? entry.actorId}</td><td>{entry.reason}{entry.note && <small>{entry.note}</small>}{entry.evidence && <details><summary>{t('cases.evidence')}</summary><pre>{JSON.stringify(entry.evidence, null, 2)}</pre></details>}</td><td>{time(entry.at)}</td><td><button type="button" className="button secondary" disabled={busy} onClick={() => editCaseReason(entry)}>{t('cases.editReason')}</button><button type="button" className="button secondary" disabled={busy} onClick={() => addCaseNote(entry)}>{t('cases.addNote')}</button>{['ban', 'timeout'].includes(entry.action) && <button type="button" className="button secondary" onClick={() => setInput({ ...input, type: entry.action === 'ban' ? 'unban' : 'untimeout', targetIds: [entry.targetId], reason: t('cases.reversalReason', { number: entry.id }) })}>{t('cases.reverse')}</button>}</td></tr>)}</tbody></table></div>{!cases.items.length && <Empty text="cases.empty" />}<Pager cursor={cases.nextCursor} onNext={loadCases} onFirst={() => loadCases()} busy={busy} /></>}
     {preview && <ImpactDialog preview={preview} resources={bootstrap.resources} busy={busy} onClose={() => setPreview(null)} onConfirm={() => run(async () => { await request('/moderation/execute', { method: 'POST', body: { token: preview.token } }); setPreview(null); setNotice(t('platform.queued')); })} />}
   </section>;
 }
 
 function Access({ request, bootstrap }) {
+  const dialogs = useUiDialog();
   const [data, setData] = useState(null); const [saved, setSaved] = useState(null); const [error, setError] = useState(null); const [busy, setBusy] = useState(false); const [notice, setNotice] = useState('');
   useEffect(() => { request('/access').then(result => { setData(result); setSaved(result.policy); }).catch(setError); }, [request]);
   const dirty = !!data && JSON.stringify(data.policy) !== JSON.stringify(saved); useUnsaved(dirty);
   const update = policy => setData({ ...data, policy });
+  const saveAccess = async () => {
+    const confirmed = await dialogs.confirm({
+      title: t('access.save'),
+      message: t('access.impact'),
+      confirmLabel: t('access.save'),
+      cancelLabel: t('common.close'),
+    });
+    if (!confirmed) return;
+    setBusy(true);
+    try {
+      await request('/access', {
+        method: 'PUT',
+        body: {
+          grants: data.policy.grants,
+          managerCapabilities: data.policy.managerCapabilities,
+        },
+      });
+      setSaved(data.policy);
+      setNotice(t('access.saved'));
+    } catch (error) {
+      setError(error);
+    } finally {
+      setBusy(false);
+    }
+  };
   return <section className="platform-module"><h2>{t('access.title')}</h2><p>{t('access.help')}</p><PlatformErrorView error={error} />{notice && <p role="status">{notice}</p>}{!data ? <Busy /> : <>
     <details><summary>{t('access.managerDefaults')}</summary><div className="access-capabilities">{data.capabilities.map(capability => <label className="platform-check" key={capability}><input type="checkbox" checked={data.policy.managerCapabilities.includes(capability)} onChange={event => update({ ...data.policy, managerCapabilities: event.target.checked ? [...data.policy.managerCapabilities, capability] : data.policy.managerCapabilities.filter(key => key !== capability) })} />{t(`capability.${capability}`)}</label>)}</div></details>
     {data.policy.grants.map((grant, index) => <div className="platform-access-grant" key={index}><div className="platform-form-grid"><SchemaField name="roleId" spec={{ type: 'roles' }} value={grant.roleId ? [grant.roleId] : []} onChange={roles => update({ ...data.policy, grants: data.policy.grants.map((row, position) => position === index ? { roleId: roles.at(-1) ?? '', capabilities: row.capabilities } : row) })} resources={bootstrap.resources} limits={bootstrap.limits} /><label className="platform-field"><span>{t('access.userId')}</span><input value={grant.userId ?? ''} onChange={event => update({ ...data.policy, grants: data.policy.grants.map((row, position) => position === index ? { userId: event.target.value, capabilities: row.capabilities } : row) })} /></label></div><div className="access-capabilities">{data.capabilities.map(capability => <label key={capability} className="platform-check"><input type="checkbox" checked={grant.capabilities.includes(capability)} onChange={event => update({ ...data.policy, grants: data.policy.grants.map((row, position) => position === index ? { ...row, capabilities: event.target.checked ? [...row.capabilities, capability] : row.capabilities.filter(key => key !== capability) } : row) })} />{t(`capability.${capability}`)}</label>)}</div><button type="button" className="button secondary" onClick={() => update({ ...data.policy, grants: data.policy.grants.filter((_, position) => position !== index) })}>{t('studio.remove')}</button></div>)}
-    <div className="platform-actions"><button type="button" className="button secondary" onClick={() => update({ ...data.policy, grants: [...data.policy.grants, { roleId: '', capabilities: [] }] })}>{t('access.addGrant')}</button><button type="button" className="button primary" disabled={!dirty || busy} onClick={async () => { if (!window.confirm(t('access.impact'))) return; setBusy(true); try { await request('/access', { method: 'PUT', body: { grants: data.policy.grants, managerCapabilities: data.policy.managerCapabilities } }); setSaved(data.policy); setNotice(t('access.saved')); } catch (error) { setError(error); } finally { setBusy(false); } }}>{t('access.save')}</button></div><ChangeList changes={configurationDiff(saved, data.policy)} />
+    <div className="platform-actions"><button type="button" className="button secondary" onClick={() => update({ ...data.policy, grants: [...data.policy.grants, { roleId: '', capabilities: [] }] })}>{t('access.addGrant')}</button><button type="button" className="button primary" disabled={!dirty || busy} onClick={saveAccess}>{t('access.save')}</button></div><ChangeList changes={configurationDiff(saved, data.policy)} />
   </>}</section>;
 }
 
