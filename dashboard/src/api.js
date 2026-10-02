@@ -51,13 +51,23 @@ async function requestApi(path, options) {
   }
 
   const contentType = response.headers.get('content-type') ?? '';
-  const payload = contentType.includes('application/json') ? await response.json() : null;
+  let payload = null;
+
+  if (contentType.includes('application/json')) {
+    try {
+      payload = await response.json();
+    } catch {
+      payload = null;
+    }
+  }
 
   if (!response.ok) {
-    throw new ApiError(
-      payload?.error?.code ?? 'INTERNAL_ERROR',
-      payload?.error?.requestId ?? response.headers.get('x-request-id'),
-    );
+    const requestId =
+      payload?.error?.requestId ?? response.headers.get('x-request-id') ?? undefined;
+    const code =
+      payload?.error?.code ??
+      (response.status >= 500 && !requestId ? 'NETWORK_ERROR' : 'INTERNAL_ERROR');
+    throw new ApiError(code, requestId);
   }
 
   return payload;
