@@ -122,6 +122,12 @@ export const en = {
   'moderation.actionLogChannel': 'Action log channel',
   'moderation.actionLogChannelHelp':
     'Channel used for message, member, and role event logs.',
+  'moderation.actionLogIgnoreRoles': 'Ignored roles',
+  'moderation.actionLogIgnoreRolesHelp':
+    'Events caused by members with these roles are excluded from applicable action logs.',
+  'moderation.actionLogIgnoreChannels': 'Ignored channels',
+  'moderation.actionLogIgnoreChannelsHelp':
+    'Message delete and edit events in these channels are not logged.',
   'moderation.logMessageDelete': 'Message deletions',
   'moderation.logMessageDeleteHelp':
     'Log deleted cached messages and their text when available.',
