@@ -6,9 +6,13 @@ import { snowflake } from './validation.js';
 
 const DISCORD_API = 'https://discord.com/api/v10';
 const DISCORD_OAUTH = 'https://discord.com/api/oauth2';
-const MANAGE_GUILD = 1n << 5n;
+const KICK_MEMBERS = 1n << 1n;
 const ADMINISTRATOR = 1n << 3n;
+const MANAGE_CHANNELS = 1n << 4n;
+const MANAGE_GUILD = 1n << 5n;
+const MANAGE_MESSAGES = 1n << 13n;
 const MANAGE_ROLES = 1n << 28n;
+const MODERATE_MEMBERS = 1n << 40n;
 const TEXT_CHANNEL_TYPES = new Set([0, 5]);
 const CATEGORY_CHANNEL_TYPE = 4;
 const requestPolicy = Object.freeze(
@@ -365,6 +369,13 @@ function rolePermissions(member, roles) {
     .reduce((permissions, role) => permissions | BigInt(role.permissions), 0n);
 }
 
+function hasGuildPermission(permissions, permission) {
+  return (
+    (permissions & ADMINISTRATOR) !== 0n ||
+    (permissions & permission) !== 0n
+  );
+}
+
 export async function guildResources(guildId, config) {
   const [channels, roles, member] = await Promise.all([
     botRequest(config, `/guilds/${guildId}/channels`),
@@ -380,7 +391,14 @@ export async function guildResources(guildId, config) {
     .filter((role) => memberRoleIds.has(role.id))
     .reduce((highest, role) => Math.max(highest, role.position), 0);
   const permissions = rolePermissions(member, roles);
-  const canManageRoles = (permissions & (ADMINISTRATOR | MANAGE_ROLES)) !== 0n;
+  const capabilities = {
+    canKickMembers: hasGuildPermission(permissions, KICK_MEMBERS),
+    canManageChannels: hasGuildPermission(permissions, MANAGE_CHANNELS),
+    canManageMessages: hasGuildPermission(permissions, MANAGE_MESSAGES),
+    canManageRoles: hasGuildPermission(permissions, MANAGE_ROLES),
+    canModerateMembers: hasGuildPermission(permissions, MODERATE_MEMBERS),
+  };
+  const canManageRoles = capabilities.canManageRoles;
 
   return {
     channels: channels
@@ -411,7 +429,7 @@ export async function guildResources(guildId, config) {
         assignable: canManageRoles && role.position < highestBotPosition,
       }))
       .sort((left, right) => right.position - left.position),
-    capabilities: { canManageRoles },
+    capabilities,
   };
 }
 
@@ -421,6 +439,29 @@ export function validateSettingsResources(patch, resources) {
   const assignableRoleIds = new Set(
     resources.roles.filter((role) => role.assignable).map((role) => role.id),
   );
+
+  if (
+    (patch.automod?.antiLink === true || patch.automod?.antiSwear === true) &&
+    !resources.capabilities.canManageMessages
+  ) {
+    throw new AppError('BOT_MISSING_PERMISSION', 409);
+  }
+
+  if (
+    (patch.automod?.antiAlt === true ||
+      patch.automod?.antiBot === true ||
+      patch.automod?.antiRaid === true) &&
+    !resources.capabilities.canKickMembers
+  ) {
+    throw new AppError('BOT_MISSING_PERMISSION', 409);
+  }
+
+  if (
+    patch.automod?.antiSwear === true &&
+    !resources.capabilities.canModerateMembers
+  ) {
+    throw new AppError('BOT_MISSING_PERMISSION', 409);
+  }
 
   for (const field of ['logsChannelId', 'suggestionsChannelId', 'giveawayChannelId']) {
     if (
@@ -448,6 +489,14 @@ export function validateSettingsResources(patch, resources) {
     !categoryIds.has(patch.ticketCategoryId)
   ) {
     throw new AppError('INVALID_CHANNEL', 400);
+  }
+
+  if (
+    patch.ticketCategoryId !== undefined &&
+    patch.ticketCategoryId !== null &&
+    !resources.capabilities.canManageChannels
+  ) {
+    throw new AppError('BOT_MISSING_PERMISSION', 409);
   }
 
   for (const field of ['autoRoleId', 'verificationRoleId']) {
