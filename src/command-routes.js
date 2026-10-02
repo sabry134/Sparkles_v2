@@ -150,11 +150,29 @@ export const GROUPED_COMMAND_OPTIONS = Object.freeze({
       maxValue: 100,
     }),
   ],
+  'anti-spam': [
+    state(),
+    integer('spamMessageThreshold', 'messages', 'options.spamMessages', false, {
+      minValue: 2,
+      maxValue: 50,
+    }),
+    integer('spamWindowSeconds', 'seconds', 'options.spamWindow', false, {
+      minValue: 1,
+      maxValue: 120,
+    }),
+    integer('duplicateThreshold', 'duplicates', 'options.duplicateMessages', false, {
+      minValue: 2,
+      maxValue: 20,
+    }),
+  ],
   'anti-swear': [
     state(),
     string('text', 'blocked-words', 'options.blockedWords', false, {
       maxLength: 1_000,
     }),
+  ],
+  'automod-test': [
+    string('text', 'text', 'options.automodTestText', true, { maxLength: 2_000 }),
   ],
   ask: [string('text', 'prompt', 'options.aiPrompt', true, { maxLength: 2_000 })],
   'auto-status': [],
@@ -170,6 +188,31 @@ export const GROUPED_COMMAND_OPTIONS = Object.freeze({
   browse: [],
   claim: [string('id', 'code', 'options.accessCode', true, { maxLength: 64 })],
   'control-panel': [],
+  'purge-user': [
+    user(true),
+    integer('amount', 'amount', 'options.purgeAmount', false, {
+      minValue: 1,
+      maxValue: 100,
+    }),
+  ],
+  'purge-links': [
+    integer('amount', 'amount', 'options.purgeAmount', false, {
+      minValue: 1,
+      maxValue: 100,
+    }),
+  ],
+  'purge-attachments': [
+    integer('amount', 'amount', 'options.purgeAmount', false, {
+      minValue: 1,
+      maxValue: 100,
+    }),
+  ],
+  'purge-bots': [
+    integer('amount', 'amount', 'options.purgeAmount', false, {
+      minValue: 1,
+      maxValue: 100,
+    }),
+  ],
   'create-event': [
     string('text', 'name', 'options.eventName', true, { maxLength: 100 }),
     string('action', 'starts-in', 'options.eventStart', true, { maxLength: 40 }),
@@ -337,6 +380,8 @@ export const GROUPED_COMMAND_OPTIONS = Object.freeze({
       choices: choices.language,
     }),
   ],
+  'unblacklist': [user(true)],
+  'unwhitelist': [user(true)],
   'user-role': [user(false)],
   verify: [],
   view: [],
