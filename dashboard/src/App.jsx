@@ -803,7 +803,9 @@ function Dashboard({ session, onSessionExpired }) {
                   <div>
                     <small>{t('overview.protection')}</small>
                     <strong>
-                      {draft.automod.antiLink ? t('common.on') : t('common.off')}
+                      {draft.automod.enabled && draft.automod.antiLink
+                        ? t('common.on')
+                        : t('common.off')}
                     </strong>
                   </div>
                 </article>
@@ -977,11 +979,15 @@ function Dashboard({ session, onSessionExpired }) {
                   onChange={(value) => updateNested('automod', 'warningThreshold', value)}
                 />
                 <div
-                  className={`inline-status ${draft.automod.antiLink ? 'enabled' : ''}`}
+                  className={`inline-status ${
+                    draft.automod.enabled && draft.automod.antiLink ? 'enabled' : ''
+                  }`}
                 >
                   <span />
                   <Icon name="link" size={16} />
-                  {draft.automod.antiLink ? t('automod.enabled') : t('automod.disabled')}
+                  {draft.automod.enabled && draft.automod.antiLink
+                    ? t('automod.enabled')
+                    : t('automod.disabled')}
                 </div>
               </div>
             </SettingSection>
