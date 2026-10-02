@@ -1160,6 +1160,7 @@ button:disabled {
   right: 20px;
   bottom: 20px;
   display: grid;
+  overflow: hidden;
   width: min(390px, calc(100vw - 40px));
   min-height: 54px;
   padding: 9px 9px 9px 11px;
@@ -1180,7 +1181,7 @@ button:disabled {
   background: #26191d;
 }
 
-.toast > span:nth-child(2) {
+.toast-message {
   font-size: 0.76rem;
   font-weight: 580;
   line-height: 1.45;
@@ -1199,6 +1200,31 @@ button:disabled {
 .toast.error .toast-icon {
   color: var(--danger);
   background: transparent;
+}
+
+.toast-progress {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.toast-progress::after {
+  position: absolute;
+  inset: 0;
+  content: '';
+  background: currentColor;
+  transform: scaleX(1);
+  transform-origin: left center;
+  animation: toast-progress var(--toast-duration) linear forwards;
+}
+
+@keyframes toast-progress {
+  to {
+    transform: scaleX(0);
+  }
 }
 
 @keyframes toast-in {
@@ -1639,11 +1665,6 @@ button:disabled {
     gap: 18px;
   }
 
-  .save-status {
-    width: 100%;
-    justify-content: space-between;
-  }
-
   .server-heading {
     gap: 13px;
   }
@@ -1718,15 +1739,6 @@ button:disabled {
     padding-bottom: 22px;
   }
 
-  .save-status {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .save-status .button {
-    width: 100%;
-  }
-
   .settings-section {
     padding-top: 34px;
   }
@@ -1783,5 +1795,9 @@ button:disabled {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+  }
+
+  .toast-progress::after {
+    animation-duration: var(--toast-duration) !important;
   }
 }
