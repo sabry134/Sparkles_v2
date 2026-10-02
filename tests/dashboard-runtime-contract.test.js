@@ -28,14 +28,14 @@ test('every dashboard setting has a bot runtime consumer', () => {
     ['server.js', 'logsChannelId'],
     ['server.js', 'config.rules'],
     ['src/modules/automod.js', 'automod?.antiLink'],
-    ['src/modules/automod.js', 'automod?.antiSwear'],
+    ['src/modules/automod.js', 'automod.antiSwear'],
     ['src/modules/automod.js', 'antiSpam'],
     ['src/modules/automod.js', 'antiMentionSpam'],
     ['src/modules/automod.js', 'antiCaps'],
     ['src/modules/automod.js', 'antiEmojiSpam'],
     ['src/modules/automod.js', 'antiAttachmentSpam'],
     ['src/modules/automod.js', 'antiLinkSpam'],
-    ['src/modules/automod.js', 'exemptUserIds'],
+    ['src/modules/automod.js', 'blockedRoleIds'],
     ['src/modules/automod.js', 'exemptRoleIds'],
     ['src/modules/automod.js', 'exemptChannelIds'],
     ['src/modules/automod.js', 'minimumAccountAgeDays'],
@@ -58,6 +58,10 @@ test('every dashboard setting has a bot runtime consumer', () => {
     ['server.js', '.modules?.[moduleKey]'],
     ['server.js', '.welcome'],
     ['server.js', '.goodbye'],
+    ['src/modules/automation.js', 'autoresponders'],
+    ['src/modules/automation.js', 'starboard'],
+    ['src/modules/action-log.js', 'actionLog'],
+    ['server.js', 'disabledCommands'],
   ];
 
   for (const [file, expected] of contracts) {
