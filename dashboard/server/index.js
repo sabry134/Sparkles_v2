@@ -30,6 +30,7 @@ import {
   reactionRoleInput,
   reactionRoleKeyInput,
   settingsPatch,
+  snowflake,
 } from './validation.js';
 
 const app = express();
@@ -284,6 +285,25 @@ app.get(
       guildResources(guildId, discordConfig()),
     ]);
     response.json({ settings, resources });
+  }),
+);
+
+app.get(
+  '/api/guilds/:guildId/moderation-cases',
+  authenticated,
+  asyncRoute(async (request, response) => {
+    const guildId = validatedGuild(request);
+    await authorizeGuild(request, guildId, discordConfig());
+    const userId = request.query.userId
+      ? snowflake(request.query.userId, 'userId')
+      : null;
+    const parsedLimit = Number.parseInt(request.query.limit ?? '100', 10);
+    const limit = Number.isSafeInteger(parsedLimit)
+      ? Math.min(250, Math.max(1, parsedLimit))
+      : 100;
+    response.json({
+      cases: await botStore.getModerationCases(guildId, { limit, userId }),
+    });
   }),
 );
 
