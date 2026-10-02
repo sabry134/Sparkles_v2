@@ -478,6 +478,7 @@ function Dashboard({ session, onSessionExpired }) {
   const [embedPending, setEmbedPending] = useState(false);
   const [lastPublishedEmbed, setLastPublishedEmbed] = useState(null);
   const [moderationCases, setModerationCases] = useState([]);
+  const [dashboardAudit, setDashboardAudit] = useState([]);
   const [moderationCasesLoading, setModerationCasesLoading] = useState(false);
   const [moderationCaseQuery, setModerationCaseQuery] = useState('');
   const [commandQuery, setCommandQuery] = useState('');
@@ -625,9 +626,14 @@ function Dashboard({ session, onSessionExpired }) {
 
     let cancelled = false;
     setModerationCasesLoading(true);
-    api(`/api/guilds/${selectedGuild.id}/moderation-cases?limit=150`)
-      .then((result) => {
-        if (!cancelled) setModerationCases(result.cases ?? []);
+    Promise.all([
+      api(`/api/guilds/${selectedGuild.id}/moderation-cases?limit=150`),
+      api(`/api/guilds/${selectedGuild.id}/dashboard-audit?limit=100`),
+    ])
+      .then(([caseResult, auditResult]) => {
+        if (cancelled) return;
+        setModerationCases(caseResult.cases ?? []);
+        setDashboardAudit(auditResult.entries ?? []);
       })
       .catch((error) => {
         if (!cancelled) showError(error);
@@ -1432,6 +1438,40 @@ function Dashboard({ session, onSessionExpired }) {
                   <div className="moderation-history-empty">
                     <Icon name="shield" size={20} />
                     <span>{t('moderation.historyEmpty')}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="settings-card moderation-history-card dashboard-audit-card">
+                <div className="subsection-heading">
+                  <div>
+                    <h3>{t('moderation.dashboardAuditTitle')}</h3>
+                    <p>{t('moderation.dashboardAuditDescription')}</p>
+                  </div>
+                  <span className="count-pill">{dashboardAudit.length}</span>
+                </div>
+                {dashboardAudit.length ? (
+                  <div className="dashboard-audit-list">
+                    {dashboardAudit.map((entry) => (
+                      <article className="dashboard-audit-entry" key={entry.id ?? entry.at}>
+                        <div className="dashboard-audit-meta">
+                          <strong>{entry.actorTag ?? entry.actorId ?? '—'}</strong>
+                          <time dateTime={entry.at ?? undefined}>
+                            {entry.at ? new Date(entry.at).toLocaleString() : '—'}
+                          </time>
+                        </div>
+                        <div className="dashboard-audit-changes">
+                          {entry.changes.map((change) => (
+                            <span key={change}>{change}</span>
+                          ))}
+                        </div>
+                      </article>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="moderation-history-empty">
+                    <Icon name="settings" size={20} />
+                    <span>{t('moderation.dashboardAuditEmpty')}</span>
                   </div>
                 )}
               </div>
