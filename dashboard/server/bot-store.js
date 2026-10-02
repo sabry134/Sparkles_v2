@@ -185,14 +185,58 @@ function publicSettings(config, defaults) {
       antiBot: config.features?.antiBot === true,
       antiRaid: config.automod?.antiRaid === true,
       antiSwear: config.automod?.antiSwear === true,
+      antiSpam: config.automod?.antiSpam === true,
+      antiMentionSpam: config.automod?.antiMentionSpam === true,
+      antiCaps: config.automod?.antiCaps === true,
+      antiEmojiSpam: config.automod?.antiEmojiSpam === true,
+      antiAttachmentSpam: config.automod?.antiAttachmentSpam === true,
+      antiLinkSpam: config.automod?.antiLinkSpam === true,
       minimumAccountAgeDays:
         config.automod?.minimumAccountAgeDays ?? defaults.automod.defaultAccountAgeDays,
       raidJoinThreshold:
         config.automod?.raidJoinThreshold ?? defaults.automod.defaultRaidJoinThreshold,
       warningThreshold:
         config.automod?.warningThreshold ?? defaults.automod.defaultWarningThreshold,
+      timeoutSeconds:
+        config.automod?.timeoutSeconds ?? defaults.automod.defaultTimeoutSeconds,
+      spamMessageThreshold:
+        config.automod?.spamMessageThreshold ??
+        defaults.automod.defaultSpamMessageThreshold,
+      spamWindowSeconds:
+        config.automod?.spamWindowSeconds ?? defaults.automod.defaultSpamWindowSeconds,
+      duplicateThreshold:
+        config.automod?.duplicateThreshold ?? defaults.automod.defaultDuplicateThreshold,
+      duplicateWindowSeconds:
+        config.automod?.duplicateWindowSeconds ??
+        defaults.automod.defaultDuplicateWindowSeconds,
+      mentionThreshold:
+        config.automod?.mentionThreshold ?? defaults.automod.defaultMentionThreshold,
+      capsPercentage:
+        config.automod?.capsPercentage ?? defaults.automod.defaultCapsPercentage,
+      capsMinimumCharacters:
+        config.automod?.capsMinimumCharacters ??
+        defaults.automod.defaultCapsMinimumCharacters,
+      emojiThreshold:
+        config.automod?.emojiThreshold ?? defaults.automod.defaultEmojiThreshold,
+      attachmentThreshold:
+        config.automod?.attachmentThreshold ??
+        defaults.automod.defaultAttachmentThreshold,
+      attachmentWindowSeconds:
+        config.automod?.attachmentWindowSeconds ??
+        defaults.automod.defaultAttachmentWindowSeconds,
+      linkThreshold:
+        config.automod?.linkThreshold ?? defaults.automod.defaultLinkThreshold,
+      linkWindowSeconds:
+        config.automod?.linkWindowSeconds ?? defaults.automod.defaultLinkWindowSeconds,
       blockedWords: Array.isArray(config.automod?.blockedWords)
         ? config.automod.blockedWords
+        : [],
+      exemptUserIds: Array.isArray(config.whitelist) ? config.whitelist : [],
+      exemptRoleIds: Array.isArray(config.automod?.exemptRoleIds)
+        ? config.automod.exemptRoleIds
+        : [],
+      exemptChannelIds: Array.isArray(config.automod?.exemptChannelIds)
+        ? config.automod.exemptChannelIds
         : [],
     },
     welcome: {
@@ -273,10 +317,31 @@ export class BotStore {
           'antiAlt',
           'antiRaid',
           'antiSwear',
+          'antiSpam',
+          'antiMentionSpam',
+          'antiCaps',
+          'antiEmojiSpam',
+          'antiAttachmentSpam',
+          'antiLinkSpam',
           'minimumAccountAgeDays',
           'raidJoinThreshold',
           'warningThreshold',
+          'timeoutSeconds',
+          'spamMessageThreshold',
+          'spamWindowSeconds',
+          'duplicateThreshold',
+          'duplicateWindowSeconds',
+          'mentionThreshold',
+          'capsPercentage',
+          'capsMinimumCharacters',
+          'emojiThreshold',
+          'attachmentThreshold',
+          'attachmentWindowSeconds',
+          'linkThreshold',
+          'linkWindowSeconds',
           'blockedWords',
+          'exemptRoleIds',
+          'exemptChannelIds',
         ]) {
           if (Object.hasOwn(patch.automod, field)) {
             config.automod[field] = patch.automod[field];
@@ -284,6 +349,9 @@ export class BotStore {
         }
         if (Object.hasOwn(patch.automod, 'antiBot')) {
           config.features.antiBot = patch.automod.antiBot;
+        }
+        if (Object.hasOwn(patch.automod, 'exemptUserIds')) {
+          config.whitelist = [...patch.automod.exemptUserIds];
         }
         if (Object.hasOwn(patch.automod, 'antiLink')) {
           delete config.automod.linkProtocols;
