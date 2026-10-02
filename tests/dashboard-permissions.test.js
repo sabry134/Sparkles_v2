@@ -33,6 +33,7 @@ test('dashboard accepts settings when bot capabilities are sufficient', () => {
           antiSwear: true,
           antiSpam: true,
           antiMentionSpam: true,
+          blockedRoleIds: ['423456789012345678'],
           exemptRoleIds: ['423456789012345678'],
           exemptChannelIds: ['223456789012345678'],
         },
@@ -111,6 +112,56 @@ test('dashboard validates automod role and channel exemptions', () => {
     () =>
       validateSettingsResources(
         { automod: { exemptChannelIds: ['523456789012345678'] } },
+        resources(),
+      ),
+    /INVALID_CHANNEL/u,
+  );
+});
+
+
+test('dashboard validates blocked role policies', () => {
+  assert.throws(
+    () =>
+      validateSettingsResources(
+        { automod: { blockedRoleIds: ['523456789012345678'] } },
+        resources(),
+      ),
+    /INVALID_ROLE/u,
+  );
+});
+
+test('dashboard validates action log and starboard channels', () => {
+  assert.throws(
+    () =>
+      validateSettingsResources(
+        {
+          actionLog: {
+            enabled: true,
+            channelId: '523456789012345678',
+            messageDelete: true,
+            messageEdit: true,
+            memberJoin: true,
+            memberLeave: true,
+            roleChanges: true,
+          },
+        },
+        resources(),
+      ),
+    /INVALID_CHANNEL/u,
+  );
+
+  assert.throws(
+    () =>
+      validateSettingsResources(
+        {
+          starboard: {
+            enabled: true,
+            channelId: '223456789012345678',
+            threshold: 3,
+            emoji: '⭐',
+            ignoreChannelIds: ['523456789012345678'],
+          },
+        },
         resources(),
       ),
     /INVALID_CHANNEL/u,
