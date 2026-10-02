@@ -1,4 +1,13 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Button,
+  Chip,
+  IconButton,
+  LinearProgress,
+  Snackbar,
+  Switch,
+  TextField,
+} from '@mui/material';
 import { api, ApiError } from './api.js';
 import { t } from './i18n/index.js';
 import Icon from './Icon.jsx';
@@ -199,32 +208,37 @@ function Login({ error, onDismiss }) {
 }
 
 function Toast({ type = 'success', message, onDismiss, duration = 0 }) {
-  useEffect(() => {
-    if (!duration) return undefined;
-    const timeout = window.setTimeout(onDismiss, duration);
-    return () => window.clearTimeout(timeout);
-  }, [duration, onDismiss]);
-
   return (
-    <div
-      className={`toast ${type}`}
-      role={type === 'error' ? 'alert' : 'status'}
-      style={duration ? { '--toast-duration': `${duration}ms` } : undefined}
+    <Snackbar
+      open={Boolean(message)}
+      autoHideDuration={duration || null}
+      onClose={(_, reason) => {
+        if (reason !== 'clickaway') onDismiss();
+      }}
+      anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
     >
-      <span className="toast-icon">
-        <Icon name={type === 'error' ? 'alert' : 'check'} />
-      </span>
-      <span className="toast-message">{message}</span>
-      <button
-        className="icon-button"
-        type="button"
-        onClick={onDismiss}
-        aria-label={t('common.close')}
-      >
-        <Icon name="close" size={18} />
-      </button>
-      {duration ? <span className="toast-progress" aria-hidden="true" /> : null}
-    </div>
+      <div className={`toast mui-toast ${type}`}>
+        <span className="toast-icon">
+          <Icon name={type === 'error' ? 'alert' : 'check'} />
+        </span>
+        <span className="toast-message">{message}</span>
+        <IconButton
+          className="icon-button"
+          size="small"
+          onClick={onDismiss}
+          aria-label={t('common.close')}
+        >
+          <Icon name="close" size={18} />
+        </IconButton>
+        {duration ? (
+          <LinearProgress
+            className="toast-progress mui-toast-progress"
+            variant="determinate"
+            value={100}
+          />
+        ) : null}
+      </div>
+    </Snackbar>
   );
 }
 
@@ -287,17 +301,17 @@ function ToggleField({ id, label, help, checked, onChange }) {
         <label htmlFor={id}>{label}</label>
         <p>{help}</p>
       </div>
-      <button
-        id={id}
-        className={`toggle ${checked ? 'checked' : ''}`}
-        type="button"
-        role="switch"
-        aria-checked={checked}
-        onClick={() => onChange(!checked)}
-      >
-        <span>{checked ? t('common.on') : t('common.off')}</span>
-        <i />
-      </button>
+      <div className="mui-switch-wrap">
+        <span className={checked ? 'switch-state on' : 'switch-state'}>
+          {checked ? t('common.on') : t('common.off')}
+        </span>
+        <Switch
+          id={id}
+          checked={checked}
+          onChange={(event) => onChange(event.target.checked)}
+          inputProps={{ 'aria-label': label }}
+        />
+      </div>
     </div>
   );
 }
@@ -315,23 +329,6 @@ function InputField({
   multiline = false,
   placeholder,
 }) {
-  const shared = {
-    id,
-    value,
-    maxLength,
-    placeholder,
-    onChange: (event) => {
-      if (type !== 'number') {
-        onChange(event.target.value);
-        return;
-      }
-      const parsed = Number.parseInt(event.target.value, 10);
-      const fallback = min ?? 0;
-      const value = Number.isNaN(parsed) ? fallback : parsed;
-      onChange(Math.min(max ?? value, Math.max(min ?? value, value)));
-    },
-  };
-
   return (
     <div className="field-row input-field-row">
       <div className="field-copy">
@@ -339,16 +336,34 @@ function InputField({
         <p>{help}</p>
       </div>
       <div className="input-wrap">
-        {multiline ? (
-          <textarea {...shared} rows="4" />
-        ) : (
-          <input {...shared} type={type} min={min} max={max} />
-        )}
+        <TextField
+          id={id}
+          fullWidth
+          multiline={multiline}
+          minRows={multiline ? 4 : undefined}
+          type={multiline ? 'text' : type}
+          value={value}
+          placeholder={placeholder}
+          inputProps={{
+            min,
+            max,
+            maxLength,
+          }}
+          onChange={(event) => {
+            if (type !== 'number') {
+              onChange(event.target.value);
+              return;
+            }
+            const parsed = Number.parseInt(event.target.value, 10);
+            const fallback = min ?? 0;
+            const next = Number.isNaN(parsed) ? fallback : parsed;
+            onChange(Math.min(max ?? next, Math.max(min ?? next, next)));
+          }}
+        />
       </div>
     </div>
   );
 }
-
 function MultiSelectField({
   id,
   label,
