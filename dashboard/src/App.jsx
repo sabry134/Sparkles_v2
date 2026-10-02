@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api, ApiError } from './api.js';
 import { t } from './i18n/index.js';
 import Icon from './Icon.jsx';
+import Select from './Select.jsx';
 
 const NAVIGATION = [
   ['overview', 'nav.overview', 'grid'],
@@ -180,23 +181,16 @@ function SelectField({
         <label htmlFor={id}>{label}</label>
         <p>{help}</p>
       </div>
-      <div className="select-wrap">
-        <Icon name={icon} size={17} />
-        <select
-          id={id}
-          value={value ?? ''}
-          onChange={(event) => onChange(event.target.value || null)}
-          disabled={disabled}
-        >
-          <option value="">{t('common.none')}</option>
-          {options.map((option) => (
-            <option value={option.id} key={option.id}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-        <Icon name="chevron" size={16} />
-      </div>
+      <Select
+        id={id}
+        label={label}
+        value={value ?? ''}
+        onChange={(nextValue) => onChange(nextValue || null)}
+        options={[{ id: '', label: t('common.none') }, ...options]}
+        disabled={disabled}
+        icon={icon}
+        variant="field-select"
+      />
     </div>
   );
 }
@@ -580,6 +574,11 @@ function Dashboard({ session, onSessionExpired }) {
       id: role.id,
       label: t('common.rolePrefix', { name: role.name }),
     }));
+  const guildOptions = guilds.map((guild) => ({
+    id: guild.id,
+    label: guild.name,
+    guild,
+  }));
   const channelNames = new Map(
     (resources?.channels ?? []).map((channel) => [channel.id, channel.name]),
   );
@@ -603,18 +602,14 @@ function Dashboard({ session, onSessionExpired }) {
           ) : (
             <span className="guild-avatar guild-initial">{t('brand.mark')}</span>
           )}
-          <select
-            aria-label={t('guild.choose')}
+          <Select
+            label={t('guild.choose')}
             value={selectedGuildId ?? ''}
-            onChange={(event) => chooseGuild(event.target.value)}
-          >
-            {guilds.map((guild) => (
-              <option value={guild.id} key={guild.id}>
-                {guild.name}
-              </option>
-            ))}
-          </select>
-          <Icon name="chevron" size={16} />
+            onChange={chooseGuild}
+            options={guildOptions}
+            variant="guild-select"
+            renderOption={(option) => <span className="guild-option-name">{option.label}</span>}
+          />
         </div>
 
         <p className="nav-label">{t('nav.workspace')}</p>
@@ -658,19 +653,15 @@ function Dashboard({ session, onSessionExpired }) {
 
       <main className="dashboard-main">
         <header className="mobile-toolbar">
-          <div>
+          <div className="mobile-guild-picker">
             <small>{t('header.mobileGuild')}</small>
-            <select
-              aria-label={t('guild.choose')}
+            <Select
+              label={t('guild.choose')}
               value={selectedGuildId ?? ''}
-              onChange={(event) => chooseGuild(event.target.value)}
-            >
-              {guilds.map((guild) => (
-                <option value={guild.id} key={guild.id}>
-                  {guild.name}
-                </option>
-              ))}
-            </select>
+              onChange={chooseGuild}
+              options={guildOptions}
+              variant="mobile-guild-select"
+            />
           </div>
           <button
             className="icon-button"
@@ -1033,28 +1024,22 @@ function Dashboard({ session, onSessionExpired }) {
                 <form className="reaction-form" onSubmit={addReactionRole}>
                   <div className="compact-field">
                     <label htmlFor="reaction-channel">{t('roles.channel')}</label>
-                    <div className="select-wrap">
-                      <Icon name="hash" size={16} />
-                      <select
-                        id="reaction-channel"
-                        required
-                        value={reactionForm.channelId}
-                        onChange={(event) =>
-                          setReactionForm((current) => ({
-                            ...current,
-                            channelId: event.target.value,
-                          }))
-                        }
-                      >
-                        <option value="">{t('common.chooseChannel')}</option>
-                        {channelOptions.map((option) => (
-                          <option key={option.id} value={option.id}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                      <Icon name="chevron" size={15} />
-                    </div>
+                    <Select
+                      id="reaction-channel"
+                      label={t('roles.channel')}
+                      required
+                      value={reactionForm.channelId}
+                      onChange={(channelId) =>
+                        setReactionForm((current) => ({
+                          ...current,
+                          channelId,
+                        }))
+                      }
+                      options={channelOptions}
+                      placeholder={t('common.chooseChannel')}
+                      icon="hash"
+                      variant="compact-select"
+                    />
                   </div>
                   <div className="compact-field">
                     <label htmlFor="reaction-message">{t('roles.messageId')}</label>
@@ -1093,28 +1078,22 @@ function Dashboard({ session, onSessionExpired }) {
                   </div>
                   <div className="compact-field">
                     <label htmlFor="reaction-role">{t('roles.role')}</label>
-                    <div className="select-wrap">
-                      <Icon name="role" size={16} />
-                      <select
-                        id="reaction-role"
-                        required
-                        value={reactionForm.roleId}
-                        onChange={(event) =>
-                          setReactionForm((current) => ({
-                            ...current,
-                            roleId: event.target.value,
-                          }))
-                        }
-                      >
-                        <option value="">{t('common.none')}</option>
-                        {roleOptions.map((option) => (
-                          <option key={option.id} value={option.id}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                      <Icon name="chevron" size={15} />
-                    </div>
+                    <Select
+                      id="reaction-role"
+                      label={t('roles.role')}
+                      required
+                      value={reactionForm.roleId}
+                      onChange={(roleId) =>
+                        setReactionForm((current) => ({
+                          ...current,
+                          roleId,
+                        }))
+                      }
+                      options={roleOptions}
+                      placeholder={t('common.none')}
+                      icon="role"
+                      variant="compact-select"
+                    />
                   </div>
                   <button
                     className="button secondary reaction-submit"
