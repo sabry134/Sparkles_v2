@@ -173,13 +173,99 @@ export default function MessageStudio({ value = EMPTY_MESSAGE, onChange, resourc
     {notice && <p className="platform-notice" role="status">{notice}</p>}
     <div className="studio-layout">
       <div className="studio-editor">
-        {tab === 'json' ? <><label className="studio-control"><span>{t('studio.json')}</span><textarea className="studio-json" rows={20} value={json} onChange={event => setJson(event.target.value)} spellCheck={false} /></label><Button type="button" className="button secondary" onClick={() => imported(json)}>{t('studio.applyJson')}</Button></> : <>
+        {tab === 'json' ? (
+          <>
+            <label className="studio-control mui-studio-control">
+              <span>{t('studio.json')}</span>
+              <TextField
+                className="studio-json"
+                fullWidth
+                multiline
+                minRows={20}
+                value={json}
+                onChange={(event) => setJson(event.target.value)}
+                inputProps={{ spellCheck: false }}
+              />
+            </label>
+            <Button variant="outlined" onClick={() => imported(json)}>
+              {t('studio.applyJson')}
+            </Button>
+          </>
+        ) : (<>
           {!embedOnly && <>
-            <label className="studio-control"><span>{t('studio.content')}</span><textarea ref={contentRef} rows={5} value={value.content} onChange={event => update({ ...value, content: event.target.value })} /><small className={value.content.length > L.content ? 'error-text' : 'muted'}>{t('studio.characterCount', { count: value.content.length, limit: L.content })}</small></label>
+            <label className="studio-control mui-studio-control">
+              <span>{t('studio.content')}</span>
+              <TextField
+                inputRef={contentRef}
+                fullWidth
+                multiline
+                minRows={5}
+                value={value.content}
+                onChange={(event) =>
+                  update({ ...value, content: event.target.value })
+                }
+              />
+              <small
+                className={value.content.length > L.content ? 'error-text' : 'muted'}
+              >
+                {t('studio.characterCount', {
+                  count: value.content.length,
+                  limit: L.content,
+                })}
+              </small>
+            </label>
             <div className="platform-actions">
-              <select aria-label={t('studio.variables')} value="" onChange={event => event.target.value && insert(`{${event.target.value}}`)}><option value="">{t('studio.variables')}</option>{MESSAGE_VARIABLES.map(variable => <option value={variable} key={variable}>{`{${variable}}`}</option>)}</select>
-              <select aria-label={t('studio.channelMention')} value="" onChange={event => event.target.value && insert(`<#${event.target.value}>`)}><option value="">{t('studio.channelMention')}</option>{resources.channels?.map(channel => <option key={channel.id} value={channel.id}>{channel.name}</option>)}</select>
-              <select aria-label={t('studio.roleMention')} value="" onChange={event => event.target.value && insert(`<@&${event.target.value}>`)}><option value="">{t('studio.roleMention')}</option>{resources.roles?.map(role => <option key={role.id} value={role.id}>{role.name}</option>)}</select>
+              <FormControl size="small" sx={{ minWidth: 170 }}>
+                <MuiSelect
+                  displayEmpty
+                  aria-label={t('studio.variables')}
+                  value=""
+                  onChange={(event) =>
+                    event.target.value && insert(`{${event.target.value}}`)
+                  }
+                >
+                  <MenuItem value="">{t('studio.variables')}</MenuItem>
+                  {MESSAGE_VARIABLES.map((variable) => (
+                    <MenuItem value={variable} key={variable}>
+                      {`{${variable}}`}
+                    </MenuItem>
+                  ))}
+                </MuiSelect>
+              </FormControl>
+              <FormControl size="small" sx={{ minWidth: 190 }}>
+                <MuiSelect
+                  displayEmpty
+                  aria-label={t('studio.channelMention')}
+                  value=""
+                  onChange={(event) =>
+                    event.target.value && insert(`<#${event.target.value}>`)
+                  }
+                >
+                  <MenuItem value="">{t('studio.channelMention')}</MenuItem>
+                  {resources.channels?.map((channel) => (
+                    <MenuItem key={channel.id} value={channel.id}>
+                      {channel.name}
+                    </MenuItem>
+                  ))}
+                </MuiSelect>
+              </FormControl>
+              <FormControl size="small" sx={{ minWidth: 190 }}>
+                <MuiSelect
+                  displayEmpty
+                  aria-label={t('studio.roleMention')}
+                  value=""
+                  onChange={(event) =>
+                    event.target.value && insert(`<@&${event.target.value}>`)
+                  }
+                >
+                  <MenuItem value="">{t('studio.roleMention')}</MenuItem>
+                  {resources.roles?.map((role) => (
+                    <MenuItem key={role.id} value={role.id}>
+                      {role.name}
+                    </MenuItem>
+                  ))}
+                </MuiSelect>
+              </FormControl>
             </div>
           </>}
           <div className="studio-section-heading"><h3>{t('studio.embeds')}</h3><Button type="button" className="button secondary" disabled={value.embeds.length >= (embedOnly ? 1 : L.embeds)} onClick={() => { update({ ...value, embeds: [...value.embeds, {}] }); setSelected(value.embeds.length); }}>{t('studio.addEmbed')}</Button></div>
@@ -207,7 +293,24 @@ export default function MessageStudio({ value = EMPTY_MESSAGE, onChange, resourc
               <div className="studio-field-top"><strong>{t('studio.fieldNumber', { number: index + 1 })}</strong><div className="platform-actions"><Button type="button" aria-label={t('studio.moveUp')} disabled={!index} onClick={() => reorder(index, index - 1)}>↑</Button><Button type="button" aria-label={t('studio.moveDown')} disabled={index === fields.length - 1} onClick={() => reorder(index, index + 1)}>↓</Button><Button type="button" onClick={() => changeEmbed({ fields: fields.filter((_, position) => position !== index) })}>{t('studio.remove')}</Button></div></div>
               <TextControl label="fieldName" value={field.name} maximum={L.fieldName} onChange={name => changeEmbed({ fields: fields.map((item, position) => position === index ? { ...item, name } : item) })} />
               <TextControl label="fieldValue" value={field.value} maximum={L.fieldValue} multiline onChange={value => changeEmbed({ fields: fields.map((item, position) => position === index ? { ...item, value } : item) })} />
-              <label className="platform-check"><input type="checkbox" checked={field.inline === true} onChange={event => changeEmbed({ fields: fields.map((item, position) => position === index ? { ...item, inline: event.target.checked } : item) })} />{t('studio.inline')}</label>
+              <FormControlLabel
+                className="platform-check mui-platform-check"
+                control={
+                  <Checkbox
+                    checked={field.inline === true}
+                    onChange={(event) =>
+                      changeEmbed({
+                        fields: fields.map((item, position) =>
+                          position === index
+                            ? { ...item, inline: event.target.checked }
+                            : item,
+                        ),
+                      })
+                    }
+                  />
+                }
+                label={t('studio.inline')}
+              />
             </div>)}
             <div className="platform-actions"><Button type="button" className="button secondary" disabled={embedOnly || value.embeds.length >= L.embeds} onClick={() => { update({ ...value, embeds: [...value.embeds, structuredClone(embed)] }); setSelected(value.embeds.length); }}>{t('studio.duplicateEmbed')}</Button><Button type="button" className="button secondary" onClick={() => update({ ...value, embeds: value.embeds.filter((_, index) => index !== current) })}>{t('studio.removeEmbed')}</Button></div>
           </div>}
@@ -216,8 +319,69 @@ export default function MessageStudio({ value = EMPTY_MESSAGE, onChange, resourc
             {(value.components ?? []).flatMap((row, rowIndex) => row.components.map((button, buttonIndex) => <div className="studio-field" key={`${rowIndex}:${buttonIndex}`}><TextControl label="buttonLabel" value={button.label} maximum={L.buttonLabel} onChange={label => update({ ...value, components: value.components.map((item, index) => index === rowIndex ? { ...item, components: item.components.map((component, current) => current === buttonIndex ? { ...component, label } : component) } : item) })} /><TextControl label="buttonUrl" value={button.url} type="url" onChange={url => update({ ...value, components: value.components.map((item, index) => index === rowIndex ? { ...item, components: item.components.map((component, current) => current === buttonIndex ? { ...component, url } : component) } : item) })} /><Button className="button secondary" type="button" onClick={() => update({ ...value, components: value.components.map((item, index) => index === rowIndex ? { ...item, components: item.components.filter((_, current) => current !== buttonIndex) } : item).filter(item => item.components.length) })}>{t('studio.remove')}</Button></div>))}
             <Button type="button" className="button secondary" disabled={value.components.length >= L.rows} onClick={() => update({ ...value, components: [...value.components, { type: 1, components: [{ type: 2, style: 5, label: '', url: '' }] }] })}>{t('studio.addLink')}</Button>
             <p className="muted">{t('studio.mentionsHelp')}</p>
-            <label className="platform-check"><input type="checkbox" checked={value.allowed_mentions?.parse?.includes('everyone') ?? false} onChange={event => update({ ...value, allowed_mentions: { ...value.allowed_mentions, parse: event.target.checked ? ['everyone'] : [] } })} />{t('studio.everyone')}</label>
-            <label className="studio-control"><span>{t('studio.allowedRoles')}</span><select multiple value={value.allowed_mentions?.roles ?? []} onChange={event => update({ ...value, allowed_mentions: { ...value.allowed_mentions, roles: [...event.target.selectedOptions].map(option => option.value) } })}>{resources.roles?.map(role => <option key={role.id} value={role.id}>{role.name}</option>)}</select></label>
+            <FormControlLabel
+              className="platform-check mui-platform-check"
+              control={
+                <Checkbox
+                  checked={
+                    value.allowed_mentions?.parse?.includes('everyone') ?? false
+                  }
+                  onChange={(event) =>
+                    update({
+                      ...value,
+                      allowed_mentions: {
+                        ...value.allowed_mentions,
+                        parse: event.target.checked ? ['everyone'] : [],
+                      },
+                    })
+                  }
+                />
+              }
+              label={t('studio.everyone')}
+            />
+            <label className="studio-control mui-studio-control">
+              <span>{t('studio.allowedRoles')}</span>
+              <FormControl size="small" fullWidth>
+                <MuiSelect
+                  multiple
+                  value={value.allowed_mentions?.roles ?? []}
+                  onChange={(event) =>
+                    update({
+                      ...value,
+                      allowed_mentions: {
+                        ...value.allowed_mentions,
+                        roles:
+                          typeof event.target.value === 'string'
+                            ? event.target.value.split(',')
+                            : event.target.value,
+                      },
+                    })
+                  }
+                  renderValue={(selected) =>
+                    selected
+                      .map(
+                        (id) =>
+                          resources.roles?.find((role) => role.id === id)?.name ??
+                          id,
+                      )
+                      .join(', ')
+                  }
+                >
+                  {resources.roles?.map((role) => (
+                    <MenuItem key={role.id} value={role.id}>
+                      <Checkbox
+                        size="small"
+                        checked={(value.allowed_mentions?.roles ?? []).includes(
+                          role.id,
+                        )}
+                        sx={{ mr: 1 }}
+                      />
+                      {role.name}
+                    </MenuItem>
+                  ))}
+                </MuiSelect>
+              </FormControl>
+            </label>
             <TextControl label="allowedUsers" value={value.allowed_mentions?.users?.join(', ') ?? ''} onChange={users => update({ ...value, allowed_mentions: { ...value.allowed_mentions, users: users.split(/[\s,]+/u).filter(Boolean) } })} />
           </details>}
           <Button type="button" className="button secondary" onClick={() => update(structuredClone(EMPTY_MESSAGE))}>{t('studio.reset')}</Button>
