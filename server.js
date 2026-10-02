@@ -204,8 +204,6 @@ const protectedCommands = new Map([
     'filter-http',
     'filter-https',
     'custom',
-    'unblacklist',
-    'unwhitelist',
   ].map((name) => [name, [PermissionFlagsBits.ManageGuild, 'Manage Server']]),
   ...['verify'].map((name) => [name, [PermissionFlagsBits.ManageRoles, 'Manage Roles']]),
 ]);
