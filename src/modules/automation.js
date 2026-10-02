@@ -69,10 +69,10 @@ function starboardEmbed(message, count, emoji) {
     .setDescription(message.content?.slice(0, 4_000) || 'No text content')
     .addFields({
       name: 'Source',
-      value: \`[Jump to message](\${message.url})\`,
+      value: `[Jump to message](${message.url})`,
       inline: true,
     })
-    .setFooter({ text: \`\${emoji} \${count} · #\${message.channel.name ?? 'channel'}\` })
+    .setFooter({ text: `${emoji} ${count} · #${message.channel.name ?? 'channel'}` })
     .setTimestamp(message.createdAt);
 
   const image = [...message.attachments.values()].find((attachment) =>
@@ -109,7 +109,7 @@ export async function handleStarboardReaction(reaction, user) {
   config.starboardPosts ??= {};
   const existing = config.starboardPosts[message.id];
   const payload = {
-    content: \`\${starboard.emoji ?? '⭐'} **\${count}**\`,
+    content: `${starboard.emoji ?? '⭐'} **${count}**`,
     embeds: [starboardEmbed(message, count, starboard.emoji ?? '⭐')],
     allowedMentions: { parse: [] },
   };
