@@ -121,6 +121,8 @@ export const en = {
   'automod.warningThresholdHelp': 'Warnings before Sparkles applies an automatic timeout.',
   'automod.enabled': 'Protection enabled',
   'automod.disabled': 'Protection disabled',
+  'automod.capabilityWarning':
+    'Some protections cannot run because Sparkles is missing Manage Messages, Kick Members, or Moderate Members.',
 
   'roles.title': 'Member roles',
   'roles.description':
@@ -163,6 +165,8 @@ export const en = {
   'community.giveawayDurationHelp': 'Duration in seconds used when the command omits one.',
   'community.ticketCategory': 'Ticket category',
   'community.ticketCategoryHelp': 'New private ticket channels are created inside this category.',
+  'community.ticketCapabilityWarning':
+    'Sparkles needs Manage Channels to create ticket channels.',
   'community.welcomeTitle': 'Welcome messages',
   'community.welcomeHelp': 'Greet new members automatically after safety checks finish.',
   'community.welcomeChannel': 'Welcome channel',
