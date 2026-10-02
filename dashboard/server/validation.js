@@ -106,7 +106,6 @@ export function settingsPatch(value) {
       'verificationRoleId',
       'rules',
       'currency',
-      'aiChatEnabled',
       'automod',
       'welcome',
       'goodbye',
@@ -141,10 +140,6 @@ export function settingsPatch(value) {
   if (Object.hasOwn(value, 'currency')) {
     patch.currency = text(value.currency, 24, { allowEmpty: false });
   }
-  if (Object.hasOwn(value, 'aiChatEnabled')) {
-    patch.aiChatEnabled = boolean(value.aiChatEnabled);
-  }
-
   if (Object.hasOwn(value, 'automod')) {
     onlyKeys(value.automod, AUTOMOD_FIELDS);
     patch.automod = {};
