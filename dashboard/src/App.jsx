@@ -1656,10 +1656,17 @@ function Dashboard({ session, onSessionExpired }) {
                         <span className="emoji-preview">{mapping.emoji}</span>
                         <div>
                           <strong>
-                            {t('roles.mappingDescription', {
-                              emoji: mapping.emoji,
-                              messageId: mapping.messageId,
-                            })}
+                            <a
+                              className="inline-link"
+                              href={`https://discord.com/channels/${selectedGuild.id}/${mapping.channelId}/${mapping.messageId}`}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              {t('roles.mappingDescription', {
+                                emoji: mapping.emoji,
+                                messageId: mapping.messageId,
+                              })}
+                            </a>
                           </strong>
                           <span>
                             {t('common.channelPrefix', {
@@ -1694,62 +1701,96 @@ function Dashboard({ session, onSessionExpired }) {
                   </div>
                 )}
 
-                <form className="reaction-form" onSubmit={addReactionRole}>
-                  <div className="compact-field">
-                    <label htmlFor="reaction-channel">{t('roles.channel')}</label>
-                    <Select
-                      id="reaction-channel"
-                      label={t('roles.channel')}
-                      required
-                      value={reactionForm.channelId}
-                      onChange={(channelId) =>
-                        setReactionForm((current) => ({
-                          ...current,
-                          channelId,
-                        }))
-                      }
-                      options={channelOptions}
-                      placeholder={t('common.chooseChannel')}
-                      icon="hash"
-                      variant="compact-select"
-                    />
-                  </div>
-                  <div className="compact-field">
-                    <label htmlFor="reaction-message">{t('roles.messageId')}</label>
-                    <input
-                      id="reaction-message"
-                      required
-                      minLength="17"
-                      maxLength="20"
-                      inputMode="numeric"
-                      pattern="[0-9]{17,20}"
-                      value={reactionForm.messageId}
-                      placeholder={t('roles.messageIdPlaceholder')}
-                      onChange={(event) =>
-                        setReactionForm((current) => ({
-                          ...current,
-                          messageId: event.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                  <div className="compact-field">
-                    <label htmlFor="reaction-emoji">{t('roles.emoji')}</label>
-                    <input
-                      id="reaction-emoji"
-                      required
-                      maxLength="64"
-                      value={reactionForm.emoji}
-                      placeholder={t('roles.emojiPlaceholder')}
-                      onChange={(event) =>
-                        setReactionForm((current) => ({
-                          ...current,
-                          emoji: event.target.value,
-                        }))
-                      }
-                    />
-                  </div>
-                  <div className="compact-field">
+                <div className="reaction-mode-switch" role="tablist" aria-label={t('roles.sourceMode')}>
+                  <button
+                    className={reactionMode === 'existing' ? 'selected' : ''}
+                    type="button"
+                    role="tab"
+                    aria-selected={reactionMode === 'existing'}
+                    onClick={() => setReactionMode('existing')}
+                  >
+                    {t('roles.existingMessage')}
+                  </button>
+                  <button
+                    className={reactionMode === 'embed' ? 'selected' : ''}
+                    type="button"
+                    role="tab"
+                    aria-selected={reactionMode === 'embed'}
+                    onClick={() => setReactionMode('embed')}
+                  >
+                    {t('roles.newEmbed')}
+                  </button>
+                </div>
+
+                <form className="reaction-form reaction-form-v2" onSubmit={addReactionRole}>
+                  {reactionMode === 'existing' ? (
+                    <div className="compact-field reaction-wide-field">
+                      <label htmlFor="reaction-message-link">{t('roles.messageLink')}</label>
+                      <input
+                        id="reaction-message-link"
+                        required
+                        type="url"
+                        maxLength="256"
+                        value={reactionForm.messageLink}
+                        placeholder={t('roles.messageLinkPlaceholder')}
+                        onChange={(event) =>
+                          setReactionForm((current) => ({
+                            ...current,
+                            messageLink: event.target.value,
+                          }))
+                        }
+                      />
+                      <small>{t('roles.messageLinkHelp')}</small>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="compact-field reaction-wide-field">
+                        <label htmlFor="reaction-channel">{t('roles.channel')}</label>
+                        <Select
+                          id="reaction-channel"
+                          label={t('roles.channel')}
+                          required
+                          value={reactionForm.channelId}
+                          onChange={(channelId) =>
+                            setReactionForm((current) => ({
+                              ...current,
+                              channelId,
+                            }))
+                          }
+                          options={channelOptions}
+                          placeholder={t('common.chooseChannel')}
+                          icon="hash"
+                          variant="compact-select"
+                        />
+                      </div>
+                      <div className="compact-field reaction-wide-field">
+                        <label htmlFor="reaction-content">{t('embeds.content')}</label>
+                        <textarea
+                          id="reaction-content"
+                          maxLength="2000"
+                          rows="2"
+                          value={reactionForm.content}
+                          placeholder={t('embeds.contentPlaceholder')}
+                          onChange={(event) =>
+                            setReactionForm((current) => ({
+                              ...current,
+                              content: event.target.value,
+                            }))
+                          }
+                        />
+                      </div>
+                      <div className="reaction-wide-field">
+                        <EmbedBuilder
+                          value={reactionForm.embed}
+                          onChange={(embed) =>
+                            setReactionForm((current) => ({ ...current, embed }))
+                          }
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  <div className="compact-field reaction-wide-field">
                     <label htmlFor="reaction-role">{t('roles.role')}</label>
                     <Select
                       id="reaction-role"
@@ -1768,21 +1809,102 @@ function Dashboard({ session, onSessionExpired }) {
                       variant="compact-select"
                     />
                   </div>
+
+                  <div className="compact-field reaction-wide-field">
+                    <label htmlFor="reaction-emoji-search">{t('roles.emoji')}</label>
+                    <EmojiPicker
+                      id="reaction-emoji-search"
+                      value={reactionForm.emoji}
+                      onChange={(emoji) =>
+                        setReactionForm((current) => ({ ...current, emoji }))
+                      }
+                    />
+                  </div>
+
                   <button
-                    className="button secondary reaction-submit"
+                    className="button primary reaction-submit"
                     type="submit"
                     disabled={
                       reactionPending ||
                       !resources.capabilities.canManageRoles ||
-                      !channelOptions.length ||
-                      !roleOptions.length
+                      !roleOptions.length ||
+                      (reactionMode === 'embed' && !reactionForm.channelId) ||
+                      (reactionMode === 'existing' && !reactionForm.messageLink)
                     }
                   >
                     <Icon name="spark" size={17} />
-                    {reactionPending ? t('common.adding') : t('common.add')}
+                    {reactionPending
+                      ? t('common.adding')
+                      : reactionMode === 'embed'
+                        ? t('roles.publishAndCreate')
+                        : t('common.add')}
                   </button>
                 </form>
               </div>
+            </SettingSection>
+
+            <SettingSection
+              id="embeds"
+              active={activeSection === 'embeds'}
+              title={t('embeds.title')}
+              description={t('embeds.description')}
+            >
+              <form className="settings-card embed-publisher" onSubmit={publishEmbed}>
+                <div className="embed-publisher-top">
+                  <SelectField
+                    id="embed-channel"
+                    label={t('embeds.channel')}
+                    help={t('embeds.channelHelp')}
+                    icon="hash"
+                    value={embedForm.channelId}
+                    onChange={(channelId) =>
+                      setEmbedForm((current) => ({ ...current, channelId }))
+                    }
+                    options={channelOptions}
+                  />
+                  <InputField
+                    id="embed-content"
+                    label={t('embeds.content')}
+                    help={t('embeds.contentHelp')}
+                    value={embedForm.content}
+                    onChange={(value) =>
+                      setEmbedForm((current) => ({ ...current, content: value }))
+                    }
+                    maxLength={2000}
+                    multiline
+                    placeholder={t('embeds.contentPlaceholder')}
+                  />
+                </div>
+                <div className="embed-publisher-builder">
+                  <EmbedBuilder
+                    value={embedForm.embed}
+                    onChange={(embed) =>
+                      setEmbedForm((current) => ({ ...current, embed }))
+                    }
+                  />
+                </div>
+                <div className="embed-publisher-actions">
+                  <button
+                    className="button primary"
+                    type="submit"
+                    disabled={embedPending || !embedForm.channelId}
+                  >
+                    <Icon name="message" size={17} />
+                    {embedPending ? t('common.saving') : t('embeds.publish')}
+                  </button>
+                  {lastPublishedEmbed?.messageLink ? (
+                    <a
+                      className="button secondary"
+                      href={lastPublishedEmbed.messageLink}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      {t('embeds.openMessage')}
+                      <Icon name="external" size={16} />
+                    </a>
+                  ) : null}
+                </div>
+              </form>
             </SettingSection>
 
             <SettingSection
