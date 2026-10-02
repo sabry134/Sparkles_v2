@@ -146,7 +146,8 @@
     "spamWindow": "Spam detection window in seconds",
     "duplicateMessages": "Identical messages before duplicate spam triggers",
     "automodTestText": "Text to test against the current automod settings",
-    "purgeAmount": "Maximum number of matching recent messages to delete"
+    "purgeAmount": "Maximum number of matching recent messages to delete",
+    "evidence": "Optional evidence link, message reference, or staff note"
   },
   "modules": {
     "missingPermissionTitle": "Missing permission",
