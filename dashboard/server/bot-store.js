@@ -275,6 +275,10 @@ export class BotStore {
     return this.#databasePromise;
   }
 
+  async ready() {
+    await this.#database();
+  }
+
   async getGuildSettings(guildId) {
     const db = await this.#database();
     const document = await db.collection(COLLECTIONS.guilds).findOne({ _id: guildId });
