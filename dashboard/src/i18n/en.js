@@ -79,7 +79,7 @@ export const en = {
 
   'overview.title': 'Overview',
   'overview.description': 'Current status of key server settings.',
-  'overview.protection': 'Link protection',
+  'overview.protection': 'Auto moderation',
   'overview.logging': 'Moderation logs',
   'overview.autoRole': 'Automatic role',
   'overview.reactionRoles': 'Reaction roles',
