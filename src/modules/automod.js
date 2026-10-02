@@ -10,16 +10,13 @@ const HTTPS_URL_PATTERN = /\bhttps:\/\/[^\s<]+/iu;
 
 export function containsBlockedWord(content, blockedWords) {
   return blockedWords.some((word) => {
-    const escaped = word.replace(/[.*+?^$(){}|[\]\\]/g, '\\const URL_PATTERN =
-  /(?:https?:\/\/|www\.)[^\s<]+|discord(?:app)?\.com\/invite\/[^\s<]+|discord\.gg\/[^\s<]+/iu;
-');
+    const escaped = word.replace(/[.*+?^$(){}|[\]\\]/g, '\\$&');
     return new RegExp(
       '(?<![\\p{L}\\p{N}_])' + escaped + '(?![\\p{L}\\p{N}_])',
       'iu',
     ).test(content);
   });
 }
-
 export function hasBlockedLink(content, linkProtocols) {
   if (!Array.isArray(linkProtocols) || linkProtocols.length === 0) {
     return URL_PATTERN.test(content);
