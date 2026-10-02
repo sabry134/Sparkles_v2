@@ -37,8 +37,7 @@ function rememberedGuild() {
 function rememberGuild(guildId) {
   try {
     window.localStorage.setItem('sparkles.selectedGuild', guildId);
-  } catch {
-  }
+  } catch {}
 }
 
 function scrollBehavior() {
