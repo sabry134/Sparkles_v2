@@ -1,0 +1,35 @@
+{
+  "automod": {
+    "defaultAccountAgeDays": 7,
+    "defaultRaidJoinThreshold": 8,
+    "defaultWarningThreshold": 3,
+    "noticeDeleteMs": 5000,
+    "timeoutMs": 600000
+  },
+  "economy": {
+    "boxPrice": 500,
+    "boxRewardMaximum": 500,
+    "boxRewardMinimum": 50,
+    "boxXp": 25,
+    "currency": "coins",
+    "rewards": {
+      "beg": { "amount": 25, "cooldownMs": 60000 },
+      "daily": { "amount": 250, "cooldownMs": 86400000 },
+      "weekly": { "amount": 1500, "cooldownMs": 604800000 }
+    },
+    "robberySuccessPercent": 45,
+    "robberyFailureDivisor": 2,
+    "voteCooldownMs": 43200000,
+    "voteReward": 500
+  },
+  "giveaways": {
+    "defaultDurationSeconds": 60,
+    "maximumDurationSeconds": 604800,
+    "minimumDurationSeconds": 10
+  },
+  "music": {
+    "defaultVolume": 50,
+    "maximumVolume": 200,
+    "searchResultLimit": 5
+  }
+}

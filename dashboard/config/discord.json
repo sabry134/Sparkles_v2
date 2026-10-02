@@ -1,0 +1,7 @@
+{
+  "requestTimeoutMs": 10000,
+  "retryLimit": 2,
+  "retryBaseDelayMs": 500,
+  "retryMaxWaitMs": 15000,
+  "botGuildCacheMs": 30000
+}

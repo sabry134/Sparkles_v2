@@ -1,0 +1,201 @@
+import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import Icon from './Icon.jsx';
+import { t } from './i18n/index.js';
+
+export default function Select({
+  id,
+  label,
+  describedBy,
+  value = '',
+  options,
+  onChange,
+  disabled = false,
+  required = false,
+  placeholder = t('common.none'),
+  icon,
+  variant = '',
+  renderOption,
+}) {
+  const generatedId = useId();
+  const controlId = id ?? generatedId;
+  const listId = `${controlId}-options`;
+  const root = useRef(null);
+  const trigger = useRef(null);
+  const list = useRef(null);
+  const [open, setOpen] = useState(false);
+  const [active, setActive] = useState(0);
+  const [above, setAbove] = useState(false);
+  const [invalid, setInvalid] = useState(false);
+  const selected = options.findIndex(option => option.id === (value ?? ''));
+  const current = options[selected];
+
+  function close() {
+    setOpen(false);
+  }
+
+  function choose(index) {
+    const option = options[index];
+    if (!option || option.disabled) return;
+    onChange(option.id);
+    setInvalid(false);
+    close();
+    trigger.current?.focus({ preventScroll: true });
+  }
+
+  function move(direction) {
+    let index = active;
+    for (let step = 0; step < options.length; step += 1) {
+      index = (index + direction + options.length) % options.length;
+      if (!options[index].disabled) {
+        setActive(index);
+        return;
+      }
+    }
+  }
+
+  function onKeyDown(event) {
+    if (event.key === 'Escape') {
+      close();
+      return;
+    }
+    if (event.key === 'Tab') {
+      close();
+      return;
+    }
+    if (['ArrowDown', 'ArrowUp', 'Home', 'End', 'Enter', ' '].includes(event.key)) {
+      event.preventDefault();
+      if (!open) {
+        setActive(Math.max(selected, 0));
+        setOpen(true);
+      } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        move(event.key === 'ArrowDown' ? 1 : -1);
+      } else if (event.key === 'Home' || event.key === 'End') {
+        setActive(event.key === 'Home' ? 0 : options.length - 1);
+      } else {
+        choose(active);
+      }
+    } else if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
+      const candidates = options.map((_, index) => (active + index + 1) % options.length);
+      const match = candidates.find(index => !options[index].disabled && options[index].label.toLocaleLowerCase().startsWith(event.key.toLocaleLowerCase()));
+      if (match !== undefined) {
+        event.preventDefault();
+        setOpen(true);
+        setActive(match);
+      }
+    }
+  }
+
+  useEffect(() => {
+    if (disabled) close();
+  }, [disabled]);
+
+  useEffect(() => {
+    if (!open) return;
+    const dismiss = event => {
+      if (!root.current?.contains(event.target)) close();
+    };
+    document.addEventListener('pointerdown', dismiss);
+    document.addEventListener('focusin', dismiss);
+    return () => {
+      document.removeEventListener('pointerdown', dismiss);
+      document.removeEventListener('focusin', dismiss);
+    };
+  }, [open]);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    const position = () => {
+      const bounds = trigger.current.getBoundingClientRect();
+      const below = window.innerHeight - bounds.bottom;
+      setAbove(below < list.current.offsetHeight && bounds.top > below);
+    };
+    position();
+    window.addEventListener('resize', position);
+    window.addEventListener('scroll', position, true);
+    return () => {
+      window.removeEventListener('resize', position);
+      window.removeEventListener('scroll', position, true);
+    };
+  }, [open]);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    const option = list.current?.children[active];
+    if (!option) return;
+    const top = option.offsetTop;
+    const bottom = top + option.offsetHeight;
+    if (top < list.current.scrollTop) list.current.scrollTop = top;
+    else if (bottom > list.current.scrollTop + list.current.clientHeight) {
+      list.current.scrollTop = bottom - list.current.clientHeight;
+    }
+  }, [open, active]);
+
+  return (
+    <div className={`select-control ${variant}`} ref={root} data-open={open}>
+      <button
+        id={controlId}
+        ref={trigger}
+        className="select-trigger"
+        type="button"
+        role="combobox"
+        aria-label={label}
+        aria-describedby={describedBy}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-controls={open ? listId : undefined}
+        aria-activedescendant={open && options[active] ? `${listId}-${active}` : undefined}
+        aria-required={required || undefined}
+        aria-invalid={invalid || undefined}
+        disabled={disabled || !options.length}
+        onKeyDown={onKeyDown}
+        onClick={() => {
+          setActive(Math.max(selected, 0));
+          setOpen(!open);
+        }}
+      >
+        {icon ? <Icon name={icon} size={18} /> : null}
+        <span className="select-value">{current ? renderOption?.(current) ?? current.label : placeholder}</span>
+        <span className="select-chevron"><Icon name="chevron" size={16} /></span>
+      </button>
+      {open ? (
+        <ul className="select-menu" ref={list} id={listId} role="listbox" aria-label={label} data-above={above}>
+          {options.map((option, index) => (
+            <li
+              id={`${listId}-${index}`}
+              key={option.id}
+              role="option"
+              aria-selected={index === selected}
+              aria-disabled={option.disabled || undefined}
+              data-active={index === active}
+              onPointerMove={() => !option.disabled && setActive(index)}
+              onPointerDown={event => event.preventDefault()}
+              onClick={() => choose(index)}
+            >
+              <span className="select-value">{renderOption?.(option) ?? option.label}</span>
+              {index === selected ? <Icon name="check" size={16} /> : null}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+      {required ? (
+        <select
+          className="select-native"
+          tabIndex={-1}
+          aria-hidden="true"
+          required
+          disabled={disabled}
+          value={value ?? ''}
+          onChange={event => onChange(event.target.value)}
+          onInvalid={event => {
+            event.preventDefault();
+            setInvalid(true);
+            trigger.current?.focus();
+          }}
+        >
+          {options.map(option => <option key={option.id} value={option.id} disabled={option.disabled}>{option.label}</option>)}
+        </select>
+      ) : null}
+      {invalid ? <span className="field-error" role="alert">{t('select.required')}</span> : null}
+    </div>
+  );
+}
