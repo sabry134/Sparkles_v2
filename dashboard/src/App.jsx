@@ -462,6 +462,9 @@ function Dashboard({ session, onSessionExpired }) {
   const [embedForm, setEmbedForm] = useState(emptyEmbedForm);
   const [embedPending, setEmbedPending] = useState(false);
   const [lastPublishedEmbed, setLastPublishedEmbed] = useState(null);
+  const [moderationCases, setModerationCases] = useState([]);
+  const [moderationCasesLoading, setModerationCasesLoading] = useState(false);
+  const [moderationCaseQuery, setModerationCaseQuery] = useState('');
   const [customForm, setCustomForm] = useState({ name: '', response: '' });
   const initialRoute = routeState();
   const [activeSection, setActiveSection] = useState(initialRoute.page);
@@ -590,6 +593,39 @@ function Dashboard({ session, onSessionExpired }) {
       dashboardPath(selectedGuildId, activeSection),
     );
   }, [selectedGuildId, activeSection]);
+
+  useEffect(() => {
+    if (
+      activeSection !== 'moderation' ||
+      !selectedGuild?.botInstalled ||
+      loadingSettings
+    ) {
+      return undefined;
+    }
+
+    let cancelled = false;
+    setModerationCasesLoading(true);
+    api(\`/api/guilds/\${selectedGuild.id}/moderation-cases?limit=150\`)
+      .then((result) => {
+        if (!cancelled) setModerationCases(result.cases ?? []);
+      })
+      .catch((error) => {
+        if (!cancelled) showError(error);
+      })
+      .finally(() => {
+        if (!cancelled) setModerationCasesLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    activeSection,
+    loadingSettings,
+    selectedGuild?.botInstalled,
+    selectedGuild?.id,
+    showError,
+  ]);
 
   useEffect(() => {
     if (!window.matchMedia('(max-width: 900px)').matches) return;
@@ -881,6 +917,24 @@ function Dashboard({ session, onSessionExpired }) {
     (resources?.channels ?? []).map((channel) => [channel.id, channel.name]),
   );
   const roleNames = new Map((resources?.roles ?? []).map((role) => [role.id, role.name]));
+  const normalizedCaseQuery = moderationCaseQuery.trim().toLocaleLowerCase('en-US');
+  const visibleModerationCases = normalizedCaseQuery
+    ? moderationCases.filter((entry) =>
+        [
+          entry.action,
+          entry.actorTag,
+          entry.actorId,
+          entry.targetTag,
+          entry.targetId,
+          entry.reason,
+          entry.evidence?.content,
+        ]
+          .filter(Boolean)
+          .some((value) =>
+            String(value).toLocaleLowerCase('en-US').includes(normalizedCaseQuery),
+          ),
+      )
+    : moderationCases;
   const automodActive =
     draft?.automod?.enabled === true &&
     [
@@ -1126,6 +1180,98 @@ function Dashboard({ session, onSessionExpired }) {
                   multiline
                   placeholder={t('moderation.rulesPlaceholder')}
                 />
+              </div>
+
+              <div className="settings-card moderation-history-card">
+                <div className="subsection-heading moderation-history-heading">
+                  <div>
+                    <h3>{t('moderation.historyTitle')}</h3>
+                    <p>{t('moderation.historyDescription')}</p>
+                  </div>
+                  <input
+                    className="moderation-history-search"
+                    value={moderationCaseQuery}
+                    placeholder={t('moderation.historySearch')}
+                    onChange={(event) => setModerationCaseQuery(event.target.value)}
+                  />
+                </div>
+
+                {moderationCasesLoading ? (
+                  <div className="moderation-history-empty">
+                    <span className="loader" />
+                    {t('common.loading')}
+                  </div>
+                ) : visibleModerationCases.length ? (
+                  <div className="moderation-case-list">
+                    {visibleModerationCases.map((entry) => (
+                      <article className="moderation-case" key={\`\${entry.id}-\${entry.at}\`}>
+                        <div className="moderation-case-head">
+                          <span className="moderation-case-id">
+                            #{entry.id ?? '—'}
+                          </span>
+                          <strong>{entry.action}</strong>
+                          <time dateTime={entry.at ?? undefined}>
+                            {entry.at ? new Date(entry.at).toLocaleString() : '—'}
+                          </time>
+                        </div>
+                        <div className="moderation-case-grid">
+                          <div>
+                            <small>{t('moderation.target')}</small>
+                            <span>{entry.targetTag ?? entry.targetId ?? '—'}</span>
+                          </div>
+                          <div>
+                            <small>{t('moderation.moderator')}</small>
+                            <span>{entry.actorTag ?? entry.actorId ?? '—'}</span>
+                          </div>
+                          <div>
+                            <small>{t('moderation.reason')}</small>
+                            <span>{entry.reason ?? t('moderation.noReason')}</span>
+                          </div>
+                          <div>
+                            <small>{t('moderation.source')}</small>
+                            <span>{entry.source}</span>
+                          </div>
+                        </div>
+                        {entry.evidence?.content ? (
+                          <div className="moderation-evidence">
+                            <div className="moderation-evidence-head">
+                              <strong>{t('moderation.evidence')}</strong>
+                              {entry.evidence.channelId ? (
+                                <span>
+                                  #{channelNames.get(entry.evidence.channelId) ??
+                                    entry.evidence.channelId}
+                                </span>
+                              ) : null}
+                            </div>
+                            <pre>{entry.evidence.content}</pre>
+                            {entry.evidence.attachments?.length ? (
+                              <div className="moderation-evidence-files">
+                                {entry.evidence.attachments.map((attachment, index) =>
+                                  attachment.url ? (
+                                    <a
+                                      href={attachment.url}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      key={\`\${attachment.url}-\${index}\`}
+                                    >
+                                      {attachment.name ?? t('moderation.attachment')}
+                                      <Icon name="external" size={13} />
+                                    </a>
+                                  ) : null,
+                                )}
+                              </div>
+                            ) : null}
+                          </div>
+                        ) : null}
+                      </article>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="moderation-history-empty">
+                    <Icon name="shield" size={20} />
+                    <span>{t('moderation.historyEmpty')}</span>
+                  </div>
+                )}
               </div>
             </SettingSection>
 
