@@ -1,84 +1,89 @@
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises';
-import os from 'node:os';
-import path from 'node:path';
 import test from 'node:test';
+import { FakeMongoDatabase } from './helpers/fake-mongo.js';
+import { COLLECTIONS, bumpRevision } from '../src/mongodb.js';
 
 test('store merges external dashboard changes with pending bot changes', async () => {
-  const directory = await mkdtemp(path.join(os.tmpdir(), 'sparkles-store-'));
-  const storePath = path.join(directory, 'store.json');
-  const previousPath = process.env.STORE_PATH;
-  process.env.STORE_PATH = storePath;
+  const db = new FakeMongoDatabase().seed(COLLECTIONS.guilds, [
+    {
+      _id: '123456789012345678',
+      tags: {},
+    },
+  ]);
+  const store = await import(`../src/store.js?test=${Date.now()}`);
+  store.setMongoDatabaseForTests(db);
+  await store.loadStore();
 
-  try {
-    const store = await import(`../src/store.js?test=${Date.now()}`);
-    await store.loadStore();
-    const guildId = '123456789012345678';
+  const guildId = '123456789012345678';
+  store.guildConfig(guildId).logsChannelId = '223456789012345678';
 
-    store.guildConfig(guildId).logsChannelId = '223456789012345678';
-    await writeFile(
-      storePath,
-      JSON.stringify({
-        guilds: {
-          [guildId]: {
-            tags: {},
-            suggestionsChannelId: '323456789012345678',
-          },
-        },
-        warnings: {},
-      }),
-      'utf8',
-    );
+  await db.collection(COLLECTIONS.guilds).updateOne(
+    { _id: guildId },
+    { $set: { suggestionsChannelId: '323456789012345678' } },
+  );
+  await bumpRevision(db);
 
-    await store.saveStore();
-    const persisted = JSON.parse(await readFile(storePath, 'utf8'));
-    assert.equal(persisted.guilds[guildId].logsChannelId, '223456789012345678');
-    assert.equal(persisted.guilds[guildId].suggestionsChannelId, '323456789012345678');
-  } finally {
-    if (previousPath === undefined) delete process.env.STORE_PATH;
-    else process.env.STORE_PATH = previousPath;
-    await rm(directory, { recursive: true, force: true });
-  }
+  await store.saveStore();
+
+  const persisted = await db.collection(COLLECTIONS.guilds).findOne({ _id: guildId });
+  assert.equal(persisted.logsChannelId, '223456789012345678');
+  assert.equal(persisted.suggestionsChannelId, '323456789012345678');
 });
 
-
-test('store notices atomic dashboard replacements immediately', async () => {
-  const directory = await mkdtemp(path.join(os.tmpdir(), 'sparkles-store-sync-'));
-  const storePath = path.join(directory, 'store.json');
-  const replacementPath = path.join(directory, 'replacement.json');
-  const previousPath = process.env.STORE_PATH;
+test('store notices MongoDB revisions immediately', async () => {
   const guildId = '123456789012345678';
-  process.env.STORE_PATH = storePath;
+  const db = new FakeMongoDatabase().seed(COLLECTIONS.guilds, [
+    {
+      _id: guildId,
+      tags: {},
+      rules: 'one',
+    },
+  ]);
+  const store = await import(`../src/store.js?sync=${Date.now()}-${Math.random()}`);
+  store.setMongoDatabaseForTests(db);
+  await store.loadStore();
+  assert.equal(store.guildConfig(guildId).rules, 'one');
 
-  try {
-    await writeFile(
-      storePath,
-      JSON.stringify({
-        guilds: { [guildId]: { tags: {}, rules: 'one' } },
-        warnings: {},
-      }),
-      'utf8',
-    );
+  await db.collection(COLLECTIONS.guilds).updateOne(
+    { _id: guildId },
+    { $set: { rules: 'two' } },
+  );
+  await bumpRevision(db);
 
-    const store = await import(`../src/store.js?sync=${Date.now()}-${Math.random()}`);
-    await store.loadStore();
-    assert.equal(store.guildConfig(guildId).rules, 'one');
+  assert.equal(await store.syncStore(), true);
+  assert.equal(store.guildConfig(guildId).rules, 'two');
+});
 
-    await writeFile(
-      replacementPath,
-      JSON.stringify({
-        guilds: { [guildId]: { tags: {}, rules: 'two' } },
-        warnings: {},
-      }),
-      'utf8',
-    );
-    await rename(replacementPath, storePath);
+test('warnings and moderation cases persist to dedicated MongoDB collections', async () => {
+  const guildId = '123456789012345678';
+  const userId = '223456789012345678';
+  const db = new FakeMongoDatabase();
+  const store = await import(`../src/store.js?collections=${Date.now()}-${Math.random()}`);
+  store.setMongoDatabaseForTests(db);
+  await store.loadStore();
 
-    assert.equal(await store.syncStore(), true);
-    assert.equal(store.guildConfig(guildId).rules, 'two');
-  } finally {
-    if (previousPath === undefined) delete process.env.STORE_PATH;
-    else process.env.STORE_PATH = previousPath;
-    await rm(directory, { recursive: true, force: true });
-  }
+  store.addWarning(guildId, userId, {
+    at: '2026-10-02T12:00:00.000Z',
+    moderatorId: '323456789012345678',
+    reason: 'test',
+  });
+  store.addModerationCase(guildId, {
+    action: 'warn',
+    targetId: userId,
+    actorId: '323456789012345678',
+    source: 'command',
+  });
+  await store.saveStore();
+
+  const warning = await db
+    .collection(COLLECTIONS.warnings)
+    .findOne({ guildId, userId });
+  assert.equal(warning.entries.length, 1);
+  assert.equal(warning.entries[0].reason, 'test');
+
+  const moderationCase = await db
+    .collection(COLLECTIONS.moderationCases)
+    .findOne({ guildId, id: 1 });
+  assert.equal(moderationCase.action, 'warn');
+  assert.equal(moderationCase.targetId, userId);
 });
