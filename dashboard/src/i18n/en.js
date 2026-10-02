@@ -370,6 +370,10 @@ export const en = {
   'modules.ai': 'AI assistant',
   'modules.aiHelp': 'Allow members to use the server AI command.',
   'modules.moduleHelp': 'Enable or disable every command in the {module} module.',
+  'modules.commandManagerTitle': 'Command availability',
+  'modules.commandManagerDescription':
+    'Override individual commands without disabling their entire module.',
+  'modules.commandSearch': 'Search commands…',
   'modules.moderation': 'Moderation',
   'modules.automod': 'Auto moderation',
   'modules.roles': 'Roles',
