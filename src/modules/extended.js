@@ -337,11 +337,16 @@ export async function handleExtendedCommand(commandName, interaction, t, client)
         input.amount ?? botConfig.automod.defaultAccountAgeDays,
       );
       config.automod.antiAlt = input.action !== 'disable';
+      if (config.automod.antiAlt) config.automod.enabled = true;
       await saveStore();
       return completed(interaction, t, t('extended.saved'));
     }
 
     case 'anti-bot': {
+      if (input.action !== 'disable') {
+        config.automod ??= {};
+        config.automod.enabled = true;
+      }
       return setFeature(interaction, t, 'antiBot');
     }
 
@@ -351,6 +356,7 @@ export async function handleExtendedCommand(commandName, interaction, t, client)
       }
       config.automod ??= {};
       config.automod.antiRaid = input.action !== 'disable';
+      if (config.automod.antiRaid) config.automod.enabled = true;
       config.automod.raidJoinThreshold = Math.max(
         3,
         input.amount ?? botConfig.automod.defaultRaidJoinThreshold,
@@ -365,6 +371,7 @@ export async function handleExtendedCommand(commandName, interaction, t, client)
       }
       config.automod ??= {};
       config.automod.antiSwear = input.action !== 'disable';
+      if (config.automod.antiSwear) config.automod.enabled = true;
       if (input.text) {
         config.automod.blockedWords = input.text
           .split(',')
@@ -718,6 +725,7 @@ export async function handleExtendedCommand(commandName, interaction, t, client)
 
     case 'enable-links': {
       config.automod ??= {};
+      config.automod.enabled = true;
       config.automod.antiLink = true;
       delete config.automod.linkProtocols;
       await saveStore();
@@ -737,6 +745,7 @@ export async function handleExtendedCommand(commandName, interaction, t, client)
 
     case 'filter-http': {
       config.automod ??= {};
+      config.automod.enabled = true;
       config.automod.antiLink = true;
       config.automod.linkProtocols = ['http'];
       await saveStore();
@@ -745,6 +754,7 @@ export async function handleExtendedCommand(commandName, interaction, t, client)
 
     case 'filter-https': {
       config.automod ??= {};
+      config.automod.enabled = true;
       config.automod.antiLink = true;
       config.automod.linkProtocols = ['https'];
       await saveStore();
