@@ -58,7 +58,6 @@ test('dashboard validates and persists every exposed guild setting', async () =>
     verificationRoleId: '323456789012345679',
     rules: 'Be kind and stay on topic.',
     currency: 'stars',
-    aiChatEnabled: true,
     automod: {
       enabled: true,
       antiLink: true,
@@ -178,7 +177,6 @@ test('dashboard validates and persists every exposed guild setting', async () =>
   assert.equal(settings.verificationRoleId, '323456789012345679');
   assert.equal(settings.rules, 'Be kind and stay on topic.');
   assert.equal(settings.currency, 'stars');
-  assert.equal(settings.aiChatEnabled, true);
   assert.equal(settings.automod.antiLink, true);
   assert.equal(settings.automod.antiBot, true);
   assert.deepEqual(settings.automod.blockedWords, [
