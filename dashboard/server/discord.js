@@ -23,6 +23,8 @@ const botGuildCaches = new WeakMap();
 const botUserIds = new WeakMap();
 const pendingUserGuilds = new Map();
 const pendingRefreshes = new Map();
+let dashboardAccess = null;
+export function configureDashboardAccess(provider) { dashboardAccess = provider; }
 
 async function sharePending(requests, key, load) {
   if (requests.has(key)) return requests.get(key);
@@ -345,7 +347,8 @@ export async function dashboardGuilds(request, config) {
     botGuildIds(config),
   ]);
 
-  return guilds.filter(canManageGuild).map((guild) => ({
+  const delegated = dashboardAccess ? await dashboardAccess.additionalGuilds(request.session.user.id, guilds.filter(guild => installedIds.has(guild.id) && !canManageGuild(guild))) : new Set();
+  return guilds.filter(guild => canManageGuild(guild) || delegated.has(guild.id)).map((guild) => ({
     id: guild.id,
     name: guild.name,
     iconUrl: iconUrl(guild),
@@ -354,12 +357,14 @@ export async function dashboardGuilds(request, config) {
   }));
 }
 
-export async function authorizeGuild(request, guildId, config) {
+export async function authorizeGuild(request, guildId, config, capability = 'manage_settings') {
   const guilds = await userGuilds(request, config);
   const guild = guilds.find((candidate) => candidate.id === guildId);
-  if (!guild || !canManageGuild(guild)) {
+  if (!guild || (!dashboardAccess && !canManageGuild(guild))) {
     throw new AppError('GUILD_NOT_AVAILABLE', 404);
   }
+
+  if (dashboardAccess) await dashboardAccess.authorize(guildId, request.session.user.id, capability);
 
   try {
     await botRequest(config, `/guilds/${guildId}`);

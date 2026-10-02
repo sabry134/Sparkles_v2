@@ -1,10 +1,14 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api, ApiError } from './api.js';
 import { t } from './i18n/index.js';
 import Icon from './Icon.jsx';
 import Select from './Select.jsx';
 import EmbedBuilder, { EMPTY_EMBED } from './EmbedBuilder.jsx';
 import EmojiPicker from './EmojiPicker.jsx';
+import Navigation from './Navigation.jsx';
+import './platform.css';
+
+const PlatformWorkspace = lazy(() => import('./PlatformWorkspace.jsx'));
 
 const NAVIGATION = [
   ['overview', 'nav.overview', 'grid'],
@@ -18,6 +22,17 @@ const NAVIGATION = [
   ['music', 'nav.music', 'music'],
   ['modules', 'nav.modules', 'settings'],
   ['custom', 'nav.custom', 'terminal'],
+  ['rules', 'nav.rules', 'shield'],
+  ['tickets', 'nav.tickets', 'message'],
+  ['forms', 'nav.forms', 'message'],
+  ['giveaways', 'nav.giveaways', 'spark'],
+  ['polls', 'nav.polls', 'users'],
+  ['feeds', 'nav.feeds', 'refresh'],
+  ['members', 'nav.members', 'users'],
+  ['activity', 'nav.activity', 'terminal'],
+  ['jobs', 'nav.jobs', 'refresh'],
+  ['access', 'nav.access', 'shield'],
+  ['blueprints', 'nav.blueprints', 'settings'],
 ];
 
 const PAGE_IDS = new Set(NAVIGATION.map(([id]) => id));
@@ -33,6 +48,9 @@ const PAGE_DESCRIPTION_KEYS = {
   music: 'music.description',
   modules: 'modules.description',
   custom: 'custom.description',
+  rules: 'feature.rules.description', tickets: 'feature.ticket-panels.description', forms: 'feature.forms.description',
+  giveaways: 'feature.giveaways.description', polls: 'feature.polls.description', feeds: 'feature.feeds.description',
+  members: 'cases.help', activity: 'records.events.help', jobs: 'records.jobs.help', access: 'access.help', blueprints: 'blueprints.help',
 };
 
 function routeState() {
@@ -220,6 +238,7 @@ function Loading() {
 }
 
 function SettingSection({ id, title, children, active = true }) {
+  if (!active) return null;
   return (
     <section
       className="settings-section module-page"
@@ -490,6 +509,7 @@ function Dashboard({ session, onSessionExpired }) {
   const [customForm, setCustomForm] = useState({ name: '', response: '' });
   const initialRoute = routeState();
   const [activeSection, setActiveSection] = useState(initialRoute.page);
+  const [platformResourceId, setPlatformResourceId] = useState(null);
   const requestSequence = useRef(0);
   const toastSequence = useRef(0);
   const activeGuildId = useRef(null);
@@ -702,8 +722,10 @@ function Dashboard({ session, onSessionExpired }) {
     [draft, savedSettings, editableSettings],
   );
 
-  function navigateSection(section) {
+  function navigateSection(section, resourceId = null) {
     if (!PAGE_IDS.has(section)) return;
+    if (!window.dispatchEvent(new Event('sparkles:navigate', { cancelable: true }))) return;
+    setPlatformResourceId(resourceId);
     setActiveSection(section);
     window.history.pushState(
       {},
@@ -714,6 +736,8 @@ function Dashboard({ session, onSessionExpired }) {
   }
 
   function chooseGuild(value) {
+    if (!window.dispatchEvent(new Event('sparkles:navigate', { cancelable: true }))) return;
+    setPlatformResourceId(null);
     activeGuildId.current = value;
     setSelectedGuildId(value);
     setActiveSection('overview');
@@ -1099,21 +1123,7 @@ function Dashboard({ session, onSessionExpired }) {
           />
         </div>
 
-        <p className="nav-label">{t('nav.workspace')}</p>
-        <nav>
-          {NAVIGATION.map(([id, label, icon]) => (
-            <button
-              key={id}
-              type="button"
-              aria-current={activeSection === id ? 'page' : undefined}
-              data-section={id}
-              onClick={() => navigateSection(id)}
-            >
-              <Icon name={icon} />
-              {t(label)}
-            </button>
-          ))}
-        </nav>
+        <Navigation items={NAVIGATION} active={activeSection} onNavigate={navigateSection} guildId={selectedGuildId} />
 
         <div className="account-card">
           {session.user.avatarUrl ? (
@@ -1216,62 +1226,17 @@ function Dashboard({ session, onSessionExpired }) {
               </div>
             </header>
 
+            {['rules', 'tickets', 'forms', 'giveaways', 'polls', 'feeds', 'members', 'activity', 'jobs', 'access', 'blueprints'].includes(activeSection) && (
+              <Suspense fallback={<Loading />}><PlatformWorkspace key={`${selectedGuildId}:${activeSection}`} page={activeSection} guildId={selectedGuildId} session={session} selectedId={platformResourceId} onNavigate={navigateSection} onSessionExpired={onSessionExpired} /></Suspense>
+            )}
+
             <SettingSection
               id="overview"
               active={activeSection === 'overview'}
               title={t('overview.title')}
               description={t('overview.description')}
             >
-              <div className="stat-grid">
-                <article className="stat-card">
-                  <span>
-                    <Icon name="link" />
-                  </span>
-                  <div>
-                    <small>{t('overview.protection')}</small>
-                    <strong>
-                      {automodActive ? t('common.on') : t('common.off')}
-                    </strong>
-                  </div>
-                </article>
-                <article className="stat-card">
-                  <span>
-                    <Icon name="hash" />
-                  </span>
-                  <div>
-                    <small>{t('overview.logging')}</small>
-                    <strong>
-                      {draft.logsChannelId
-                        ? t('common.configured')
-                        : t('common.notConfigured')}
-                    </strong>
-                  </div>
-                </article>
-                <article className="stat-card">
-                  <span>
-                    <Icon name="role" />
-                  </span>
-                  <div>
-                    <small>{t('overview.autoRole')}</small>
-                    <strong>
-                      {draft.autoRoleId
-                        ? t('common.configured')
-                        : t('common.notConfigured')}
-                    </strong>
-                  </div>
-                </article>
-                <article className="stat-card">
-                  <span>
-                    <Icon name="users" />
-                  </span>
-                  <div>
-                    <small>{t('overview.reactionRoles')}</small>
-                    <strong>
-                      {t('overview.mappingCount', { count: draft.reactionRoles.length })}
-                    </strong>
-                  </div>
-                </article>
-              </div>
+              <Suspense fallback={<Loading />}><PlatformWorkspace key={`${selectedGuildId}:overview`} page="overview" guildId={selectedGuildId} session={session} selectedId={platformResourceId} onNavigate={navigateSection} onSessionExpired={onSessionExpired} /></Suspense>
             </SettingSection>
 
             <SettingSection
@@ -1280,7 +1245,10 @@ function Dashboard({ session, onSessionExpired }) {
               title={t('moderation.title')}
               description={t('moderation.description')}
             >
-              <div className="settings-card">
+              <Suspense fallback={<Loading />}><PlatformWorkspace key={`${selectedGuildId}:moderation`} page="moderation" guildId={selectedGuildId} session={session} selectedId={platformResourceId} onNavigate={navigateSection} onSessionExpired={onSessionExpired} /></Suspense>
+
+              <details className="legacy-settings"><summary>{t('navigation.legacy')}</summary>
+<div className="settings-card">
                 <SelectField
                   id="logs-channel"
                   label={t('moderation.logChannel')}
@@ -1316,8 +1284,7 @@ function Dashboard({ session, onSessionExpired }) {
                   checked={draft.actionLog.enabled}
                   onChange={(value) => updateNested('actionLog', 'enabled', value)}
                 />
-                {draft.actionLog.enabled ? (
-                  <>
+                {<>
                     <SelectField
                       id="action-log-channel"
                       label={t('moderation.actionLogChannel')}
@@ -1371,8 +1338,7 @@ function Dashboard({ session, onSessionExpired }) {
                       options={channelOptions}
                       icon="hash"
                     />
-                  </>
-                ) : null}
+                  </>}
               </div>
 
               <div className="settings-card moderation-history-card">
@@ -1522,6 +1488,7 @@ function Dashboard({ session, onSessionExpired }) {
                   </div>
                 )}
               </div>
+              </details>
             </SettingSection>
 
             <SettingSection
@@ -1530,7 +1497,10 @@ function Dashboard({ session, onSessionExpired }) {
               title={t('automod.title')}
               description={t('automod.description')}
             >
-              <div className="settings-card automod-card">
+              <Suspense fallback={<Loading />}><PlatformWorkspace key={`${selectedGuildId}:automod`} page="automod" guildId={selectedGuildId} session={session} selectedId={platformResourceId} onNavigate={navigateSection} onSessionExpired={onSessionExpired} /></Suspense>
+
+              <details className="legacy-settings"><summary>{t('navigation.legacy')}</summary>
+<div className="settings-card automod-card">
                 <div className="subsection-heading">
                   <div>
                     <h3>{t('automod.contentTitle')}</h3>
@@ -1544,8 +1514,7 @@ function Dashboard({ session, onSessionExpired }) {
                   checked={draft.automod.enabled}
                   onChange={(value) => updateNested('automod', 'enabled', value)}
                 />
-                {draft.automod.enabled ? (
-                  <>
+                {<>
                     <ToggleField
                       id="anti-link"
                       label={t('automod.antiLink')}
@@ -1560,11 +1529,8 @@ function Dashboard({ session, onSessionExpired }) {
                       checked={draft.automod.antiSwear}
                       onChange={(value) => updateNested('automod', 'antiSwear', value)}
                     />
-                  </>
-                ) : null}
-                {draft.automod.enabled && draft.automod.antiSwear ? (
-
-                  <InputField
+                  </>}
+                {<InputField
                   id="blocked-words"
                   label={t('automod.blockedWords')}
                   help={t('automod.blockedWordsHelp')}
@@ -1582,9 +1548,7 @@ function Dashboard({ session, onSessionExpired }) {
                         .slice(0, 100),
                     )
                   }
-                />
-
-                ) : null}
+                />}
               </div>
 
               <div className="settings-card automod-card" hidden={!draft.automod.enabled}>
@@ -1979,9 +1943,7 @@ function Dashboard({ session, onSessionExpired }) {
               <div className={`inline-status ${automodActive ? 'enabled' : ''}`}>
                 <span />
                 <Icon name="shield" size={16} />
-                {draft.automod.enabled
-                  ? t('automod.engineRunning')
-                  : t('automod.enginePaused')}
+                {t('automod.engineRunning')}
               </div>
               {!resources.capabilities.canManageMessages ||
               !resources.capabilities.canKickMembers ||
@@ -1991,6 +1953,7 @@ function Dashboard({ session, onSessionExpired }) {
                   {t('automod.capabilityWarning')}
                 </div>
               ) : null}
+              </details>
             </SettingSection>
 
             <SettingSection
@@ -1999,7 +1962,10 @@ function Dashboard({ session, onSessionExpired }) {
               title={t('roles.title')}
               description={t('roles.description')}
             >
-              <div className="settings-card">
+              <Suspense fallback={<Loading />}><PlatformWorkspace key={`${selectedGuildId}:roles`} page="roles" guildId={selectedGuildId} session={session} selectedId={platformResourceId} onNavigate={navigateSection} onSessionExpired={onSessionExpired} /></Suspense>
+
+              <details className="legacy-settings"><summary>{t('navigation.legacy')}</summary>
+<div className="settings-card">
                 <SelectField
                   id="auto-role"
                   label={t('roles.autoRole')}
@@ -2229,6 +2195,7 @@ function Dashboard({ session, onSessionExpired }) {
                   </button>
                 </form>
               </div>
+              </details>
             </SettingSection>
 
             <SettingSection
@@ -2237,62 +2204,7 @@ function Dashboard({ session, onSessionExpired }) {
               title={t('embeds.title')}
               description={t('embeds.description')}
             >
-              <form className="settings-card embed-publisher" onSubmit={publishEmbed}>
-                <div className="embed-publisher-top">
-                  <SelectField
-                    id="embed-channel"
-                    label={t('embeds.channel')}
-                    help={t('embeds.channelHelp')}
-                    icon="hash"
-                    value={embedForm.channelId}
-                    onChange={(channelId) =>
-                      setEmbedForm((current) => ({ ...current, channelId }))
-                    }
-                    options={channelOptions}
-                  />
-                  <InputField
-                    id="embed-content"
-                    label={t('embeds.content')}
-                    help={t('embeds.contentHelp')}
-                    value={embedForm.content}
-                    onChange={(value) =>
-                      setEmbedForm((current) => ({ ...current, content: value }))
-                    }
-                    maxLength={2000}
-                    multiline
-                    placeholder={t('embeds.contentPlaceholder')}
-                  />
-                </div>
-                <div className="embed-publisher-builder">
-                  <EmbedBuilder
-                    value={embedForm.embed}
-                    onChange={(embed) =>
-                      setEmbedForm((current) => ({ ...current, embed }))
-                    }
-                  />
-                </div>
-                <div className="embed-publisher-actions">
-                  <button
-                    className="button primary"
-                    type="submit"
-                    disabled={embedPending || !embedForm.channelId}
-                  >
-                    <Icon name="message" size={17} />
-                    {embedPending ? t('common.saving') : t('embeds.publish')}
-                  </button>
-                  {lastPublishedEmbed?.messageLink ? (
-                    <a
-                      className="button secondary"
-                      href={lastPublishedEmbed.messageLink}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      {t('embeds.openMessage')}
-                      <Icon name="external" size={16} />
-                    </a>
-                  ) : null}
-                </div>
-              </form>
+              <Suspense fallback={<Loading />}><PlatformWorkspace key={`${selectedGuildId}:embeds`} page="embeds" guildId={selectedGuildId} session={session} selectedId={platformResourceId} onNavigate={navigateSection} onSessionExpired={onSessionExpired} /></Suspense>
             </SettingSection>
 
             <SettingSection
@@ -2360,8 +2272,7 @@ function Dashboard({ session, onSessionExpired }) {
                     checked={draft[section].enabled}
                     onChange={(value) => updateNested(section, 'enabled', value)}
                   />
-                  {draft[section].enabled ? (
-                    <>
+                  {<>
                       <SelectField
                         id={`${section}-channel`}
                         label={t(`${prefix}Channel`)}
@@ -2387,8 +2298,7 @@ function Dashboard({ session, onSessionExpired }) {
                         multiline
                         placeholder={t(`${prefix}Placeholder`)}
                       />
-                    </>
-                  ) : null}
+                    </>}
                 </div>
               ))}
             </SettingSection>
@@ -2399,7 +2309,10 @@ function Dashboard({ session, onSessionExpired }) {
               title={t('automation.title')}
               description={t('automation.description')}
             >
-              <div className="settings-card automation-card">
+              <Suspense fallback={<Loading />}><PlatformWorkspace key={`${selectedGuildId}:automation`} page="automation" guildId={selectedGuildId} session={session} selectedId={platformResourceId} onNavigate={navigateSection} onSessionExpired={onSessionExpired} /></Suspense>
+
+              <details className="legacy-settings"><summary>{t('navigation.legacy')}</summary>
+<div className="settings-card automation-card">
                 <div className="subsection-heading page-card-heading">
                   <div>
                     <h3>{t('automation.autoresponderTitle')}</h3>
@@ -2535,8 +2448,7 @@ function Dashboard({ session, onSessionExpired }) {
                   checked={draft.starboard.enabled}
                   onChange={(value) => updateNested('starboard', 'enabled', value)}
                 />
-                {draft.starboard.enabled ? (
-                  <>
+                {<>
                     <SelectField
                       id="starboard-channel"
                       label={t('automation.starboardChannel')}
@@ -2586,9 +2498,9 @@ function Dashboard({ session, onSessionExpired }) {
                       options={channelOptions}
                       icon="hash"
                     />
-                  </>
-                ) : null}
+                  </>}
               </div>
+              </details>
             </SettingSection>
 
             <SettingSection
@@ -2870,7 +2782,10 @@ function Dashboard({ session, onSessionExpired }) {
               title={t('custom.title')}
               description={t('custom.description')}
             >
-              <div className="settings-card reaction-card">
+              <Suspense fallback={<Loading />}><PlatformWorkspace key={`${selectedGuildId}:custom`} page="custom" guildId={selectedGuildId} session={session} selectedId={platformResourceId} onNavigate={navigateSection} onSessionExpired={onSessionExpired} /></Suspense>
+
+              <details className="legacy-settings"><summary>{t('navigation.legacy')}</summary>
+<div className="settings-card reaction-card">
                 <div className="subsection-heading">
                   <div>
                     <h3>{t('custom.library')}</h3>
@@ -2951,6 +2866,7 @@ function Dashboard({ session, onSessionExpired }) {
                   </button>
                 </form>
               </div>
+              </details>
             </SettingSection>
           </div>
         ) : null}

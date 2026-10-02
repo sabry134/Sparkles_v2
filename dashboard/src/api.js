@@ -1,9 +1,10 @@
 export class ApiError extends Error {
-  constructor(code, requestId) {
+  constructor(code, requestId, details = []) {
     super(code);
     this.name = 'ApiError';
     this.code = code;
     this.requestId = requestId;
+    this.details = details;
   }
 }
 
@@ -67,7 +68,7 @@ async function requestApi(path, options) {
     const code =
       payload?.error?.code ??
       (response.status >= 500 && !requestId ? 'NETWORK_ERROR' : 'INTERNAL_ERROR');
-    throw new ApiError(code, requestId);
+    throw new ApiError(code, requestId, payload?.error?.details ?? []);
   }
 
   return payload;

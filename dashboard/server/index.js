@@ -6,10 +6,14 @@ import express from 'express';
 import session from 'express-session';
 import helmet from 'helmet';
 import { BotStore } from './bot-store.js';
+import { createPlatformApi } from './platform-api.js';
+import { platformConfig } from '../../src/platform/config.js';
+import { PlatformError } from '../../shared/platform-schema.js';
 import { closeMongoConnections } from '../../src/mongodb.js';
 import { config } from './config.js';
 import {
   authorizeGuild,
+  configureDashboardAccess,
   createReactionRoleEmbed,
   dashboardGuilds,
   exchangeAuthorizationCode,
@@ -44,6 +48,25 @@ const botStore = new BotStore({
   uri: config.mongo.uri,
   dbName: config.mongo.dbName,
   defaults: config.botDefaults,
+});
+const platform = createPlatformApi(config, { botStore });
+configureDashboardAccess({
+  authorize: async (guildId, userId, capability) => {
+    if (capability) return platform.gateway.authorize(guildId, userId, capability);
+    const access = await platform.gateway.capabilities(guildId, userId);
+    if (!access.capabilities.length) throw new AppError('GUILD_NOT_AVAILABLE', 404);
+    return access;
+  },
+  additionalGuilds: async (userId, guilds) => {
+    const db = await platform.store.database();
+    const policies = await db.collection('dashboard_access').find({ _id: { $in: guilds.map(guild => guild.id) } }).toArray();
+    const result = new Set();
+    for (const policy of policies) {
+      const access = await platform.gateway.capabilities(policy._id, userId);
+      if (access.capabilities.length) result.add(policy._id);
+    }
+    return result;
+  },
 });
 
 if (config.trustProxy) app.set('trust proxy', 1);
@@ -89,7 +112,7 @@ app.use(
   }),
 );
 
-app.use(express.json({ limit: '32kb', strict: true }));
+app.use(express.json({ limit: platformConfig.maximumImportBytes, strict: true }));
 
 function rateLimiter({ maximum, windowMs, useIp = false }) {
   const clients = new Map();
@@ -269,6 +292,10 @@ app.get(
 );
 
 app.use('/api', apiRateLimit);
+app.use('/api/guilds/:guildId/platform', authenticated, (request, response, next) => {
+  if (['GET', 'HEAD', 'OPTIONS'].includes(request.method)) return next();
+  return csrfProtected(request, response, next);
+}, platform.router);
 
 app.get('/api/session', (request, response) => {
   if (!request.session.user || !request.session.oauth) {
@@ -309,7 +336,7 @@ app.get(
   authenticated,
   asyncRoute(async (request, response) => {
     const guildId = validatedGuild(request);
-    await authorizeGuild(request, guildId, discordConfig());
+    await authorizeGuild(request, guildId, discordConfig(), null);
     const [settings, resources] = await Promise.all([
       botStore.getGuildSettings(guildId),
       guildResources(guildId, discordConfig()),
@@ -366,13 +393,28 @@ app.patch(
   asyncRoute(async (request, response) => {
     const guildId = validatedGuild(request);
     const patch = settingsPatch(request.body);
-    await authorizeGuild(request, guildId, discordConfig());
+    await authorizeGuild(request, guildId, discordConfig(), null);
+    const settingPermissions = {
+      logsChannelId: 'manage_settings', rules: 'manage_rules', automod: 'manage_automod',
+      autoRoleId: 'manage_roles', verificationRoleId: 'manage_roles', commandPermissions: 'manage_commands',
+      disabledCommands: 'manage_commands', customCommands: 'manage_commands', ticketCategoryId: 'manage_tickets',
+      welcome: 'manage_community', goodbye: 'manage_community', suggestionsChannelId: 'manage_community', giveawayChannelId: 'manage_community',
+      giveaways: 'manage_community', starboard: 'manage_community', autoresponders: 'manage_workflows',
+    };
+    const previous = await botStore.getGuildSettings(guildId);
+    const changedPatch = Object.fromEntries(Object.entries(patch).filter(([key, value]) => JSON.stringify(previous[key]) !== JSON.stringify(value)));
+    for (const permission of new Set(Object.keys(changedPatch).map(key => settingPermissions[key] ?? 'manage_settings'))) {
+      await platform.gateway.authorize(guildId, request.session.user.id, permission, { fresh: true });
+    }
     const resources = await guildResources(guildId, discordConfig());
     validateSettingsResources(patch, resources);
     const settings = await botStore.updateGuildSettings(guildId, patch);
     await botStore.appendDashboardAudit(guildId, {
       ...dashboardActor(request),
       changes: patchPaths(patch),
+    });
+    await platform.store.event(guildId, 'settings_changed', request.session.user.id, {
+      changes: Object.keys(changedPatch).map(key => ({ path: key, before: previous[key] ?? null, after: settings[key] ?? null })),
     });
     response.json({ settings });
   }),
@@ -503,7 +545,7 @@ if (config.isProduction && existsSync(distributionDirectory)) {
 
 app.use((error, request, response, _next) => {
   const result = errorResponse(error, request.id);
-  if (!(error instanceof AppError) || error.status >= 500) {
+  if (!(error instanceof AppError) && !(error instanceof PlatformError) || error.status >= 500) {
     console.error(
       `[dashboard:${request.id}] ${request.method} ${request.originalUrl}`,
       error,
@@ -522,6 +564,7 @@ app.use((error, request, response, _next) => {
 
 await sessionStore.ready();
 await botStore.ready();
+await platform.ready();
 
 const server = app.listen(config.port, () => {
   console.log(

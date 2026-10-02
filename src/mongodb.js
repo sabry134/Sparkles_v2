@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from 'node:util';
 import { MongoClient } from 'mongodb';
 
 export const COLLECTIONS = Object.freeze({
@@ -123,6 +124,8 @@ export const DELETE_VALUE = Symbol('delete-value');
 export function changesBetween(previous, current) {
   if (Object.is(previous, current)) return undefined;
   if (!isPlainObject(previous) || !isPlainObject(current)) {
+    // Snapshots clone arrays; a new reference alone is not a local edit.
+    if (isDeepStrictEqual(previous, current)) return undefined;
     return structuredClone(current);
   }
 

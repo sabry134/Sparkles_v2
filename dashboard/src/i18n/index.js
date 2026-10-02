@@ -1,6 +1,7 @@
 import { en } from './en.js';
+import { platformEn } from './platform.en.js';
 
-const translations = { en };
+const translations = { en: { ...en, ...platformEn } };
 let locale = 'en';
 
 export function setLocale(nextLocale) {

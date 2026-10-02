@@ -67,6 +67,7 @@ import {
   slashSubcommandName,
 } from './src/command-routes.js';
 import { componentMessage, successMessage } from './src/ui/components.js';
+import { PlatformRuntime } from './src/platform/runtime.js';
 
 const requiredEnvironment = ['DISCORD_TOKEN', 'DISCORD_CLIENT_ID'];
 for (const key of requiredEnvironment) {
@@ -502,9 +503,12 @@ const client = new Client({
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.GuildMessageReactions,
     GatewayIntentBits.MessageContent,
+    GatewayIntentBits.GuildVoiceStates,
   ],
   partials: [Partials.Message, Partials.Channel, Partials.Reaction],
 });
+
+const platformRuntime = new PlatformRuntime({ client });
 
 const ephemeral = (description) =>
   componentMessage({
@@ -626,6 +630,13 @@ client.on('interactionCreate', async (interaction) => {
   await syncStore().catch((error) =>
     console.error('[store-sync]', { guildId: interaction.guildId }, error),
   );
+
+  try {
+    if (await platformRuntime.interaction(interaction)) return;
+  } catch (error) {
+    await handleInteractionError(interaction, error, t);
+    return;
+  }
 
   if (interaction.isButton() || interaction.isStringSelectMenu()) {
     try {
@@ -1477,6 +1488,7 @@ client.on('interactionCreate', async (interaction) => {
 });
 
 client.once('clientReady', () => {
+  platformRuntime.start().catch(error => console.error('[platform-start]', error.code ?? error.name));
   restoreGiveaways(client, t);
   console.log(
     `Ready as ${client.user.tag}; registered ${commands.length} commands; store ${storeBackendDescription()}.`,
@@ -1489,6 +1501,8 @@ client.on('guildMemberAdd', (member) => {
       const removed = await protectNewMember(member, t);
       if (removed) return;
       await assignAutoRole(member);
+      await platformRuntime.onEvent({ event: 'member_join', eventId: `${member.id}:${member.joinedTimestamp}`, guildId: member.guild.id, guildName: member.guild.name, userId: member.id,
+        username: member.displayName, roleIds: [...member.roles.cache.keys()], accountAgeDays: (Date.now() - member.user.createdTimestamp) / 86400000, membershipAgeDays: 0, isBot: member.user.bot });
       const welcome = guildConfig(member.guild.id).welcome;
       if (!welcome?.enabled || !welcome.channelId) return;
       const channel = await member.guild.channels
@@ -1516,6 +1530,7 @@ client.on('guildMemberRemove', (member) => {
   syncStore()
     .then(async () => {
       await logMemberLeave(member);
+      await platformRuntime.onEvent({ event: 'member_leave', eventId: `${member.id}:${Date.now()}`, guildId: member.guild.id, guildName: member.guild.name, userId: member.id, username: member.displayName, roleIds: [...member.roles.cache.keys()] });
       const goodbye = guildConfig(member.guild.id).goodbye;
       if (!goodbye?.enabled || !goodbye.channelId) return;
       const channel = await member.guild.channels
@@ -1540,7 +1555,11 @@ client.on('guildMemberRemove', (member) => {
 });
 client.on('messageCreate', (message) => {
   syncStore()
-    .then(() => filterAutomodMessage(message, t))
+    .then(() => platformRuntime.onMessage(message).catch(error => {
+      console.error('[platform-message]', error.code ?? error.name);
+      return false;
+    }))
+    .then((handled) => handled ? true : filterAutomodMessage(message, t))
     .then((handled) => (handled ? true : filterLinks(message, t)))
     .then((handled) => (handled ? true : handleAutoresponder(message)))
     .catch((error) =>
@@ -1552,6 +1571,7 @@ client.on('messageReactionAdd', (reaction, user) => {
     .then(async () => {
       await applyReactionRole(reaction, user, true);
       await handleStarboardReaction(reaction, user);
+      if (!user.bot && reaction.message.guildId) await platformRuntime.onEvent({ event: 'reaction_add', eventId: `${reaction.message.id}:${user.id}:${reaction.emoji.identifier}:${Date.now()}`, guildId: reaction.message.guildId, userId: user.id, channelId: reaction.message.channelId });
     })
     .catch((error) =>
       console.error('[reaction-add-event]', { userId: user.id }, error),
@@ -1575,10 +1595,23 @@ client.on('messageUpdate', (before, after) => {
 
 client.on('guildMemberUpdate', (before, after) => {
   syncStore()
-    .then(() => logRoleChanges(before, after))
+    .then(async () => {
+      await logRoleChanges(before, after);
+      for (const [event, source, other] of [['role_add', after, before], ['role_remove', before, after]]) {
+        const changed = [...source.roles.cache.keys()].filter(id => !other.roles.cache.has(id));
+        if (changed.length) await platformRuntime.onEvent({ event, eventId: `${after.id}:${event}:${changed.join(',')}:${Date.now()}`, guildId: after.guild.id, userId: after.id, roleIds: [...after.roles.cache.keys()] });
+      }
+    })
     .catch((error) =>
       console.error('[member-role-log]', { guildId: after.guild.id }, error),
     );
+});
+client.on('voiceStateUpdate', (before, after) => {
+  if (before.channelId === after.channelId) return;
+  for (const [event, state] of [['voice_leave', before], ['voice_join', after]]) if (state.channelId) {
+    platformRuntime.onEvent({ event, eventId: `${state.id}:${state.channelId}:${event}:${Date.now()}`, guildId: state.guild.id, userId: state.id, channelId: state.channelId, roleIds: [...(state.member?.roles.cache.keys() ?? [])] })
+      .catch(error => console.error('[platform-voice]', error.code ?? error.name));
+  }
 });
 
 client.on('messageReactionRemove', (reaction, user) => {
@@ -1595,6 +1628,7 @@ if (!discordDryRun) {
 export const registeredCommands = commands;
 
 const shutdown = async () => {
+  await platformRuntime.stop().catch(() => {});
   await saveStore().catch(() => {});
   await closeMongoConnections().catch(() => {});
   client.destroy();

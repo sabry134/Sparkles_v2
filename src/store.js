@@ -247,6 +247,14 @@ export function moderationCases(guildId, userId = null) {
   return structuredClone(filtered);
 }
 
+export function updateModerationCase(guildId, id, update) {
+  const cases = state.moderationCases[guildId] ?? [];
+  const index = cases.findIndex(entry => entry.id === id);
+  if (index < 0) return null;
+  cases[index] = update(structuredClone(cases[index]));
+  return structuredClone(cases[index]);
+}
+
 export function saveStore() {
   writeQueue = writeQueue
     .catch((error) => {

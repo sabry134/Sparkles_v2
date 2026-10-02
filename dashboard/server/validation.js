@@ -531,7 +531,7 @@ function embedPayload(value) {
     result.description = text(value.description, 4_096);
   }
   if (Object.hasOwn(value, 'url')) result.url = webUrl(value.url, 'url');
-  if (Object.hasOwn(value, 'color')) {
+  if (Object.hasOwn(value, 'color') && value.color !== '') {
     assert(
       typeof value.color === 'string' && /^#?[0-9a-f]{6}$/iu.test(value.color),
       'INVALID_INPUT',

@@ -1,4 +1,4 @@
-import { PermissionFlagsBits } from 'discord.js';
+import { PermissionFlagsBits, RESTJSONErrorCodes } from 'discord.js';
 import { addModerationCase, addWarning, guildConfig, saveStore } from '../store.js';
 import { componentMessage, errorMessage, successMessage } from '../ui/components.js';
 import { botConfig } from '../config.js';
@@ -250,23 +250,24 @@ async function automodLog(message, t, reason) {
 }
 
 async function enforceViolation(message, t, reason) {
-  const deleted = await message
-    .delete()
-    .then(() => true)
-    .catch((error) => {
-      console.error(
-        '[automod-delete]',
-        {
-          guildId: message.guildId,
-          channelId: message.channelId,
-          userId: message.author.id,
-          reason,
-        },
-        error,
-      );
-      return false;
-    });
-  if (!deleted) return false;
+  try {
+    await message.delete();
+  } catch (error) {
+    // Another handler, moderator, or bot may have removed the message already.
+    // Stop further automation without recording a second warning or timeout.
+    if (error.code === RESTJSONErrorCodes.UnknownMessage) return true;
+    console.error(
+      '[automod-delete]',
+      {
+        guildId: message.guildId,
+        channelId: message.channelId,
+        userId: message.author.id,
+        reason,
+      },
+      error,
+    );
+    return false;
+  }
 
   const config = guildConfig(message.guildId);
   const count = addWarning(message.guildId, message.author.id, {
