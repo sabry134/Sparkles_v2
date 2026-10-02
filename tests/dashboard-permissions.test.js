@@ -25,6 +25,14 @@ test('dashboard accepts settings when bot capabilities are sufficient', () => {
         logsChannelId: '223456789012345678',
         ticketCategoryId: '323456789012345678',
         autoRoleId: '423456789012345678',
+        commandPermissions: {
+          weather: {
+            roleMode: 'deny-all-except',
+            roleIds: ['423456789012345678'],
+            channelMode: 'allow-all-except',
+            channelIds: ['223456789012345678'],
+          },
+        },
         automod: {
           antiLink: true,
           antiAlt: true,
@@ -160,6 +168,45 @@ test('dashboard validates action log and starboard channels', () => {
             threshold: 3,
             emoji: '⭐',
             ignoreChannelIds: ['523456789012345678'],
+          },
+        },
+        resources(),
+      ),
+    /INVALID_CHANNEL/u,
+  );
+});
+
+
+test('dashboard validates command role and channel access selectors', () => {
+  assert.throws(
+    () =>
+      validateSettingsResources(
+        {
+          commandPermissions: {
+            weather: {
+              roleMode: 'deny-all-except',
+              roleIds: ['523456789012345678'],
+              channelMode: 'allow-all-except',
+              channelIds: [],
+            },
+          },
+        },
+        resources(),
+      ),
+    /INVALID_ROLE/u,
+  );
+
+  assert.throws(
+    () =>
+      validateSettingsResources(
+        {
+          commandPermissions: {
+            weather: {
+              roleMode: 'allow-all-except',
+              roleIds: [],
+              channelMode: 'deny-all-except',
+              channelIds: ['523456789012345678'],
+            },
           },
         },
         resources(),
