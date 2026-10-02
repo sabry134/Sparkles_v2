@@ -129,6 +129,7 @@ const optionNames = {
     'channel-topic',
   ],
   reason: ['ban', 'kick', 'timeout', 'soft-ban', 'warn'],
+  evidence: ['ban', 'kick', 'timeout', 'soft-ban', 'warn'],
   text: ['say', 'suggest', 'rules', 'thread', 'poll', 'announce', 'channel-topic'],
   name: [
     'create-category',
@@ -258,6 +259,13 @@ function commandData({ name }) {
   if (optionNames.reason.includes(name))
     builder.addStringOption((o) =>
       o.setName('reason').setDescription(t('options.reason')).setMaxLength(500),
+    );
+  if (optionNames.evidence.includes(name))
+    builder.addStringOption((o) =>
+      o
+        .setName('evidence')
+        .setDescription(t('options.evidence'))
+        .setMaxLength(500),
     );
   if (name === 'clear')
     builder.addIntegerOption((o) =>
@@ -567,6 +575,7 @@ async function modLog(interaction, title, description, details = {}) {
     evidence: details.evidence ?? {
       channelId: interaction.channelId,
       interactionId: interaction.id,
+      reference: interaction.options.getString('evidence') ?? null,
     },
   });
   await saveStore();
