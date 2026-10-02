@@ -98,7 +98,7 @@ export const en = {
     'Apply automatic protections to member messages and joins. Explicitly whitelisted members are exempt.',
   'automod.antiLink': 'Anti-link protection',
   'automod.antiLinkHelp':
-    'Delete HTTP links and Discord invite links from regular members.',
+    'Delete HTTP, HTTPS, www, and Discord invite links from non-whitelisted members.',
   'automod.master': 'Protection engine',
   'automod.masterHelp': 'Pause or activate every automatic moderation rule at once.',
   'automod.antiAlt': 'New-account protection',
@@ -112,7 +112,8 @@ export const en = {
   'automod.raidThreshold': 'Raid join threshold',
   'automod.raidThresholdHelp': 'Joins within the protection window before action starts.',
   'automod.antiSwear': 'Blocked-word filter',
-  'automod.antiSwearHelp': 'Remove messages containing words from your custom list.',
+  'automod.antiSwearHelp':
+    'Remove messages containing whole words from your custom blocked-word list.',
   'automod.blockedWords': 'Blocked words',
   'automod.blockedWordsHelp': 'Separate words with commas. Up to 100 entries are supported.',
   'automod.blockedWordsPlaceholder': 'word one, word two, word three',
