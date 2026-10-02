@@ -1487,6 +1487,115 @@ button:disabled {
   }
 }
 
+
+.automod-card {
+  overflow: visible;
+}
+
+.automod-card > .subsection-heading {
+  margin: 0;
+  padding: 18px var(--space-5) 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.automod-self-exempt {
+  margin-bottom: 12px;
+  border: 1px solid rgba(221, 180, 111, 0.3);
+  border-radius: var(--radius-lg);
+}
+
+.automod-self-exempt > span {
+  flex: 1;
+}
+
+.automod-self-exempt .button {
+  min-height: 32px;
+  margin-left: auto;
+}
+
+.list-editor {
+  display: grid;
+  min-width: 0;
+  gap: 9px;
+}
+
+.list-editor-add {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 8px;
+}
+
+.list-editor-add > input {
+  width: 100%;
+  height: var(--control-height);
+  padding: 0 12px;
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  outline: 0;
+  background: var(--surface-subtle);
+  font-size: 0.78rem;
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.list-editor-add > input:focus {
+  border-color: var(--primary);
+  box-shadow: var(--focus-ring);
+}
+
+.token-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.token-item {
+  display: inline-flex;
+  max-width: 100%;
+  min-height: 30px;
+  padding: 4px 5px 4px 9px;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-subtle);
+  font-size: 0.7rem;
+}
+
+.token-item > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.token-item button {
+  display: grid;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  flex: 0 0 auto;
+  place-items: center;
+  color: var(--text-tertiary);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  cursor: pointer;
+}
+
+.token-item button:hover {
+  color: var(--text);
+  background: var(--surface-hover);
+}
+
+.list-editor-empty {
+  color: var(--text-tertiary);
+  font-size: 0.7rem;
+}
+
 @media (min-width: 1440px) {
   :root {
     --content-width: 1100px;
@@ -1685,6 +1794,23 @@ button:disabled {
 
   .reaction-form {
     grid-template-columns: 1fr;
+  }
+
+  .list-editor-add {
+    grid-template-columns: 1fr;
+  }
+
+  .list-editor-add .button {
+    justify-self: start;
+  }
+
+  .automod-self-exempt {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .automod-self-exempt .button {
+    margin-left: 0;
   }
 
   .custom-command-form {
