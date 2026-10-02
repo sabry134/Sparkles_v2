@@ -240,3 +240,47 @@ test('dashboard rejects unknown and unsafe settings', () => {
     /INVALID_INPUT/u,
   );
 });
+
+
+test('dashboard exposes and normalizes legacy automod user exemptions', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'sparkles-dashboard-exempt-'));
+  const file = path.join(directory, 'store.json');
+  const guildId = '823456789012345678';
+
+  await writeFile(
+    file,
+    JSON.stringify({
+      guilds: {
+        [guildId]: {
+          tags: {},
+          whitelist: ['923456789012345678'],
+          automod: {
+            exemptUserIds: ['923456789012345679'],
+          },
+        },
+      },
+      warnings: {},
+    }),
+    'utf8',
+  );
+
+  const store = new BotStore(file, defaults);
+  const settings = await store.getGuildSettings(guildId);
+  assert.deepEqual(settings.automod.exemptUserIds, [
+    '923456789012345678',
+    '923456789012345679',
+  ]);
+
+  await store.updateGuildSettings(
+    guildId,
+    settingsPatch({
+      automod: {
+        exemptUserIds: ['923456789012345679'],
+      },
+    }),
+  );
+
+  const persisted = JSON.parse(await readFile(file, 'utf8'));
+  assert.deepEqual(persisted.guilds[guildId].whitelist, ['923456789012345679']);
+  assert.equal(persisted.guilds[guildId].automod.exemptUserIds, undefined);
+});
