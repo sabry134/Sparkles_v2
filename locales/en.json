@@ -13,7 +13,8 @@
     "invalidChannel": "Select a compatible text channel for this command.",
     "targetChannelPermission": "You need Manage Messages to post this command in another channel.",
     "moduleDisabled": "The **{module}** module is disabled for this server. An administrator can enable it from the dashboard.",
-    "commandDisabled": "The /{command} command is disabled in this server."
+    "commandDisabled": "The /{command} command is disabled in this server.",
+    "commandPermission": "You cannot use /{command} with your current role or in this channel."
   },
   "dashboard": {
     "modules": {
