@@ -53,10 +53,32 @@ const AUTOMOD_FIELDS = new Set([
   'antiBot',
   'antiRaid',
   'antiSwear',
+  'antiSpam',
+  'antiMentionSpam',
+  'antiCaps',
+  'antiEmojiSpam',
+  'antiAttachmentSpam',
+  'antiLinkSpam',
   'minimumAccountAgeDays',
   'raidJoinThreshold',
   'warningThreshold',
+  'timeoutSeconds',
+  'spamMessageThreshold',
+  'spamWindowSeconds',
+  'duplicateThreshold',
+  'duplicateWindowSeconds',
+  'mentionThreshold',
+  'capsPercentage',
+  'capsMinimumCharacters',
+  'emojiThreshold',
+  'attachmentThreshold',
+  'attachmentWindowSeconds',
+  'linkThreshold',
+  'linkWindowSeconds',
   'blockedWords',
+  'exemptUserIds',
+  'exemptRoleIds',
+  'exemptChannelIds',
 ]);
 const MODULE_FIELDS = new Set([
   'moderation',
@@ -127,6 +149,12 @@ export function settingsPatch(value) {
       'antiBot',
       'antiRaid',
       'antiSwear',
+      'antiSpam',
+      'antiMentionSpam',
+      'antiCaps',
+      'antiEmojiSpam',
+      'antiAttachmentSpam',
+      'antiLinkSpam',
     ]) {
       if (Object.hasOwn(value.automod, field)) {
         patch.automod[field] = boolean(value.automod[field]);
@@ -144,6 +172,34 @@ export function settingsPatch(value) {
     }
     if (Object.hasOwn(value.automod, 'warningThreshold')) {
       patch.automod.warningThreshold = integer(value.automod.warningThreshold, 1, 100);
+    }
+    if (Object.hasOwn(value.automod, 'timeoutSeconds')) {
+      patch.automod.timeoutSeconds = integer(value.automod.timeoutSeconds, 10, 2_419_200);
+    }
+    for (const [field, minimum, maximum] of [
+      ['spamMessageThreshold', 2, 50],
+      ['spamWindowSeconds', 1, 120],
+      ['duplicateThreshold', 2, 20],
+      ['duplicateWindowSeconds', 2, 300],
+      ['mentionThreshold', 2, 50],
+      ['capsPercentage', 50, 100],
+      ['capsMinimumCharacters', 4, 500],
+      ['emojiThreshold', 3, 100],
+      ['attachmentThreshold', 2, 50],
+      ['attachmentWindowSeconds', 1, 120],
+      ['linkThreshold', 2, 50],
+      ['linkWindowSeconds', 1, 120],
+    ]) {
+      if (Object.hasOwn(value.automod, field)) {
+        patch.automod[field] = integer(value.automod[field], minimum, maximum);
+      }
+    }
+    for (const field of ['exemptUserIds', 'exemptRoleIds', 'exemptChannelIds']) {
+      if (!Object.hasOwn(value.automod, field)) continue;
+      assert(Array.isArray(value.automod[field]) && value.automod[field].length <= 50, 'INVALID_INPUT');
+      patch.automod[field] = [
+        ...new Set(value.automod[field].map((id) => snowflake(id, field))),
+      ];
     }
     if (Object.hasOwn(value.automod, 'blockedWords')) {
       assert(
