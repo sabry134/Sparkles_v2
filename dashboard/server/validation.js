@@ -301,6 +301,8 @@ export function settingsPatch(value) {
         'memberJoin',
         'memberLeave',
         'roleChanges',
+        'ignoreRoleIds',
+        'ignoreChannelIds',
       ]),
     );
     patch.actionLog = {
@@ -313,6 +315,18 @@ export function settingsPatch(value) {
       memberJoin: boolean(value.actionLog.memberJoin),
       memberLeave: boolean(value.actionLog.memberLeave),
       roleChanges: boolean(value.actionLog.roleChanges),
+      ignoreRoleIds: Array.isArray(value.actionLog.ignoreRoleIds)
+        ? [...new Set(value.actionLog.ignoreRoleIds.map((id) => snowflake(id, 'roleId')))]
+        : [],
+      ignoreChannelIds: Array.isArray(value.actionLog.ignoreChannelIds)
+        ? [
+            ...new Set(
+              value.actionLog.ignoreChannelIds.map((id) =>
+                snowflake(id, 'channelId'),
+              ),
+            ),
+          ]
+        : [],
     };
     if (patch.actionLog.enabled && !patch.actionLog.channelId) {
       throw new AppError('INVALID_CHANNEL', 400);
