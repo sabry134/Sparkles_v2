@@ -1,3 +1,4 @@
+import { catalog } from '../../src/catalog.js';
 import { AppError, assert } from './errors.js';
 
 const SNOWFLAKE_PATTERN = /^\d{17,20}$/;
@@ -375,11 +376,14 @@ export function settingsPatch(value) {
   if (Object.hasOwn(value, 'disabledCommands')) {
     assert(Array.isArray(value.disabledCommands), 'INVALID_INPUT');
     assert(value.disabledCommands.length <= 250, 'INVALID_INPUT');
+    const commandNames = new Set(catalog.map(({ name }) => name));
     patch.disabledCommands = [
       ...new Set(
         value.disabledCommands.map((name) => {
           assert(
-            typeof name === 'string' && /^[a-z0-9-]{1,64}$/u.test(name),
+            typeof name === 'string' &&
+              /^[a-z0-9-]{1,64}$/u.test(name) &&
+              commandNames.has(name),
             'INVALID_INPUT',
           );
           return name;
