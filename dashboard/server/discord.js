@@ -420,13 +420,15 @@ export async function guildResources(guildId, config) {
       }))
       .sort((left, right) => left.position - right.position),
     roles: roles
-      .filter((role) => role.id !== guildId && !role.managed)
+      .filter((role) => role.id !== guildId)
       .map((role) => ({
         id: role.id,
         name: role.name,
         color: role.color,
         position: role.position,
-        assignable: canManageRoles && role.position < highestBotPosition,
+        managed: role.managed === true,
+        assignable:
+          !role.managed && canManageRoles && role.position < highestBotPosition,
       }))
       .sort((left, right) => right.position - left.position),
     capabilities,
@@ -436,12 +438,20 @@ export async function guildResources(guildId, config) {
 export function validateSettingsResources(patch, resources) {
   const channelIds = new Set(resources.channels.map((channel) => channel.id));
   const categoryIds = new Set(resources.categories.map((category) => category.id));
+  const roleIds = new Set(resources.roles.map((role) => role.id));
   const assignableRoleIds = new Set(
     resources.roles.filter((role) => role.assignable).map((role) => role.id),
   );
 
   if (
-    (patch.automod?.antiLink === true || patch.automod?.antiSwear === true) &&
+    (patch.automod?.antiLink === true ||
+      patch.automod?.antiSwear === true ||
+      patch.automod?.antiSpam === true ||
+      patch.automod?.antiMentionSpam === true ||
+      patch.automod?.antiCaps === true ||
+      patch.automod?.antiEmojiSpam === true ||
+      patch.automod?.antiAttachmentSpam === true ||
+      patch.automod?.antiLinkSpam === true) &&
     !resources.capabilities.canManageMessages
   ) {
     throw new AppError('BOT_MISSING_PERMISSION', 409);
@@ -470,6 +480,18 @@ export function validateSettingsResources(patch, resources) {
       !channelIds.has(patch[field])
     ) {
       throw new AppError('INVALID_CHANNEL', 400);
+    }
+  }
+
+  for (const channelId of patch.automod?.exemptChannelIds ?? []) {
+    if (!channelIds.has(channelId)) {
+      throw new AppError('INVALID_CHANNEL', 400);
+    }
+  }
+
+  for (const roleId of patch.automod?.exemptRoleIds ?? []) {
+    if (!roleIds.has(roleId)) {
+      throw new AppError('INVALID_ROLE', 400);
     }
   }
 
