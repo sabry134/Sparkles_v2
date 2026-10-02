@@ -634,7 +634,41 @@ function CommandCenter({ request, bootstrap, onNavigate }) {
     catch (error) { setError(error); } finally { setBusy(false); }
   }, [request, range, from, to]);
   useEffect(() => { load(); }, [load]);
-  return <section className="platform-module"><div className="platform-section-heading"><div><h2>{t('center.title')}</h2><p>{t('center.description')}</p></div><div className="platform-actions"><select aria-label={t('center.dateRange')} value={range} onChange={event => setRange(event.target.value)}>{limits.dateRangeDays.map(days => <option key={days} value={String(days)}>{t('center.days', { count: days })}</option>)}<option value="custom">{t('center.custom')}</option></select>{range === 'custom' && <><input aria-label={t('center.from')} type="datetime-local" value={from} onChange={event => setFrom(event.target.value)} /><input aria-label={t('center.to')} type="datetime-local" value={to} onChange={event => setTo(event.target.value)} /></>}<Button type="button" className="button secondary" disabled={busy} onClick={load}>{t('platform.refresh')}</Button></div></div>
+  return <section className="platform-module"><div className="platform-section-heading"><div><h2>{t('center.title')}</h2><p>{t('center.description')}</p></div><div className="platform-actions">
+        <FormControl size="small" sx={{ minWidth: 170 }}>
+          <MuiSelect
+            aria-label={t('center.dateRange')}
+            value={range}
+            onChange={(event) => setRange(event.target.value)}
+          >
+            {limits.dateRangeDays.map((days) => (
+              <MenuItem key={days} value={String(days)}>
+                {t('center.days', { count: days })}
+              </MenuItem>
+            ))}
+            <MenuItem value="custom">{t('center.custom')}</MenuItem>
+          </MuiSelect>
+        </FormControl>
+        {range === 'custom' ? (
+          <>
+            <TextField
+              aria-label={t('center.from')}
+              type="datetime-local"
+              value={from}
+              onChange={(event) => setFrom(event.target.value)}
+            />
+            <TextField
+              aria-label={t('center.to')}
+              type="datetime-local"
+              value={to}
+              onChange={(event) => setTo(event.target.value)}
+            />
+          </>
+        ) : null}
+        <Button variant="outlined" disabled={busy} onClick={load}>
+          {t('platform.refresh')}
+        </Button>
+      </div></div>
     <PlatformErrorView error={error} />{!data ? <Busy /> : <>
       <div className="center-metrics"><article><span>{t('center.members')}</span><strong>{resources.guild.memberCount?.toLocaleString() ?? t('platform.notAvailable')}</strong><small>{t('center.online', { count: resources.guild.onlineCount?.toLocaleString() ?? t('platform.notAvailable') })}</small></article>{['messages', 'joins', 'leaves', 'automod', 'warnings'].map(key => <article key={key}><span>{t(`center.${key}`)}</span><strong>{data.current[key].toLocaleString()}</strong><small>{t('center.previous', { count: data.previous[key].toLocaleString(), change: data.current[key] - data.previous[key] })}</small></article>)}</div>
       <p className="muted">{t('center.collectionHelp')}</p>
@@ -685,7 +719,39 @@ function Records({ table, request, bootstrap }) {
     }
   };
   return <section className="platform-module"><div className="platform-section-heading"><div><h2>{t(`records.${table}`)}</h2><p>{t(`records.${table}.help`)}</p></div><Button type="button" className="button secondary" onClick={load} disabled={busy}>{t('platform.refresh')}</Button></div><PlatformErrorView error={error} />
-    <div className="platform-filterbar"><input aria-label={t('platform.search')} type="search" placeholder={t('platform.search')} value={query} onChange={event => { setQuery(event.target.value); setCursor(null); }} />{!!statuses.length && <select aria-label={t('platform.status')} value={status} onChange={event => { setStatus(event.target.value); setCursor(null); }}><option value="">{t('platform.allStatuses')}</option>{statuses.map(status => <option key={status} value={status}>{t(`status.${status}`)}</option>)}</select>}</div>
+    <div className="platform-filterbar">
+      <TextField
+        type="search"
+        size="small"
+        aria-label={t('platform.search')}
+        placeholder={t('platform.search')}
+        value={query}
+        onChange={(event) => {
+          setQuery(event.target.value);
+          setCursor(null);
+        }}
+      />
+      {statuses.length ? (
+        <FormControl size="small" sx={{ minWidth: 190 }}>
+          <MuiSelect
+            displayEmpty
+            aria-label={t('platform.status')}
+            value={status}
+            onChange={(event) => {
+              setStatus(event.target.value);
+              setCursor(null);
+            }}
+          >
+            <MenuItem value="">{t('platform.allStatuses')}</MenuItem>
+            {statuses.map((statusValue) => (
+              <MenuItem key={statusValue} value={statusValue}>
+                {t(`status.${statusValue}`)}
+              </MenuItem>
+            ))}
+          </MuiSelect>
+        </FormControl>
+      ) : null}
+    </div>
     {busy && !data.items.length ? <Busy /> : table === 'jobs' ? <RunList items={data.items} request={request} onRefresh={load} /> : !data.items.length ? <Empty /> : <div className="platform-record-list">{data.items.map(entry => <article key={entry.id} className="platform-record"><div className="platform-record-heading"><strong>{entry.event ? t(`event.${entry.event}`) : entry.userId ?? entry.resourceId}</strong>{entry.status && <Status value={entry.status} />}<time>{time(entry.at)}</time></div>
       {entry.actorId && <p className="muted">{t('platform.actorValue', { actor: entry.actorId })}</p>}
       {entry.details?.changes ? <ChangeList changes={entry.details.changes} /> : entry.details && <pre>{JSON.stringify(entry.details, null, 2)}</pre>}
@@ -751,10 +817,71 @@ function Moderation({ request, bootstrap, membersOnly = false }) {
     });
   };
   return <section className="platform-module"><div className="platform-section-heading"><div><h2>{t(membersOnly ? 'members.title' : 'cases.title')}</h2><p>{t('cases.help')}</p></div><Button type="button" className="button secondary" onClick={() => loadCases()}>{t('platform.refresh')}</Button></div><PlatformErrorView error={error} />{notice && <p role="status" className="platform-notice">{notice}</p>}
-    <label className="platform-field"><span>{t('members.search')}</span><input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder={t('members.searchHelp')} /></label>
-    {!!members.length && <div className="platform-member-results">{members.map(member => <div key={member.id}><label className="platform-check"><input type="checkbox" checked={input.targetIds.includes(member.id)} onChange={event => setInput({ ...input, targetIds: event.target.checked ? [...input.targetIds, member.id] : input.targetIds.filter(id => id !== member.id) })} /><strong>{member.name}</strong><small>{member.id}</small></label><Button type="button" className="button secondary" onClick={() => run(async () => setProfile(await request(`/members/${member.id}`)))}>{t('members.profile')}</Button></div>)}</div>}
+    <label className="platform-field mui-platform-field">
+      <span>{t('members.search')}</span>
+      <TextField
+        fullWidth
+        type="search"
+        value={query}
+        onChange={(event) => setQuery(event.target.value)}
+        placeholder={t('members.searchHelp')}
+      />
+    </label>
+    {!!members.length && (
+      <div className="platform-member-results">
+        {members.map((member) => (
+          <div key={member.id}>
+            <FormControlLabel
+              className="platform-check mui-platform-check"
+              control={
+                <Checkbox
+                  checked={input.targetIds.includes(member.id)}
+                  onChange={(event) =>
+                    setInput({
+                      ...input,
+                      targetIds: event.target.checked
+                        ? [...input.targetIds, member.id]
+                        : input.targetIds.filter((id) => id !== member.id),
+                    })
+                  }
+                />
+              }
+              label={
+                <span className="mui-member-label">
+                  <strong>{member.name}</strong>
+                  <small>{member.id}</small>
+                </span>
+              }
+            />
+            <Button
+              variant="outlined"
+              onClick={() =>
+                run(async () =>
+                  setProfile(await request(`/members/${member.id}`)),
+                )
+              }
+            >
+              {t('members.profile')}
+            </Button>
+          </div>
+        ))}
+      </div>
+    )}
     {!!input.targetIds.length && <p>{t('cases.selected', { count: input.targetIds.length })}<Button type="button" className="button secondary" onClick={() => setInput({ ...input, targetIds: [] })}>{t('cases.clearSelection')}</Button></p>}
-    {!membersOnly && <div className="platform-moderation-form"><div className="platform-form-grid"><SchemaField name="type" spec={{ type: 'select', options: ['warn', 'note', 'timeout', 'untimeout', 'kick', 'ban', 'unban'] }} value={input.type} onChange={type => setInput({ ...input, type })} resources={bootstrap.resources} limits={bootstrap.limits} /><SchemaField name="reason" spec={{ type: 'text', required: true, multiline: true }} value={input.reason} onChange={reason => setInput({ ...input, reason })} resources={bootstrap.resources} limits={bootstrap.limits} />{['timeout', 'ban'].includes(input.type) && <SchemaField name="durationSeconds" spec={{ type: 'number', min: 0 }} value={input.durationSeconds} onChange={durationSeconds => setInput({ ...input, durationSeconds })} resources={bootstrap.resources} limits={bootstrap.limits} />}{input.type === 'warn' && <SchemaField name="points" spec={{ type: 'number', min: 1 }} value={input.points} onChange={points => setInput({ ...input, points })} resources={bootstrap.resources} limits={bootstrap.limits} />}</div><details><summary>{t('members.manualId')}</summary><input aria-label={t('members.manualId')} value={input.targetIds.join(', ')} onChange={event => setInput({ ...input, targetIds: event.target.value.split(/[\s,]+/u).filter(Boolean) })} /></details><Button type="button" className="button primary" disabled={busy || !input.targetIds.length || !input.reason.trim()} onClick={() => run(async () => setPreview(await request('/moderation/preview', { method: 'POST', body: input })))}>{t('cases.previewAction')}</Button></div>}
+    {!membersOnly && <div className="platform-moderation-form"><div className="platform-form-grid"><SchemaField name="type" spec={{ type: 'select', options: ['warn', 'note', 'timeout', 'untimeout', 'kick', 'ban', 'unban'] }} value={input.type} onChange={type => setInput({ ...input, type })} resources={bootstrap.resources} limits={bootstrap.limits} /><SchemaField name="reason" spec={{ type: 'text', required: true, multiline: true }} value={input.reason} onChange={reason => setInput({ ...input, reason })} resources={bootstrap.resources} limits={bootstrap.limits} />{['timeout', 'ban'].includes(input.type) && <SchemaField name="durationSeconds" spec={{ type: 'number', min: 0 }} value={input.durationSeconds} onChange={durationSeconds => setInput({ ...input, durationSeconds })} resources={bootstrap.resources} limits={bootstrap.limits} />}{input.type === 'warn' && <SchemaField name="points" spec={{ type: 'number', min: 1 }} value={input.points} onChange={points => setInput({ ...input, points })} resources={bootstrap.resources} limits={bootstrap.limits} />}</div><details>
+      <summary>{t('members.manualId')}</summary>
+      <TextField
+        fullWidth
+        aria-label={t('members.manualId')}
+        value={input.targetIds.join(', ')}
+        onChange={(event) =>
+          setInput({
+            ...input,
+            targetIds: event.target.value.split(/[\s,]+/u).filter(Boolean),
+          })
+        }
+      />
+    </details><Button type="button" className="button primary" disabled={busy || !input.targetIds.length || !input.reason.trim()} onClick={() => run(async () => setPreview(await request('/moderation/preview', { method: 'POST', body: input })))}>{t('cases.previewAction')}</Button></div>}
     {profile && <section className="platform-profile"><div className="platform-section-heading"><h3>{profile.member.name}</h3><code>{profile.member.id}</code><Button type="button" className="button secondary" onClick={() => setProfile(null)}>{t('common.close')}</Button></div><dl><dt>{t('members.created')}</dt><dd>{time(profile.member.accountCreatedAt)}</dd><dt>{t('members.joined')}</dt><dd>{time(profile.member.joinedAt)}</dd><dt>{t('members.roles')}</dt><dd>{profile.member.roles.map(id => bootstrap.resources.roles.find(role => role.id === id)?.name ?? id).join(', ')}</dd><dt>{t('members.timeout')}</dt><dd>{time(profile.member.timeoutUntil)}</dd><dt>{t('members.tickets')}</dt><dd>{profile.tickets.length}</dd></dl>{profile.cases.map(entry => <p key={entry.id}>{t('cases.caseNumber', { number: entry.id })} · {entry.action} · {entry.reason}</p>)}</section>}
     {!membersOnly && <><div className="platform-table-wrap"><table className="platform-table"><thead><tr>{['case', 'target', 'moderator', 'reason', 'date', 'actions'].map(key => <th key={key}>{t(`cases.${key}`)}</th>)}</tr></thead><tbody>{cases.items.map(entry => <tr key={entry.id}><td><strong>#{entry.id}</strong><span>{choice(entry.action)}</span><Status value={entry.status ?? 'active'} /></td><td><Button type="button" onClick={() => run(async () => setProfile(await request(`/members/${entry.targetId}`)))}>{entry.targetTag ?? entry.targetId}</Button></td><td>{entry.actorTag ?? entry.actorId}</td><td>{entry.reason}{entry.note && <small>{entry.note}</small>}{entry.evidence && <details><summary>{t('cases.evidence')}</summary><pre>{JSON.stringify(entry.evidence, null, 2)}</pre></details>}</td><td>{time(entry.at)}</td><td><Button type="button" className="button secondary" disabled={busy} onClick={() => editCaseReason(entry)}>{t('cases.editReason')}</Button><Button type="button" className="button secondary" disabled={busy} onClick={() => addCaseNote(entry)}>{t('cases.addNote')}</Button>{['ban', 'timeout'].includes(entry.action) && <Button type="button" className="button secondary" onClick={() => setInput({ ...input, type: entry.action === 'ban' ? 'unban' : 'untimeout', targetIds: [entry.targetId], reason: t('cases.reversalReason', { number: entry.id }) })}>{t('cases.reverse')}</Button>}</td></tr>)}</tbody></table></div>{!cases.items.length && <Empty text="cases.empty" />}<Pager cursor={cases.nextCursor} onNext={loadCases} onFirst={() => loadCases()} busy={busy} /></>}
     {preview && <ImpactDialog preview={preview} resources={bootstrap.resources} busy={busy} onClose={() => setPreview(null)} onConfirm={() => run(async () => { await request('/moderation/execute', { method: 'POST', body: { token: preview.token } }); setPreview(null); setNotice(t('platform.queued')); })} />}
@@ -793,8 +920,53 @@ function Access({ request, bootstrap }) {
     }
   };
   return <section className="platform-module"><h2>{t('access.title')}</h2><p>{t('access.help')}</p><PlatformErrorView error={error} />{notice && <p role="status">{notice}</p>}{!data ? <Busy /> : <>
-    <details><summary>{t('access.managerDefaults')}</summary><div className="access-capabilities">{data.capabilities.map(capability => <label className="platform-check" key={capability}><input type="checkbox" checked={data.policy.managerCapabilities.includes(capability)} onChange={event => update({ ...data.policy, managerCapabilities: event.target.checked ? [...data.policy.managerCapabilities, capability] : data.policy.managerCapabilities.filter(key => key !== capability) })} />{t(`capability.${capability}`)}</label>)}</div></details>
-    {data.policy.grants.map((grant, index) => <div className="platform-access-grant" key={index}><div className="platform-form-grid"><SchemaField name="roleId" spec={{ type: 'roles' }} value={grant.roleId ? [grant.roleId] : []} onChange={roles => update({ ...data.policy, grants: data.policy.grants.map((row, position) => position === index ? { roleId: roles.at(-1) ?? '', capabilities: row.capabilities } : row) })} resources={bootstrap.resources} limits={bootstrap.limits} /><label className="platform-field"><span>{t('access.userId')}</span><input value={grant.userId ?? ''} onChange={event => update({ ...data.policy, grants: data.policy.grants.map((row, position) => position === index ? { userId: event.target.value, capabilities: row.capabilities } : row) })} /></label></div><div className="access-capabilities">{data.capabilities.map(capability => <label key={capability} className="platform-check"><input type="checkbox" checked={grant.capabilities.includes(capability)} onChange={event => update({ ...data.policy, grants: data.policy.grants.map((row, position) => position === index ? { ...row, capabilities: event.target.checked ? [...row.capabilities, capability] : row.capabilities.filter(key => key !== capability) } : row) })} />{t(`capability.${capability}`)}</label>)}</div><Button type="button" className="button secondary" onClick={() => update({ ...data.policy, grants: data.policy.grants.filter((_, position) => position !== index) })}>{t('studio.remove')}</Button></div>)}
+    <details>
+      <summary>{t('access.managerDefaults')}</summary>
+      <div className="access-capabilities">
+        {data.capabilities.map((capability) => (
+          <FormControlLabel
+            className="platform-check mui-platform-check"
+            key={capability}
+            control={
+              <Checkbox
+                checked={data.policy.managerCapabilities.includes(capability)}
+                onChange={(event) =>
+                  update({
+                    ...data.policy,
+                    managerCapabilities: event.target.checked
+                      ? [...data.policy.managerCapabilities, capability]
+                      : data.policy.managerCapabilities.filter(
+                          (key) => key !== capability,
+                        ),
+                  })
+                }
+              />
+            }
+            label={t(`capability.${capability}`)}
+          />
+        ))}
+      </div>
+    </details>
+    {data.policy.grants.map((grant, index) => <div className="platform-access-grant" key={index}><div className="platform-form-grid"><SchemaField name="roleId" spec={{ type: 'roles' }} value={grant.roleId ? [grant.roleId] : []} onChange={roles => update({ ...data.policy, grants: data.policy.grants.map((row, position) => position === index ? { roleId: roles.at(-1) ?? '', capabilities: row.capabilities } : row) })} resources={bootstrap.resources} limits={bootstrap.limits} /><label className="platform-field mui-platform-field">
+        <span>{t('access.userId')}</span>
+        <TextField
+          fullWidth
+          value={grant.userId ?? ''}
+          onChange={(event) =>
+            update({
+              ...data.policy,
+              grants: data.policy.grants.map((row, position) =>
+                position === index
+                  ? {
+                      userId: event.target.value,
+                      capabilities: row.capabilities,
+                    }
+                  : row,
+              ),
+            })
+          }
+        />
+      </label></div><div className="access-capabilities">{data.capabilities.map(capability => <label key={capability} className="platform-check"><input type="checkbox" checked={grant.capabilities.includes(capability)} onChange={event => update({ ...data.policy, grants: data.policy.grants.map((row, position) => position === index ? { ...row, capabilities: event.target.checked ? [...row.capabilities, capability] : row.capabilities.filter(key => key !== capability) } : row) })} />{t(`capability.${capability}`)}</label>)}</div><Button type="button" className="button secondary" onClick={() => update({ ...data.policy, grants: data.policy.grants.filter((_, position) => position !== index) })}>{t('studio.remove')}</Button></div>)}
     <div className="platform-actions"><Button type="button" className="button secondary" onClick={() => update({ ...data.policy, grants: [...data.policy.grants, { roleId: '', capabilities: [] }] })}>{t('access.addGrant')}</Button><Button type="button" className="button primary" disabled={!dirty || busy} onClick={saveAccess}>{t('access.save')}</Button></div><ChangeList changes={configurationDiff(saved, data.policy)} />
   </>}</section>;
 }
