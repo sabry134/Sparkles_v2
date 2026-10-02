@@ -8,7 +8,8 @@ const dashboardDirectory = path.resolve(
   '..',
 );
 
-dotenv.config({ path: path.join(dashboardDirectory, '.env') });
+dotenv.config({ path: path.resolve(dashboardDirectory, '..', '.env') });
+dotenv.config({ path: path.join(dashboardDirectory, '.env'), override: true });
 
 function required(name) {
   const value = process.env[name]?.trim();
@@ -106,7 +107,10 @@ export const config = Object.freeze({
     file: resolveConfiguredPath('SESSION_STORE_PATH'),
     maxAgeMs: 12 * 60 * 60 * 1_000,
   }),
-  botStoreFile: resolveConfiguredPath('BOT_STORE_PATH'),
+  mongo: Object.freeze({
+    uri: required('MONGODB_URI'),
+    dbName: process.env.MONGODB_DB_NAME?.trim() || 'sparkles',
+  }),
   botDefaults: Object.freeze(botDefaults),
   allowedOrigins: new Set([publicUrl.origin, frontendUrl.origin]),
 });
