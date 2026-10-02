@@ -285,6 +285,9 @@ export class BotStore {
         if (Object.hasOwn(patch.automod, 'antiBot')) {
           config.features.antiBot = patch.automod.antiBot;
         }
+        if (Object.hasOwn(patch.automod, 'antiLink')) {
+          delete config.automod.linkProtocols;
+        }
       }
       for (const field of ['welcome', 'goodbye']) {
         if (patch[field]) config[field] = { ...(config[field] ?? {}), ...patch[field] };
