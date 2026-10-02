@@ -533,6 +533,7 @@ export class BotStore {
       if (changes) {
         const update = mongoUpdateFromChanges(changes);
         if (Object.keys(update).length) {
+          update.$setOnInsert = { tags: {} };
           await db
             .collection(COLLECTIONS.guilds)
             .updateOne({ _id: guildId }, update, { upsert: true });
