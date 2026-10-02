@@ -26,6 +26,7 @@ import {
 import { scheduleGiveaway } from './giveaways.js';
 import { botConfig } from '../config.js';
 import { readGroupedCommandOptions } from '../command-routes.js';
+import { containsBlockedWord, hasBlockedLink } from './automod.js';
 
 const DEFAULT_DASHBOARD_URL = 'http://localhost:5173';
 const effectiveCommandNames = new WeakMap();
@@ -121,6 +122,33 @@ async function updatePoints(interaction, t, direction) {
       target: user,
       value: amount,
     }),
+  );
+}
+
+async function purgeFiltered(interaction, t, predicate) {
+  if (!hasPermission(interaction, PermissionFlagsBits.ManageMessages)) {
+    return denied(interaction, t, 'Manage Messages');
+  }
+  if (!interaction.channel?.isTextBased() || typeof interaction.channel.bulkDelete !== 'function') {
+    return interaction.reply(
+      errorMessage(t('extended.permissionTitle'), t('extended.textChannelRequired')),
+    );
+  }
+
+  const input = options(interaction);
+  const amount = Math.min(100, Math.max(1, input.amount ?? 50));
+  const fetched = await interaction.channel.messages.fetch({ limit: 100 });
+  const selected = fetched
+    .filter((message) => predicate(message))
+    .first(amount);
+  if (!selected.length) {
+    return completed(interaction, t, t('extended.purgeEmpty'));
+  }
+  const deleted = await interaction.channel.bulkDelete(selected, true);
+  return completed(
+    interaction,
+    t,
+    t('extended.purgeCompleted', { count: deleted.size }),
   );
 }
 
@@ -365,6 +393,35 @@ export async function handleExtendedCommand(commandName, interaction, t, client)
       return completed(interaction, t, t('extended.saved'));
     }
 
+    case 'anti-spam': {
+      if (!hasPermission(interaction, PermissionFlagsBits.ManageGuild)) {
+        return denied(interaction, t, 'Manage Server');
+      }
+      config.automod ??= {};
+      config.automod.antiSpam = input.action !== 'disable';
+      if (config.automod.antiSpam) config.automod.enabled = true;
+      if (input.spamMessageThreshold !== null) {
+        config.automod.spamMessageThreshold = Math.min(
+          50,
+          Math.max(2, input.spamMessageThreshold),
+        );
+      }
+      if (input.spamWindowSeconds !== null) {
+        config.automod.spamWindowSeconds = Math.min(
+          120,
+          Math.max(1, input.spamWindowSeconds),
+        );
+      }
+      if (input.duplicateThreshold !== null) {
+        config.automod.duplicateThreshold = Math.min(
+          20,
+          Math.max(2, input.duplicateThreshold),
+        );
+      }
+      await saveStore();
+      return completed(interaction, t, t('extended.saved'));
+    }
+
     case 'anti-swear': {
       if (!hasPermission(interaction, PermissionFlagsBits.ManageGuild)) {
         return denied(interaction, t, 'Manage Server');
@@ -385,6 +442,36 @@ export async function handleExtendedCommand(commandName, interaction, t, client)
       }
       await saveStore();
       return completed(interaction, t, t('extended.saved'));
+    }
+
+    case 'automod-test': {
+      if (!hasPermission(interaction, PermissionFlagsBits.ManageGuild)) {
+        return denied(interaction, t, 'Manage Server');
+      }
+      const automod = config.automod ?? {};
+      const exempt =
+        (config.whitelist ?? []).includes(interaction.user.id) ||
+        (automod.exemptUserIds ?? []).includes(interaction.user.id) ||
+        (automod.exemptChannelIds ?? []).includes(interaction.channelId) ||
+        (automod.exemptRoleIds ?? []).some((roleId) =>
+          interaction.member.roles.cache.has(roleId),
+        );
+      const values = [
+        `**engine:** ${automod.enabled !== false ? 'on' : 'off'}`,
+        `**you are exempt:** ${exempt ? 'yes' : 'no'}`,
+        `**blocked term match:** ${
+          automod.antiSwear &&
+          containsBlockedWord(input.text ?? '', automod.blockedWords ?? [])
+            ? 'yes'
+            : 'no'
+        }`,
+        `**blocked link match:** ${
+          automod.antiLink && hasBlockedLink(input.text ?? '', automod.linkProtocols)
+            ? 'yes'
+            : 'no'
+        }`,
+      ].join('\n');
+      return completed(interaction, t, t('extended.list', { values }));
     }
 
     case 'ask': {
@@ -471,6 +558,31 @@ export async function handleExtendedCommand(commandName, interaction, t, client)
         }),
         files: [attachment],
       });
+    }
+
+    case 'purge-user': {
+      if (!input.user) return missing(interaction, t, 'user');
+      return purgeFiltered(
+        interaction,
+        t,
+        (message) => message.author.id === input.user.id,
+      );
+    }
+
+    case 'purge-links': {
+      return purgeFiltered(
+        interaction,
+        t,
+        (message) => Boolean(message.content) && hasBlockedLink(message.content),
+      );
+    }
+
+    case 'purge-attachments': {
+      return purgeFiltered(interaction, t, (message) => message.attachments.size > 0);
+    }
+
+    case 'purge-bots': {
+      return purgeFiltered(interaction, t, (message) => message.author.bot);
     }
 
     case 'blacklist': {
@@ -1529,6 +1641,38 @@ export async function handleExtendedCommand(commandName, interaction, t, client)
         interaction,
         t,
         t('extended.added', { target: input.user, value: 'whitelist' }),
+      );
+    }
+
+    case 'unwhitelist': {
+      if (!hasPermission(interaction, PermissionFlagsBits.ManageGuild)) {
+        return denied(interaction, t, 'Manage Server');
+      }
+      if (!input.user) return missing(interaction, t, 'user');
+      config.whitelist = (config.whitelist ?? []).filter(
+        (id) => id !== input.user.id,
+      );
+      await saveStore();
+      return completed(
+        interaction,
+        t,
+        t('extended.removed', { target: input.user, value: 'whitelist' }),
+      );
+    }
+
+    case 'unblacklist': {
+      if (!hasPermission(interaction, PermissionFlagsBits.ManageGuild)) {
+        return denied(interaction, t, 'Manage Server');
+      }
+      if (!input.user) return missing(interaction, t, 'user');
+      config.blacklist = (config.blacklist ?? []).filter(
+        (id) => id !== input.user.id,
+      );
+      await saveStore();
+      return completed(
+        interaction,
+        t,
+        t('extended.removed', { target: input.user, value: 'blacklist' }),
       );
     }
 
