@@ -11,7 +11,7 @@ export const CATEGORY_SLASH_NAMES = Object.freeze({
   fun: 'fun',
   music: 'music',
   events: 'events',
-  'tools-ai': 'tools',
+  tools: 'tools',
   'custom-premium': 'premium-tools',
   other: 'other',
 });
