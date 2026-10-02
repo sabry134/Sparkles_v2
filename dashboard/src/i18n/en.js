@@ -19,6 +19,10 @@ export const en = {
   'common.rolePrefix': '@{name}',
   'common.separator': ' · ',
   'common.chooseChannel': 'Choose a channel',
+  'common.choose': 'Choose…',
+  'common.addItem': 'Add',
+  'common.removeItem': 'Remove {item}',
+  'common.noExemptions': 'None configured',
   'common.referenceUnavailable': 'unavailable',
   'select.required': 'Choose an option.',
 
@@ -94,7 +98,7 @@ export const en = {
 
   'automod.title': 'Auto moderation',
   'automod.description':
-    'Apply automatic protections to member messages and joins. Explicitly whitelisted members are exempt.',
+    'Configure content filters, spam protection, join protection, enforcement, and explicit exemptions.',
   'automod.antiLink': 'Anti-link protection',
   'automod.antiLinkHelp':
     'Delete HTTP, HTTPS, www, and Discord invite links from non-whitelisted members.',
@@ -112,10 +116,82 @@ export const en = {
   'automod.raidThresholdHelp': 'Joins within the protection window before action starts.',
   'automod.antiSwear': 'Blocked-word filter',
   'automod.antiSwearHelp':
-    'Remove messages containing whole words from your custom blocked-word list.',
+    'Remove messages matching your custom blocked terms. Phrases and * wildcards are supported.',
   'automod.blockedWords': 'Blocked words',
-  'automod.blockedWordsHelp': 'Separate words with commas. Up to 100 entries are supported.',
-  'automod.blockedWordsPlaceholder': 'word one, word two, word three',
+  'automod.blockedWordsHelp':
+    'Separate terms with commas. Up to 100 terms are supported, including phrases and wildcards such as scam*.',
+  'automod.blockedWordsPlaceholder': 'test, scam*, free nitro, blocked phrase',
+  'automod.contentTitle': 'Content filters',
+  'automod.contentDescription':
+    'Block unwanted terms and links before they remain visible in chat.',
+  'automod.spamTitle': 'Anti-spam',
+  'automod.spamDescription':
+    'Detect rapid messages, duplicates, mass mentions, excessive caps, emoji floods, attachments, and link floods.',
+  'automod.antiSpam': 'Message and duplicate spam',
+  'automod.antiSpamHelp':
+    'Detect users sending too many messages or repeating the same content in a short period.',
+  'automod.spamMessageThreshold': 'Message threshold',
+  'automod.spamMessageThresholdHelp': 'Messages allowed inside the spam window before action.',
+  'automod.spamWindow': 'Message window',
+  'automod.spamWindowHelp': 'Number of seconds used for rapid-message detection.',
+  'automod.duplicateThreshold': 'Duplicate threshold',
+  'automod.duplicateThresholdHelp':
+    'Number of identical messages allowed before duplicate spam triggers.',
+  'automod.duplicateWindow': 'Duplicate window',
+  'automod.duplicateWindowHelp': 'Seconds during which identical messages are counted.',
+  'automod.antiMentionSpam': 'Mention spam',
+  'automod.antiMentionSpamHelp':
+    'Remove messages that mention too many unique users or roles at once.',
+  'automod.mentionThreshold': 'Mention threshold',
+  'automod.mentionThresholdHelp': 'Unique mentions in one message before action.',
+  'automod.antiCaps': 'Excessive capitals',
+  'automod.antiCapsHelp': 'Remove messages that are mostly uppercase after a minimum length.',
+  'automod.capsPercentage': 'Capital percentage',
+  'automod.capsPercentageHelp': 'Percentage of letters that must be uppercase before action.',
+  'automod.capsMinimum': 'Minimum letters for caps filter',
+  'automod.capsMinimumHelp': 'Short messages below this length are ignored by the caps filter.',
+  'automod.antiEmojiSpam': 'Emoji spam',
+  'automod.antiEmojiSpamHelp': 'Remove messages containing too many emoji.',
+  'automod.emojiThreshold': 'Emoji threshold',
+  'automod.emojiThresholdHelp': 'Emoji in one message before action.',
+  'automod.antiAttachmentSpam': 'Attachment spam',
+  'automod.antiAttachmentSpamHelp':
+    'Detect users uploading too many attachments within a short period.',
+  'automod.attachmentThreshold': 'Attachment threshold',
+  'automod.attachmentThresholdHelp': 'Attachments allowed inside the attachment window.',
+  'automod.attachmentWindow': 'Attachment window',
+  'automod.attachmentWindowHelp': 'Seconds during which uploaded attachments are counted.',
+  'automod.antiLinkSpam': 'Link flood protection',
+  'automod.antiLinkSpamHelp':
+    'Detect users sending many links rapidly without blocking normal occasional links.',
+  'automod.linkThreshold': 'Link flood threshold',
+  'automod.linkThresholdHelp': 'Links allowed inside the link flood window.',
+  'automod.linkWindow': 'Link flood window',
+  'automod.linkWindowHelp': 'Seconds during which links are counted.',
+  'automod.joinTitle': 'Join protection',
+  'automod.joinDescription':
+    'Stop suspicious new accounts, automated bot joins, and sudden join raids.',
+  'automod.enforcementTitle': 'Enforcement',
+  'automod.enforcementDescription':
+    'Every removed message records a warning. Reaching the threshold applies a timeout.',
+  'automod.timeoutSeconds': 'Automatic timeout duration',
+  'automod.timeoutSecondsHelp': 'Timeout length in seconds after the warning threshold is reached.',
+  'automod.exemptionsTitle': 'Exemptions',
+  'automod.exemptionsDescription':
+    'Users, roles, and channels listed here bypass message and join protection where applicable.',
+  'automod.exemptUsers': 'Exempt users',
+  'automod.exemptUsersHelp':
+    'Discord user IDs that bypass automod. Existing /whitelist entries appear here.',
+  'automod.userIdPlaceholder': 'Discord user ID',
+  'automod.exemptRoles': 'Exempt roles',
+  'automod.exemptRolesHelp': 'Members with any selected role bypass automod.',
+  'automod.exemptChannels': 'Exempt channels',
+  'automod.exemptChannelsHelp': 'Messages in these channels bypass message filters.',
+  'automod.currentUserExempt':
+    'Your Discord account is currently exempt from automod. Your own test messages will not be filtered.',
+  'automod.removeMyExemption': 'Remove my exemption',
+  'automod.engineRunning': 'Protection engine active',
+  'automod.enginePaused': 'Protection engine paused',
   'automod.warningThreshold': 'Warning threshold',
   'automod.warningThresholdHelp': 'Warnings before Sparkles applies an automatic timeout.',
   'automod.enabled': 'Protection enabled',
