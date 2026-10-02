@@ -84,14 +84,69 @@ function SchemaField({ name, spec, value, onChange, resources, limits, forms = [
   const caption = label(name);
   const dragIndex = useRef(null);
   const common = { resources, limits, forms };
-  if (spec.type === 'boolean') return <label className="platform-check"><input type="checkbox" checked={value === true} onChange={event => onChange(event.target.checked)} />{caption}</label>;
+  if (spec.type === 'boolean') {
+    return (
+      <FormControlLabel
+        className="platform-check mui-platform-check"
+        control={
+          <Checkbox
+            checked={value === true}
+            onChange={(event) => onChange(event.target.checked)}
+          />
+        }
+        label={caption}
+      />
+    );
+  }
   if (spec.type === 'message') return <section className="platform-field-message"><h4>{caption}</h4><MessageStudio value={value ?? structuredClone(EMPTY_MESSAGE)} onChange={onChange} resources={resources} limits={limits} /></section>;
   if (spec.type === 'object') return <div className="platform-form-grid">{Object.entries(spec.fields).map(([key, child]) => <SchemaField key={key} name={key} spec={child} value={value?.[key]} onChange={next => onChange({ ...value, [key]: next })} {...common} />)}</div>;
   if (spec.type === 'actions' || spec.type === 'list') {
     const rows = value ?? []; const max = spec.max ?? limits[spec.limit ?? 'maximumSteps'];
     const move = (from, to) => { if (from < 0 || to < 0 || to >= rows.length || from === to) return; const next = [...rows]; next.splice(to, 0, next.splice(from, 1)[0]); onChange(next); };
     return <section className="platform-list-editor"><div className="studio-section-heading"><h4>{caption}{spec.required && <span aria-hidden="true"> *</span>}</h4>
-      {spec.type === 'actions' ? <select aria-label={t('platform.addAction')} value="" disabled={rows.length >= max} onChange={event => { const type = event.target.value; if (type) onChange([...rows, { type, ...Object.fromEntries(Object.entries(ACTION_FIELDS[type]).map(([key, spec]) => [key, defaultField(spec, limits)])) }]); }}><option value="">{t('platform.addAction')}</option>{Object.keys(ACTION_FIELDS).map(type => <option key={type} value={type}>{choice(type)}</option>)}</select> : <button type="button" className="button secondary" disabled={rows.length >= max} onClick={() => onChange([...rows, defaultField(spec.item, limits)])}>{t('platform.addItem')}</button>}
+      {spec.type === 'actions' ? (
+        <FormControl size="small" sx={{ minWidth: 210 }}>
+          <MuiSelect
+            displayEmpty
+            aria-label={t('platform.addAction')}
+            value=""
+            disabled={rows.length >= max}
+            onChange={(event) => {
+              const type = event.target.value;
+              if (type) {
+                onChange([
+                  ...rows,
+                  {
+                    type,
+                    ...Object.fromEntries(
+                      Object.entries(ACTION_FIELDS[type]).map(([key, childSpec]) => [
+                        key,
+                        defaultField(childSpec, limits),
+                      ]),
+                    ),
+                  },
+                ]);
+              }
+            }}
+          >
+            <MenuItem value="">{t('platform.addAction')}</MenuItem>
+            {Object.keys(ACTION_FIELDS).map((type) => (
+              <MenuItem key={type} value={type}>
+                {choice(type)}
+              </MenuItem>
+            ))}
+          </MuiSelect>
+        </FormControl>
+      ) : (
+        <Button
+          type="button"
+          variant="outlined"
+          disabled={rows.length >= max}
+          onClick={() => onChange([...rows, defaultField(spec.item, limits)])}
+        >
+          {t('platform.addItem')}
+        </Button>
+      )}
     </div>
       {rows.map((row, index) => <div className="platform-array-row" key={index} draggable onDragStart={() => { dragIndex.current = index; }} onDragOver={event => event.preventDefault()} onDrop={event => { event.preventDefault(); move(dragIndex.current, index); }}>
         <div className="studio-field-top"><strong>{spec.type === 'actions' ? t('platform.actionStep', { number: index + 1, action: choice(row.type) }) : t('platform.itemNumber', { number: index + 1 })}</strong><div className="platform-actions"><button type="button" aria-label={t('studio.moveUp')} disabled={!index} onClick={() => move(index, index - 1)}>↑</button><button type="button" aria-label={t('studio.moveDown')} disabled={index === rows.length - 1} onClick={() => move(index, index + 1)}>↓</button><button type="button" onClick={() => onChange(rows.filter((_, position) => position !== index))}>{t('studio.remove')}</button></div></div>
@@ -110,15 +165,127 @@ function SchemaField({ name, spec, value, onChange, resources, limits, forms = [
   if (options) {
     const existing = multiple ? value ?? [] : value ? [value] : [];
     const unavailable = existing.filter(id => !options.some(option => option.id === id));
-    return <label className="platform-field"><span>{caption}{spec.required && ' *'}</span><select required={spec.required} multiple={multiple} value={value ?? (multiple ? [] : '')} onChange={event => onChange(multiple ? [...event.target.selectedOptions].map(option => option.value) : event.target.value)}>
-      {!multiple && <option value="">{t('platform.choose')}</option>}{unavailable.map(id => <option key={id} value={id}>{t('platform.unavailableObject', { id })}</option>)}{options.map(option => <option value={option.id} key={option.id} disabled={option.disabled}>{option.name}{option.disabled ? t('platform.unmanageable') : ''}</option>)}</select>{multiple && <small className="muted">{t('platform.multipleHelp')}</small>}</label>;
+    return (
+      <label className="platform-field mui-platform-field">
+        <span>
+          {caption}
+          {spec.required && ' *'}
+        </span>
+        <FormControl size="small" fullWidth required={spec.required}>
+          <MuiSelect
+            multiple={multiple}
+            displayEmpty={!multiple}
+            value={value ?? (multiple ? [] : '')}
+            onChange={(event) =>
+              onChange(
+                multiple
+                  ? typeof event.target.value === 'string'
+                    ? event.target.value.split(',')
+                    : event.target.value
+                  : event.target.value,
+              )
+            }
+            renderValue={(selected) => {
+              if (!multiple) {
+                if (!selected) return t('platform.choose');
+                const option = options.find((item) => item.id === selected);
+                return option?.name ?? t('platform.unavailableObject', { id: selected });
+              }
+              const ids = Array.isArray(selected) ? selected : [];
+              if (!ids.length) return t('platform.choose');
+              return ids
+                .map((id) => options.find((item) => item.id === id)?.name ?? id)
+                .join(', ');
+            }}
+          >
+            {!multiple ? <MenuItem value="">{t('platform.choose')}</MenuItem> : null}
+            {unavailable.map((id) => (
+              <MenuItem key={id} value={id}>
+                {t('platform.unavailableObject', { id })}
+              </MenuItem>
+            ))}
+            {options.map((option) => (
+              <MenuItem value={option.id} key={option.id} disabled={option.disabled}>
+                {multiple ? (
+                  <Checkbox
+                    size="small"
+                    checked={(value ?? []).includes(option.id)}
+                    sx={{ mr: 1 }}
+                  />
+                ) : null}
+                {option.name}
+                {option.disabled ? t('platform.unmanageable') : ''}
+              </MenuItem>
+            ))}
+          </MuiSelect>
+        </FormControl>
+        {multiple ? <small className="muted">{t('platform.multipleHelp')}</small> : null}
+      </label>
+    );
   }
-  const Element = spec.multiline ? 'textarea' : 'input';
-  const displayValue = spec.type === 'date' && value ? new Date(Date.parse(value) - new Date(value).getTimezoneOffset() * 60000).toISOString().slice(0, 16) : spec.type === 'users' ? (value ?? []).join(', ') : value ?? '';
-  return <label className="platform-field"><span>{caption}{spec.required && ' *'}</span><Element rows={spec.multiline ? 3 : undefined} type={spec.type === 'number' ? 'number' : spec.type === 'date' ? 'datetime-local' : 'text'} min={spec.min} max={spec.max ?? limits[spec.limit]} required={spec.required} value={displayValue} onChange={event => {
-    const next = event.target.value;
-    onChange(spec.type === 'number' ? (next === '' ? '' : Number(next)) : spec.type === 'date' ? (next ? new Date(next).toISOString() : '') : spec.type === 'users' ? next.split(/[\s,]+/u).filter(Boolean) : next);
-  }} />{spec.type === 'date' && <small className="muted">{t('platform.scheduleTimezone', { zone: Intl.DateTimeFormat().resolvedOptions().timeZone })}</small>}{spec.type === 'users' && <small className="muted">{t('platform.userIdsHelp')}</small>}</label>;
+  const displayValue =
+    spec.type === 'date' && value
+      ? new Date(
+          Date.parse(value) - new Date(value).getTimezoneOffset() * 60000,
+        )
+          .toISOString()
+          .slice(0, 16)
+      : spec.type === 'users'
+        ? (value ?? []).join(', ')
+        : value ?? '';
+
+  return (
+    <label className="platform-field mui-platform-field">
+      <span>
+        {caption}
+        {spec.required && ' *'}
+      </span>
+      <TextField
+        fullWidth
+        multiline={spec.multiline}
+        minRows={spec.multiline ? 3 : undefined}
+        type={
+          spec.type === 'number'
+            ? 'number'
+            : spec.type === 'date'
+              ? 'datetime-local'
+              : 'text'
+        }
+        required={spec.required}
+        value={displayValue}
+        inputProps={{
+          min: spec.min,
+          max: spec.max ?? limits[spec.limit],
+        }}
+        onChange={(event) => {
+          const next = event.target.value;
+          onChange(
+            spec.type === 'number'
+              ? next === ''
+                ? ''
+                : Number(next)
+              : spec.type === 'date'
+                ? next
+                  ? new Date(next).toISOString()
+                  : ''
+                : spec.type === 'users'
+                  ? next.split(/[\s,]+/u).filter(Boolean)
+                  : next,
+          );
+        }}
+      />
+      {spec.type === 'date' ? (
+        <small className="muted">
+          {t('platform.scheduleTimezone', {
+            zone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          })}
+        </small>
+      ) : null}
+      {spec.type === 'users' ? (
+        <small className="muted">{t('platform.userIdsHelp')}</small>
+      ) : null}
+    </label>
+  );
 }
 
 function ChangeList({ changes }) {
