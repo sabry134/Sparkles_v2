@@ -19,7 +19,7 @@ import {
   guildConfig,
   loadStore,
   saveStore,
-  storeFilePath,
+  storeBackendDescription,
   syncStore,
   warningCount,
 } from './src/store.js';
@@ -1480,7 +1480,7 @@ client.on('interactionCreate', async (interaction) => {
 client.once('ready', () => {
   restoreGiveaways(client, t);
   console.log(
-    `Ready as ${client.user.tag}; registered ${commands.length} commands; store ${storeFilePath}.`,
+    `Ready as ${client.user.tag}; registered ${commands.length} commands; store ${storeBackendDescription()}.`,
   );
 });
 client.on('guildMemberAdd', (member) => {
