@@ -110,7 +110,9 @@ export default function Select({
     if (!open) return;
     const position = () => {
       if (!trigger.current) return;
-      const bounds = trigger.current.getBoundingClientRect();
+      const anchor =
+        variant === 'guild-select' ? root.current?.parentElement ?? trigger.current : trigger.current;
+      const bounds = anchor.getBoundingClientRect();
       const viewportGap = 12;
       const menuGap = 7;
       const below = window.innerHeight - bounds.bottom - viewportGap;
@@ -135,7 +137,7 @@ export default function Select({
       window.removeEventListener('resize', position);
       window.removeEventListener('scroll', position, true);
     };
-  }, [open, options.length]);
+  }, [open, options.length, variant]);
 
   useLayoutEffect(() => {
     if (!open || !list.current) return;
