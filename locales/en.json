@@ -12,7 +12,8 @@
     "invalidDuration": "Use a duration such as 10m, 2h, or 3d (maximum 28 days).",
     "invalidChannel": "Select a compatible text channel for this command.",
     "targetChannelPermission": "You need Manage Messages to post this command in another channel.",
-    "moduleDisabled": "The **{module}** module is disabled for this server. An administrator can enable it from the dashboard."
+    "moduleDisabled": "The **{module}** module is disabled for this server. An administrator can enable it from the dashboard.",
+    "commandDisabled": "The /{command} command is disabled in this server."
   },
   "dashboard": {
     "modules": {
