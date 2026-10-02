@@ -554,7 +554,6 @@ function Dashboard({ session, onSessionExpired }) {
   }, [loadGuilds]);
 
   const selectedGuild = guilds.find((guild) => guild.id === selectedGuildId) ?? null;
-  const sectionsReady = Boolean(draft && resources);
 
   const loadSettings = useCallback(
     async (guild) => {
