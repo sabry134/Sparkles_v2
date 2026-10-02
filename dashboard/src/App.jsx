@@ -1105,7 +1105,7 @@ function Dashboard({ session, onSessionExpired }) {
               title={t('automod.title')}
               description={t('automod.description')}
             >
-              {draft.automod.exemptUserIds.includes(session.user.id) ? (
+              {(draft.automod.exemptUserIds ?? []).includes(session.user.id) ? (
                 <div className="warning-banner automod-self-exempt">
                   <Icon name="alert" size={18} />
                   <span>{t('automod.currentUserExempt')}</span>
@@ -1116,7 +1116,7 @@ function Dashboard({ session, onSessionExpired }) {
                       updateNested(
                         'automod',
                         'exemptUserIds',
-                        draft.automod.exemptUserIds.filter(
+                        (draft.automod.exemptUserIds ?? []).filter(
                           (userId) => userId !== session.user.id,
                         ),
                       )
@@ -1459,7 +1459,7 @@ function Dashboard({ session, onSessionExpired }) {
                   id="automod-blacklisted-users"
                   label={t('automod.blacklistedUsers')}
                   help={t('automod.blacklistedUsersHelp')}
-                  value={draft.automod.blacklistedUserIds}
+                  value={draft.automod.blacklistedUserIds ?? []}
                   onChange={(value) =>
                     updateNested('automod', 'blacklistedUserIds', value)
                   }
@@ -1468,14 +1468,14 @@ function Dashboard({ session, onSessionExpired }) {
                   id="automod-exempt-users"
                   label={t('automod.exemptUsers')}
                   help={t('automod.exemptUsersHelp')}
-                  value={draft.automod.exemptUserIds}
+                  value={draft.automod.exemptUserIds ?? []}
                   onChange={(value) => updateNested('automod', 'exemptUserIds', value)}
                 />
                 <MultiSelectField
                   id="automod-exempt-roles"
                   label={t('automod.exemptRoles')}
                   help={t('automod.exemptRolesHelp')}
-                  value={draft.automod.exemptRoleIds}
+                  value={draft.automod.exemptRoleIds ?? []}
                   onChange={(value) => updateNested('automod', 'exemptRoleIds', value)}
                   options={allRoleOptions}
                   icon="role"
@@ -1484,7 +1484,7 @@ function Dashboard({ session, onSessionExpired }) {
                   id="automod-exempt-channels"
                   label={t('automod.exemptChannels')}
                   help={t('automod.exemptChannelsHelp')}
-                  value={draft.automod.exemptChannelIds}
+                  value={draft.automod.exemptChannelIds ?? []}
                   onChange={(value) =>
                     updateNested('automod', 'exemptChannelIds', value)
                   }
