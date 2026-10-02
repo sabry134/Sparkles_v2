@@ -3,18 +3,37 @@ import { api, ApiError } from './api.js';
 import { t } from './i18n/index.js';
 import Icon from './Icon.jsx';
 import Select from './Select.jsx';
+import EmbedBuilder, { EMPTY_EMBED } from './EmbedBuilder.jsx';
+import EmojiPicker from './EmojiPicker.jsx';
 
 const NAVIGATION = [
   ['overview', 'nav.overview', 'grid'],
   ['moderation', 'nav.moderation', 'shield'],
   ['automod', 'nav.automod', 'spark'],
   ['roles', 'nav.roles', 'users'],
+  ['embeds', 'nav.embeds', 'message'],
   ['community', 'nav.community', 'message'],
   ['economy', 'nav.economy', 'coin'],
   ['music', 'nav.music', 'music'],
   ['modules', 'nav.modules', 'settings'],
   ['custom', 'nav.custom', 'terminal'],
 ];
+
+const PAGE_IDS = new Set(NAVIGATION.map(([id]) => id));
+
+function routeState() {
+  const match = /^\/servers\/(\d{17,20})\/([a-z-]+)\/?$/u.exec(
+    window.location.pathname,
+  );
+  return {
+    guildId: match?.[1] ?? null,
+    page: PAGE_IDS.has(match?.[2]) ? match[2] : 'overview',
+  };
+}
+
+function dashboardPath(guildId, page) {
+  return guildId ? `/servers/${guildId}/${PAGE_IDS.has(page) ? page : 'overview'}` : '/';
+}
 
 function translatedError(error) {
   if (!(error instanceof ApiError)) return t('error.client');
@@ -167,9 +186,9 @@ function Loading() {
   );
 }
 
-function SettingSection({ id, title, description, children }) {
+function SettingSection({ id, title, description, children, active = true }) {
   return (
-    <section className="settings-section" id={id}>
+    <section className="settings-section module-page" id={id} hidden={!active}>
       <header className="section-heading">
         <h2>{title}</h2>
         <p>{description}</p>
@@ -484,14 +503,25 @@ function Dashboard({ session, onSessionExpired }) {
   const [toast, setToast] = useState(null);
   const [saving, setSaving] = useState(false);
   const [reactionPending, setReactionPending] = useState(false);
+  const [reactionMode, setReactionMode] = useState('existing');
   const [reactionForm, setReactionForm] = useState({
+    messageLink: '',
     channelId: '',
-    messageId: '',
-    emoji: '',
+    emoji: '👍',
     roleId: '',
+    content: '',
+    embed: structuredClone(EMPTY_EMBED),
   });
+  const [embedForm, setEmbedForm] = useState({
+    channelId: '',
+    content: '',
+    embed: structuredClone(EMPTY_EMBED),
+  });
+  const [embedPending, setEmbedPending] = useState(false);
+  const [lastPublishedEmbed, setLastPublishedEmbed] = useState(null);
   const [customForm, setCustomForm] = useState({ name: '', response: '' });
-  const [activeSection, setActiveSection] = useState('overview');
+  const initialRoute = routeState();
+  const [activeSection, setActiveSection] = useState(initialRoute.page);
   const requestSequence = useRef(0);
   const toastSequence = useRef(0);
   const activeGuildId = useRef(null);
@@ -513,7 +543,7 @@ function Dashboard({ session, onSessionExpired }) {
     (error) => {
       if (
         error instanceof ApiError &&
-        ['AUTH_REQUIRED', 'DISCORD_SESSION_EXPIRED'].includes(error.code)
+        ['AUTH_REQUIRED', 'DISCORD_SESSION_EXPIRED', 'INVALID_CSRF'].includes(error.code)
       ) {
         onSessionExpired(error);
         return;
@@ -536,8 +566,10 @@ function Dashboard({ session, onSessionExpired }) {
       setGuilds(result.guilds);
       setSelectedGuildId((current) => {
         if (result.guilds.some((guild) => guild.id === current)) return current;
+        const routed = routeState().guildId;
         const remembered = rememberedGuild();
         const selected =
+          result.guilds.find((guild) => guild.id === routed) ??
           result.guilds.find((guild) => guild.id === remembered) ??
           result.guilds.find((guild) => guild.botInstalled) ??
           result.guilds[0];
@@ -594,26 +626,27 @@ function Dashboard({ session, onSessionExpired }) {
   }, [selectedGuildId, selectedGuild, loadSettings]);
 
   useEffect(() => {
-    if (loadingSettings || settingsError || !sectionsReady) return;
-    const sections = NAVIGATION.map(([id]) => document.getElementById(id)).filter(Boolean);
-    if (!sections.length) return;
+    const onPopState = () => {
+      const next = routeState();
+      setActiveSection(next.page);
+      if (next.guildId && guilds.some((guild) => guild.id === next.guildId)) {
+        setSelectedGuildId(next.guildId);
+      }
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
+  }, [guilds]);
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((left, right) => right.intersectionRatio - left.intersectionRatio)[0];
-        if (visible) setActiveSection(visible.target.id);
-      },
-      {
-        rootMargin: '-18% 0px -68% 0px',
-        threshold: [0, 0.2, 0.5, 0.8],
-      },
+  useEffect(() => {
+    if (!selectedGuildId) return;
+    const current = routeState();
+    if (current.guildId === selectedGuildId && current.page === activeSection) return;
+    window.history.replaceState(
+      {},
+      '',
+      dashboardPath(selectedGuildId, activeSection),
     );
-
-    sections.forEach((section) => observer.observe(section));
-    return () => observer.disconnect();
-  }, [selectedGuildId, loadingSettings, settingsError, sectionsReady]);
+  }, [selectedGuildId, activeSection]);
 
   useEffect(() => {
     if (!window.matchMedia('(max-width: 900px)').matches) return;
@@ -660,11 +693,23 @@ function Dashboard({ session, onSessionExpired }) {
     [draft, savedSettings, editableSettings],
   );
 
+  function navigateSection(section) {
+    if (!PAGE_IDS.has(section)) return;
+    setActiveSection(section);
+    window.history.pushState(
+      {},
+      '',
+      dashboardPath(selectedGuildId, section),
+    );
+    window.scrollTo({ top: 0, behavior: scrollBehavior() });
+  }
+
   function chooseGuild(value) {
     activeGuildId.current = value;
     setSelectedGuildId(value);
     setActiveSection('overview');
     setToast(null);
+    window.history.pushState({}, '', dashboardPath(value, 'overview'));
   }
 
   function updateField(field, value) {
@@ -903,10 +948,7 @@ function Dashboard({ session, onSessionExpired }) {
               type="button"
               aria-current={activeSection === id ? 'page' : undefined}
               data-section={id}
-              onClick={() => {
-                setActiveSection(id);
-                document.getElementById(id)?.scrollIntoView({ behavior: scrollBehavior() });
-              }}
+              onClick={() => navigateSection(id)}
             >
               <Icon name={icon} />
               {t(label)}
@@ -1017,6 +1059,7 @@ function Dashboard({ session, onSessionExpired }) {
 
             <SettingSection
               id="overview"
+              active={activeSection === 'overview'}
               title={t('overview.title')}
               description={t('overview.description')}
             >
@@ -1074,6 +1117,7 @@ function Dashboard({ session, onSessionExpired }) {
 
             <SettingSection
               id="moderation"
+              active={activeSection === 'moderation'}
               title={t('moderation.title')}
               description={t('moderation.description')}
             >
@@ -1102,6 +1146,7 @@ function Dashboard({ session, onSessionExpired }) {
 
             <SettingSection
               id="automod"
+              active={activeSection === 'automod'}
               title={t('automod.title')}
               description={t('automod.description')}
             >
@@ -1512,6 +1557,7 @@ function Dashboard({ session, onSessionExpired }) {
 
             <SettingSection
               id="roles"
+              active={activeSection === 'roles'}
               title={t('roles.title')}
               description={t('roles.description')}
             >
@@ -1691,6 +1737,7 @@ function Dashboard({ session, onSessionExpired }) {
 
             <SettingSection
               id="community"
+              active={activeSection === 'community'}
               title={t('community.title')}
               description={t('community.description')}
             >
@@ -1778,6 +1825,7 @@ function Dashboard({ session, onSessionExpired }) {
 
             <SettingSection
               id="economy"
+              active={activeSection === 'economy'}
               title={t('economy.title')}
               description={t('economy.description')}
             >
@@ -1826,6 +1874,7 @@ function Dashboard({ session, onSessionExpired }) {
 
             <SettingSection
               id="music"
+              active={activeSection === 'music'}
               title={t('music.title')}
               description={t('music.description')}
             >
@@ -1845,6 +1894,7 @@ function Dashboard({ session, onSessionExpired }) {
 
             <SettingSection
               id="modules"
+              active={activeSection === 'modules'}
               title={t('modules.title')}
               description={t('modules.description')}
             >
@@ -1873,6 +1923,7 @@ function Dashboard({ session, onSessionExpired }) {
 
             <SettingSection
               id="custom"
+              active={activeSection === 'custom'}
               title={t('custom.title')}
               description={t('custom.description')}
             >
