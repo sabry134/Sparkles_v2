@@ -301,6 +301,27 @@ function publicSettings(config, defaults) {
     disabledCommands: Array.isArray(config.disabledCommands)
       ? [...new Set(config.disabledCommands.filter((name) => typeof name === 'string'))]
       : [],
+    commandPermissions: validRoot(config.commandPermissions)
+      ? Object.fromEntries(
+          Object.entries(config.commandPermissions)
+            .filter(([, rule]) => validRoot(rule))
+            .map(([name, rule]) => [
+              name,
+              {
+                roleMode:
+                  rule.roleMode === 'deny-all-except'
+                    ? 'deny-all-except'
+                    : 'allow-all-except',
+                roleIds: Array.isArray(rule.roleIds) ? rule.roleIds : [],
+                channelMode:
+                  rule.channelMode === 'deny-all-except'
+                    ? 'deny-all-except'
+                    : 'allow-all-except',
+                channelIds: Array.isArray(rule.channelIds) ? rule.channelIds : [],
+              },
+            ]),
+        )
+      : {},
     customCommands: validRoot(config.customCommands)
       ? Object.fromEntries(
           Object.entries(config.customCommands).filter(
@@ -544,6 +565,9 @@ export class BotStore {
       }
       if (patch.disabledCommands) {
         config.disabledCommands = [...patch.disabledCommands];
+      }
+      if (patch.commandPermissions) {
+        config.commandPermissions = structuredClone(patch.commandPermissions);
       }
       if (patch.customCommands) {
         config.customCommands = { ...patch.customCommands };
