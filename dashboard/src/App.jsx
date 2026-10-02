@@ -960,7 +960,7 @@ function Dashboard({ session, onSessionExpired }) {
                       'blockedWords',
                       value
                         .split(',')
-                        .map((word) => word.trim())
+                        .map((word) => word.trim().slice(0, 64))
                         .filter(Boolean)
                         .slice(0, 100),
                     )
