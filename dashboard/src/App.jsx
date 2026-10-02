@@ -128,13 +128,23 @@ function Login({ error, onDismiss }) {
   );
 }
 
-function Toast({ type = 'success', message, onDismiss }) {
+function Toast({ type = 'success', message, onDismiss, duration = 0 }) {
+  useEffect(() => {
+    if (!duration) return undefined;
+    const timeout = window.setTimeout(onDismiss, duration);
+    return () => window.clearTimeout(timeout);
+  }, [duration, onDismiss]);
+
   return (
-    <div className={`toast ${type}`} role={type === 'error' ? 'alert' : 'status'}>
+    <div
+      className={`toast ${type}`}
+      role={type === 'error' ? 'alert' : 'status'}
+      style={duration ? { '--toast-duration': `${duration}ms` } : undefined}
+    >
       <span className="toast-icon">
         <Icon name={type === 'error' ? 'alert' : 'check'} />
       </span>
-      <span>{message}</span>
+      <span className="toast-message">{message}</span>
       <button
         className="icon-button"
         type="button"
@@ -143,6 +153,7 @@ function Toast({ type = 'success', message, onDismiss }) {
       >
         <Icon name="close" size={18} />
       </button>
+      {duration ? <span className="toast-progress" aria-hidden="true" /> : null}
     </div>
   );
 }
@@ -348,6 +359,21 @@ function Dashboard({ session, onSessionExpired }) {
   const [customForm, setCustomForm] = useState({ name: '', response: '' });
   const [activeSection, setActiveSection] = useState('overview');
   const requestSequence = useRef(0);
+  const toastSequence = useRef(0);
+  const activeGuildId = useRef(null);
+  const failedSaveSignature = useRef(null);
+
+  const dismissToast = useCallback(() => setToast(null), []);
+
+  const showSuccess = useCallback((message) => {
+    toastSequence.current += 1;
+    setToast({
+      id: toastSequence.current,
+      type: 'success',
+      message,
+      duration: 3600,
+    });
+  }, []);
 
   const showError = useCallback(
     (error) => {
@@ -358,7 +384,12 @@ function Dashboard({ session, onSessionExpired }) {
         onSessionExpired(error);
         return;
       }
-      setToast({ type: 'error', message: translatedError(error) });
+      toastSequence.current += 1;
+      setToast({
+        id: toastSequence.current,
+        type: 'error',
+        message: translatedError(error),
+      });
     },
     [onSessionExpired],
   );
@@ -422,6 +453,8 @@ function Dashboard({ session, onSessionExpired }) {
   );
 
   useEffect(() => {
+    activeGuildId.current = selectedGuildId;
+    failedSaveSignature.current = null;
     if (selectedGuildId) rememberGuild(selectedGuildId);
     loadSettings(selectedGuild);
   }, [selectedGuildId, selectedGuild, loadSettings]);
@@ -494,6 +527,7 @@ function Dashboard({ session, onSessionExpired }) {
   );
 
   function chooseGuild(value) {
+    activeGuildId.current = value;
     setSelectedGuildId(value);
     setActiveSection('overview');
     setToast(null);
@@ -516,34 +550,70 @@ function Dashboard({ session, onSessionExpired }) {
     }));
   }
 
-  async function saveSettings() {
-    if (!dirty || !selectedGuild || !draft) return;
-    setSaving(true);
-    const path = `/api/guilds/${selectedGuild.id}/settings`;
-    const options = {
-      method: 'PATCH',
-      csrfToken: session.csrfToken,
-      body: editableSettings(draft),
-    };
+  const autosaveSettings = useCallback(
+    async (guildId, snapshot, signature) => {
+      setSaving(true);
+      const path = `/api/guilds/${guildId}/settings`;
+      const options = {
+        method: 'PATCH',
+        csrfToken: session.csrfToken,
+        body: snapshot,
+      };
 
-    try {
-      let result;
       try {
-        result = await api(path, options);
+        let result;
+        try {
+          result = await api(path, options);
+        } catch (error) {
+          if (!(error instanceof ApiError) || error.code !== 'NETWORK_ERROR') throw error;
+          await new Promise((resolve) => window.setTimeout(resolve, 500));
+          result = await api(path, options);
+        }
+
+        if (activeGuildId.current !== guildId) return;
+        failedSaveSignature.current = null;
+        setSavedSettings(result.settings);
+        setDraft((current) =>
+          JSON.stringify(editableSettings(current)) === signature
+            ? result.settings
+            : current,
+        );
+        showSuccess(t('status.saved'));
       } catch (error) {
-        if (!(error instanceof ApiError) || error.code !== 'NETWORK_ERROR') throw error;
-        await new Promise((resolve) => window.setTimeout(resolve, 500));
-        result = await api(path, options);
+        if (activeGuildId.current === guildId) {
+          failedSaveSignature.current = signature;
+          showError(error);
+        }
+      } finally {
+        setSaving(false);
       }
-      setSavedSettings(result.settings);
-      setDraft(result.settings);
-      setToast({ type: 'success', message: t('status.saved') });
-    } catch (error) {
-      showError(error);
-    } finally {
-      setSaving(false);
-    }
-  }
+    },
+    [editableSettings, session.csrfToken, showError, showSuccess],
+  );
+
+  useEffect(() => {
+    if (!dirty || saving || !selectedGuild?.botInstalled || !draft) return undefined;
+
+    const snapshot = editableSettings(draft);
+    const signature = JSON.stringify(snapshot);
+    if (failedSaveSignature.current === signature) return undefined;
+
+    const guildId = selectedGuild.id;
+    const timeout = window.setTimeout(
+      () => autosaveSettings(guildId, snapshot, signature),
+      650,
+    );
+
+    return () => window.clearTimeout(timeout);
+  }, [
+    autosaveSettings,
+    dirty,
+    draft,
+    editableSettings,
+    saving,
+    selectedGuild?.botInstalled,
+    selectedGuild?.id,
+  ]);
 
   function mergeReactionSettings(nextSettings) {
     setSavedSettings((current) => ({
@@ -565,7 +635,7 @@ function Dashboard({ session, onSessionExpired }) {
       });
       mergeReactionSettings(result.settings);
       setReactionForm({ channelId: '', messageId: '', emoji: '', roleId: '' });
-      setToast({ type: 'success', message: t('status.reactionAdded') });
+      showSuccess(t('status.reactionAdded'));
     } catch (error) {
       showError(error);
     } finally {
@@ -583,7 +653,7 @@ function Dashboard({ session, onSessionExpired }) {
         body: { key },
       });
       mergeReactionSettings(result.settings);
-      setToast({ type: 'success', message: t('status.reactionRemoved') });
+      showSuccess(t('status.reactionRemoved'));
     } catch (error) {
       showError(error);
     } finally {
@@ -780,19 +850,15 @@ function Dashboard({ session, onSessionExpired }) {
                   <p>{t('header.description')}</p>
                 </div>
               </div>
-              <div className={`save-status ${dirty ? 'dirty' : ''}`}>
+              <div className={`save-status ${dirty || saving ? 'dirty' : ''}`}>
                 <span>
-                  <Icon name={dirty ? 'alert' : 'check'} size={15} />
-                  {dirty ? t('header.unsaved') : t('header.saved')}
+                  <Icon name={dirty || saving ? 'refresh' : 'check'} size={15} />
+                  {saving
+                    ? t('common.saving')
+                    : dirty
+                      ? t('header.autosavePending')
+                      : t('header.saved')}
                 </span>
-                <button
-                  className="button primary"
-                  type="button"
-                  disabled={!dirty || saving}
-                  onClick={saveSettings}
-                >
-                  {saving ? t('common.saving') : t('common.save')}
-                </button>
               </div>
             </header>
 
@@ -1452,10 +1518,6 @@ function Dashboard({ session, onSessionExpired }) {
                     {t('custom.stage')}
                   </button>
                 </form>
-                <div className="warning-banner custom-save-note">
-                  <Icon name="alert" size={18} />
-                  {t('custom.saveNote')}
-                </div>
               </div>
             </SettingSection>
           </div>
@@ -1464,9 +1526,11 @@ function Dashboard({ session, onSessionExpired }) {
 
       {toast ? (
         <Toast
+          key={toast.id}
           type={toast.type}
           message={toast.message}
-          onDismiss={() => setToast(null)}
+          duration={toast.duration}
+          onDismiss={dismissToast}
         />
       ) : null}
     </div>
