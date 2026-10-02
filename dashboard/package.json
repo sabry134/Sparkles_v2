@@ -7,7 +7,7 @@
     "node": ">=20.11.0"
   },
   "scripts": {
-    "dev": "concurrently -k -n api,web -c magenta,cyan \"node --watch server/index.js\" \"vite\"",
+    "dev": "concurrently -k -n api,web -c magenta,cyan \"node --watch-path=server --watch-path=config server/index.js\" \"vite\"",
     "build": "vite build",
     "start": "node server/index.js",
     "check": "node --check server/index.js && node --check server/config.js && node --check server/discord.js && node --check server/bot-store.js && node --check server/session-store.js && node --check server/validation.js && node --check server/errors.js && vite build",
