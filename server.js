@@ -586,19 +586,25 @@ client.on('interactionCreate', async (interaction) => {
       );
     }
 
-    const moduleKey = {
-      moderation: 'moderation',
-      automod: 'automod',
-      'roles-members': 'roles',
-      'server-builder': 'server',
-      community: 'community',
-      'economy-profile': 'economy',
-      fun: 'fun',
-      music: 'music',
-      events: 'events',
-      'tools-ai': 'tools',
-      'custom-premium': 'tools',
-    }[commandModules.get(commandName)];
+    const moduleKey =
+      {
+        'set-verification': 'roles',
+        verify: 'roles',
+        ticket: 'community',
+      }[commandName] ??
+      {
+        moderation: 'moderation',
+        automod: 'automod',
+        'roles-members': 'roles',
+        'server-builder': 'server',
+        community: 'community',
+        'economy-profile': 'economy',
+        fun: 'fun',
+        music: 'music',
+        events: 'events',
+        'tools-ai': 'tools',
+        'custom-premium': 'tools',
+      }[commandModules.get(commandName)];
     if (
       moduleKey &&
       commandName !== 'module' &&
