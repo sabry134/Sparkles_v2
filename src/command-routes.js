@@ -176,7 +176,6 @@ export const GROUPED_COMMAND_OPTIONS = Object.freeze({
   'automod-test': [
     string('text', 'text', 'options.automodTestText', true, { maxLength: 2_000 }),
   ],
-  ask: [string('text', 'prompt', 'options.aiPrompt', true, { maxLength: 2_000 })],
   'auto-status': [],
   automod: [
     state(),
@@ -304,7 +303,6 @@ export const GROUPED_COMMAND_OPTIONS = Object.freeze({
   'now-playing': [],
   open: [],
   organize: [],
-  pastebin: [
     string('text', 'content', 'options.pasteContent', true, { maxLength: 2_000 }),
   ],
   play: [string('text', 'query', 'options.songQuery', true, { maxLength: 300 })],
@@ -321,7 +319,6 @@ export const GROUPED_COMMAND_OPTIONS = Object.freeze({
   ],
   queue: [],
   random: [],
-  ratings: [string('text', 'player', 'options.playerName', true, { maxLength: 100 })],
   'redeem-code': [string('id', 'code', 'options.accessCode', true, { maxLength: 64 })],
   'remove-permissions': [],
   'remove-points': [
@@ -344,7 +341,6 @@ export const GROUPED_COMMAND_OPTIONS = Object.freeze({
     string('text', 'message', 'options.messageContent', true, { maxLength: 2_000 }),
     channel('channel', 'options.messageChannel'),
   ],
-  reward: [],
   rob: [
     user(true),
     integer('amount', 'maximum', 'options.robAmount', false, {
@@ -365,9 +361,7 @@ export const GROUPED_COMMAND_OPTIONS = Object.freeze({
   shop: [],
   skip: [],
   'song-search': [string('text', 'query', 'options.songQuery', true, { maxLength: 300 })],
-  start: [],
   status: [],
-  stop: [],
   sudo: [
     user(true),
     string('text', 'message', 'options.messageContent', true, { maxLength: 2_000 }),
