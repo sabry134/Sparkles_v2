@@ -560,6 +560,61 @@ export async function validateAndAddReaction(guildId, mapping, resources, config
   }
 }
 
+export async function sendDashboardEmbed(guildId, input, resources, config) {
+  const channel = resources.channels.find(({ id }) => id === input.channelId);
+  if (!channel) throw new AppError('INVALID_CHANNEL', 400);
+
+  try {
+    const message = await botRequest(
+      config,
+      `/channels/${input.channelId}/messages`,
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          content: input.content || undefined,
+          embeds: [input.embed],
+          allowed_mentions: { parse: [] },
+        }),
+      },
+    );
+    return {
+      channelId: input.channelId,
+      messageId: message.id,
+      messageLink: `https://discord.com/channels/${guildId}/${input.channelId}/${message.id}`,
+    };
+  } catch (error) {
+    if (error.discordStatus === 403) throw new AppError('BOT_MISSING_PERMISSION', 409);
+    throw error;
+  }
+}
+
+export async function createReactionRoleEmbed(
+  guildId,
+  input,
+  resources,
+  config,
+) {
+  const role = resources.roles.find(({ id }) => id === input.roleId);
+  if (!role?.assignable) throw new AppError('INVALID_ROLE', 400);
+
+  const message = await sendDashboardEmbed(guildId, input, resources, config);
+  const mapping = {
+    channelId: message.channelId,
+    messageId: message.messageId,
+    roleId: input.roleId,
+    emoji: input.emoji,
+    emojiKey: input.emojiKey,
+    key: `${message.messageId}:${input.emojiKey}`,
+  };
+
+  await validateAndAddReaction(guildId, mapping, resources, config);
+  return {
+    mapping,
+    messageLink: message.messageLink,
+  };
+}
+
 export async function removeBotReaction(mapping, config) {
   await botRequest(
     config,
