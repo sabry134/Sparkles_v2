@@ -966,24 +966,242 @@ function Access({ request, bootstrap }) {
             })
           }
         />
-      </label></div><div className="access-capabilities">{data.capabilities.map(capability => <label key={capability} className="platform-check"><input type="checkbox" checked={grant.capabilities.includes(capability)} onChange={event => update({ ...data.policy, grants: data.policy.grants.map((row, position) => position === index ? { ...row, capabilities: event.target.checked ? [...row.capabilities, capability] : row.capabilities.filter(key => key !== capability) } : row) })} />{t(`capability.${capability}`)}</label>)}</div><Button type="button" className="button secondary" onClick={() => update({ ...data.policy, grants: data.policy.grants.filter((_, position) => position !== index) })}>{t('studio.remove')}</Button></div>)}
+      </label>
+      </div>
+      <div className="access-capabilities">
+        {data.capabilities.map((capability) => (
+          <FormControlLabel
+            key={capability}
+            className="platform-check mui-platform-check"
+            control={
+              <Checkbox
+                checked={grant.capabilities.includes(capability)}
+                onChange={(event) =>
+                  update({
+                    ...data.policy,
+                    grants: data.policy.grants.map((row, position) =>
+                      position === index
+                        ? {
+                            ...row,
+                            capabilities: event.target.checked
+                              ? [...row.capabilities, capability]
+                              : row.capabilities.filter(
+                                  (key) => key !== capability,
+                                ),
+                          }
+                        : row,
+                    ),
+                  })
+                }
+              />
+            }
+            label={t(`capability.${capability}`)}
+          />
+        ))}
+      </div>
+      <Button
+        variant="outlined"
+        onClick={() =>
+          update({
+            ...data.policy,
+            grants: data.policy.grants.filter(
+              (_, position) => position !== index,
+            ),
+          })
+        }
+      >
+        {t('studio.remove')}
+      </Button>
+    </div>
+  )}
     <div className="platform-actions"><Button type="button" className="button secondary" onClick={() => update({ ...data.policy, grants: [...data.policy.grants, { roleId: '', capabilities: [] }] })}>{t('access.addGrant')}</Button><Button type="button" className="button primary" disabled={!dirty || busy} onClick={saveAccess}>{t('access.save')}</Button></div><ChangeList changes={configurationDiff(saved, data.policy)} />
   </>}</section>;
 }
 
 function Blueprints({ request, bootstrap }) {
-  const [blueprint, setBlueprint] = useState(null); const [mapping, setMapping] = useState({}); const [kinds, setKinds] = useState([]); const [preview, setPreview] = useState(null);
-  const [error, setError] = useState(null); const [busy, setBusy] = useState(false); const [notice, setNotice] = useState('');
-  const run = async action => { setBusy(true); setError(null); try { await action(); } catch (error) { setError(error); } finally { setBusy(false); } };
-  return <section className="platform-module"><h2>{t('blueprints.title')}</h2><p>{t('blueprints.help')}</p><PlatformErrorView error={error} />{notice && <p role="status">{notice}</p>}<div className="platform-actions"><Button className="button secondary" type="button" disabled={busy} onClick={() => run(async () => downloadJson(await request('/blueprint'), t('blueprints.filename')))}>{t('blueprints.export')}</Button><label className="platform-field"><span>{t('blueprints.import')}</span><input type="file" accept="application/json,.json" onChange={event => run(async () => {
-    const file = event.target.files?.[0]; if (!file) return; if (file.size > bootstrap.limits.maximumImportBytes) throw { code: 'IMPORT_TOO_LARGE' };
-    let parsed; try { parsed = JSON.parse(await file.text()); } catch { throw { code: 'INVALID_INPUT' }; }
-    if (parsed.format !== 'sparkles-blueprint' || !Array.isArray(parsed.resources)) throw { code: 'INVALID_INPUT' };
-    setBlueprint(parsed); setKinds([...new Set(parsed.resources.map(item => item.kind))].filter(kind => bootstrap.features.includes(kind))); setMapping({});
-  })} /></label></div>
-    {blueprint && <><h3>{t('blueprints.modules')}</h3><div className="platform-actions">{[...new Set(blueprint.resources.map(item => item.kind))].filter(kind => FEATURES[kind]).map(kind => <label className="platform-check" key={kind}><input type="checkbox" checked={kinds.includes(kind)} disabled={!bootstrap.features.includes(kind)} onChange={event => setKinds(event.target.checked ? [...kinds, kind] : kinds.filter(value => value !== kind))} />{t(`feature.${kind}.title`)}</label>)}</div><h3>{t('blueprints.mapping')}</h3>{['channels', 'categories', 'roles'].map(type => <div key={type}>{(blueprint[type] ?? []).map(source => <label className="platform-mapping" key={source.id}><span>{source.name}<small>{source.id}</small></span><span aria-hidden="true">→</span><select aria-label={t('blueprints.mapObject', { name: source.name })} value={mapping[source.id] ?? ''} onChange={event => setMapping({ ...mapping, [source.id]: event.target.value })}><option value="">{t('platform.choose')}</option>{bootstrap.resources[type].map(target => <option key={target.id} value={target.id}>{target.name}</option>)}</select></label>)}</div>)}<Button type="button" className="button primary" disabled={busy || !kinds.length} onClick={() => run(async () => setPreview(await request('/blueprint/preview', { method: 'POST', body: { blueprint, mapping: Object.fromEntries(Object.entries(mapping).filter(([, id]) => id)), kinds } })))}>{t('blueprints.preview')}</Button></>}
-    {preview && <ImpactDialog preview={preview} resources={bootstrap.resources} busy={busy} onClose={() => setPreview(null)} onConfirm={() => run(async () => { const result = await request('/blueprint/import', { method: 'POST', body: { token: preview.token } }); setPreview(null); setBlueprint(null); setNotice(t('blueprints.imported', { count: result.items.length })); })} />}
-  </section>;
+  const [blueprint, setBlueprint] = useState(null);
+  const [mapping, setMapping] = useState({});
+  const [kinds, setKinds] = useState([]);
+  const [preview, setPreview] = useState(null);
+  const [error, setError] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState('');
+
+  const run = async (action) => {
+    setBusy(true);
+    setError(null);
+    try {
+      await action();
+    } catch (error) {
+      setError(error);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const importBlueprint = (event) =>
+    run(async () => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+      if (file.size > bootstrap.limits.maximumImportBytes) {
+        throw { code: 'IMPORT_TOO_LARGE' };
+      }
+      let parsed;
+      try {
+        parsed = JSON.parse(await file.text());
+      } catch {
+        throw { code: 'INVALID_INPUT' };
+      }
+      if (parsed.format !== 'sparkles-blueprint' || !Array.isArray(parsed.resources)) {
+        throw { code: 'INVALID_INPUT' };
+      }
+      setBlueprint(parsed);
+      setKinds(
+        [...new Set(parsed.resources.map((item) => item.kind))].filter((kind) =>
+          bootstrap.features.includes(kind),
+        ),
+      );
+      setMapping({});
+    });
+
+  return (
+    <section className="platform-module">
+      <h2>{t('blueprints.title')}</h2>
+      <p>{t('blueprints.help')}</p>
+      <PlatformErrorView error={error} />
+      {notice ? <p role="status">{notice}</p> : null}
+      <div className="platform-actions">
+        <Button
+          variant="outlined"
+          disabled={busy}
+          onClick={() =>
+            run(async () =>
+              downloadJson(await request('/blueprint'), t('blueprints.filename')),
+            )
+          }
+        >
+          {t('blueprints.export')}
+        </Button>
+        <Button component="label" variant="outlined" disabled={busy}>
+          {t('blueprints.import')}
+          <input
+            className="mui-visually-hidden"
+            type="file"
+            accept="application/json,.json"
+            onChange={importBlueprint}
+          />
+        </Button>
+      </div>
+
+      {blueprint ? (
+        <>
+          <h3>{t('blueprints.modules')}</h3>
+          <div className="platform-actions">
+            {[...new Set(blueprint.resources.map((item) => item.kind))]
+              .filter((kind) => FEATURES[kind])
+              .map((kind) => (
+                <FormControlLabel
+                  className="platform-check mui-platform-check"
+                  key={kind}
+                  control={
+                    <Checkbox
+                      checked={kinds.includes(kind)}
+                      disabled={!bootstrap.features.includes(kind)}
+                      onChange={(event) =>
+                        setKinds(
+                          event.target.checked
+                            ? [...kinds, kind]
+                            : kinds.filter((value) => value !== kind),
+                        )
+                      }
+                    />
+                  }
+                  label={t(`feature.${kind}.title`)}
+                />
+              ))}
+          </div>
+
+          <h3>{t('blueprints.mapping')}</h3>
+          {['channels', 'categories', 'roles'].map((type) => (
+            <div key={type}>
+              {(blueprint[type] ?? []).map((source) => (
+                <div className="platform-mapping" key={source.id}>
+                  <span>
+                    {source.name}
+                    <small>{source.id}</small>
+                  </span>
+                  <span aria-hidden="true">→</span>
+                  <FormControl size="small" fullWidth>
+                    <MuiSelect
+                      aria-label={t('blueprints.mapObject', { name: source.name })}
+                      displayEmpty
+                      value={mapping[source.id] ?? ''}
+                      onChange={(event) =>
+                        setMapping({
+                          ...mapping,
+                          [source.id]: event.target.value,
+                        })
+                      }
+                    >
+                      <MenuItem value="">{t('platform.choose')}</MenuItem>
+                      {bootstrap.resources[type].map((target) => (
+                        <MenuItem key={target.id} value={target.id}>
+                          {target.name}
+                        </MenuItem>
+                      ))}
+                    </MuiSelect>
+                  </FormControl>
+                </div>
+              ))}
+            </div>
+          ))}
+
+          <Button
+            variant="contained"
+            disabled={busy || !kinds.length}
+            onClick={() =>
+              run(async () =>
+                setPreview(
+                  await request('/blueprint/preview', {
+                    method: 'POST',
+                    body: {
+                      blueprint,
+                      mapping: Object.fromEntries(
+                        Object.entries(mapping).filter(([, id]) => id),
+                      ),
+                      kinds,
+                    },
+                  }),
+                ),
+              )
+            }
+          >
+            {t('blueprints.preview')}
+          </Button>
+        </>
+      ) : null}
+
+      {preview ? (
+        <ImpactDialog
+          preview={preview}
+          resources={bootstrap.resources}
+          busy={busy}
+          onClose={() => setPreview(null)}
+          onConfirm={() =>
+            run(async () => {
+              const result = await request('/blueprint/import', {
+                method: 'POST',
+                body: { token: preview.token },
+              });
+              setPreview(null);
+              setBlueprint(null);
+              setNotice(t('blueprints.imported', { count: result.items.length }));
+            })
+          }
+        />
+      ) : null}
+    </section>
+  );
 }
 
 export default function PlatformWorkspace({ page, guildId, session, onNavigate, selectedId, onSessionExpired }) {
