@@ -26,7 +26,7 @@ export default function Select({
   const [active, setActive] = useState(0);
   const [above, setAbove] = useState(false);
   const [invalid, setInvalid] = useState(false);
-  const selected = options.findIndex(option => option.id === (value ?? ''));
+  const selected = options.findIndex((option) => option.id === (value ?? ''));
   const current = options[selected];
 
   function close() {
@@ -74,9 +74,16 @@ export default function Select({
       } else {
         choose(active);
       }
-    } else if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
+      return;
+    }
+    if (event.key.length === 1 && !event.ctrlKey && !event.metaKey && !event.altKey) {
+      const key = event.key.toLocaleLowerCase();
       const candidates = options.map((_, index) => (active + index + 1) % options.length);
-      const match = candidates.find(index => !options[index].disabled && options[index].label.toLocaleLowerCase().startsWith(event.key.toLocaleLowerCase()));
+      const match = candidates.find(
+        (index) =>
+          !options[index].disabled &&
+          options[index].label.toLocaleLowerCase().startsWith(key),
+      );
       if (match !== undefined) {
         event.preventDefault();
         setOpen(true);
@@ -91,7 +98,7 @@ export default function Select({
 
   useEffect(() => {
     if (!open) return;
-    const dismiss = event => {
+    const dismiss = (event) => {
       if (!root.current?.contains(event.target)) close();
     };
     document.addEventListener('pointerdown', dismiss);
@@ -107,7 +114,8 @@ export default function Select({
     const position = () => {
       const bounds = trigger.current.getBoundingClientRect();
       const below = window.innerHeight - bounds.bottom;
-      setAbove(below < list.current.offsetHeight && bounds.top > below);
+      const menuHeight = list.current?.offsetHeight ?? 0;
+      setAbove(below < menuHeight + 12 && bounds.top > below);
     };
     position();
     window.addEventListener('resize', position);
@@ -121,17 +129,17 @@ export default function Select({
   useLayoutEffect(() => {
     if (!open) return;
     const option = list.current?.children[active];
-    if (!option) return;
+    if (!option || !list.current) return;
     const top = option.offsetTop;
     const bottom = top + option.offsetHeight;
     if (top < list.current.scrollTop) list.current.scrollTop = top;
-    else if (bottom > list.current.scrollTop + list.current.clientHeight) {
+    if (bottom > list.current.scrollTop + list.current.clientHeight) {
       list.current.scrollTop = bottom - list.current.clientHeight;
     }
   }, [open, active]);
 
   return (
-    <div className={`select-control ${variant}`} ref={root} data-open={open}>
+    <div className={`select-control ${variant}`.trim()} ref={root} data-open={open}>
       <button
         id={controlId}
         ref={trigger}
@@ -153,12 +161,27 @@ export default function Select({
           setOpen(!open);
         }}
       >
-        {icon ? <Icon name={icon} size={18} /> : null}
-        <span className="select-value">{current ? renderOption?.(current) ?? current.label : placeholder}</span>
-        <span className="select-chevron"><Icon name="chevron" size={16} /></span>
+        {icon ? (
+          <span className="select-leading-icon">
+            <Icon name={icon} size={17} />
+          </span>
+        ) : null}
+        <span className={`select-value ${current ? '' : 'placeholder'}`.trim()}>
+          {current ? renderOption?.(current) ?? current.label : placeholder}
+        </span>
+        <span className="select-chevron">
+          <Icon name="chevron" size={16} />
+        </span>
       </button>
       {open ? (
-        <ul className="select-menu" ref={list} id={listId} role="listbox" aria-label={label} data-above={above}>
+        <ul
+          className="select-menu"
+          ref={list}
+          id={listId}
+          role="listbox"
+          aria-label={label}
+          data-above={above}
+        >
           {options.map((option, index) => (
             <li
               id={`${listId}-${index}`}
@@ -167,8 +190,9 @@ export default function Select({
               aria-selected={index === selected}
               aria-disabled={option.disabled || undefined}
               data-active={index === active}
+              data-selected={index === selected}
               onPointerMove={() => !option.disabled && setActive(index)}
-              onPointerDown={event => event.preventDefault()}
+              onPointerDown={(event) => event.preventDefault()}
               onClick={() => choose(index)}
             >
               <span className="select-value">{renderOption?.(option) ?? option.label}</span>
@@ -185,17 +209,26 @@ export default function Select({
           required
           disabled={disabled}
           value={value ?? ''}
-          onChange={event => onChange(event.target.value)}
-          onInvalid={event => {
+          onChange={(event) => onChange(event.target.value)}
+          onInvalid={(event) => {
             event.preventDefault();
             setInvalid(true);
             trigger.current?.focus();
           }}
         >
-          {options.map(option => <option key={option.id} value={option.id} disabled={option.disabled}>{option.label}</option>)}
+          <option value="" />
+          {options.map((option) => (
+            <option key={option.id} value={option.id} disabled={option.disabled}>
+              {option.label}
+            </option>
+          ))}
         </select>
       ) : null}
-      {invalid ? <span className="field-error" role="alert">{t('select.required')}</span> : null}
+      {invalid ? (
+        <span className="field-error" role="alert">
+          {t('select.required')}
+        </span>
+      ) : null}
     </div>
   );
 }
