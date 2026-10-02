@@ -14,8 +14,12 @@ const sources = Object.fromEntries(
       'src/modules/extended.js',
       'src/modules/automation.js',
       'src/modules/action-log.js',
+      'src/store.js',
+      'src/mongodb.js',
       'dashboard/src/App.jsx',
       'dashboard/server/index.js',
+      'dashboard/server/bot-store.js',
+      'dashboard/server/config.js',
     ].map(async (file) => [
       file,
       await readFile(new URL(`../${file}`, import.meta.url), 'utf8'),
@@ -261,5 +265,30 @@ test('disabled dashboard features hide settings that only apply while enabled', 
   assert.match(
     app,
     /selectedCommandRule &&[\s\S]*?!draft\.disabledCommands\.includes\(selectedCommand\.name\)/u,
+  );
+});
+
+
+test('bot and dashboard persist shared state in MongoDB instead of store.json', () => {
+  assert.match(sources['src/mongodb.js'], /import \{ MongoClient \} from 'mongodb'/u);
+  for (const collection of [
+    'guilds',
+    'warnings',
+    'moderation_cases',
+    'dashboard_audit',
+    'counters',
+    'metadata',
+  ]) {
+    assert.match(sources['src/mongodb.js'], new RegExp(collection, 'u'));
+  }
+  assert.match(sources['src/store.js'], /connectMongo/u);
+  assert.match(sources['src/store.js'], /currentRevision/u);
+  assert.match(sources['dashboard/server/bot-store.js'], /COLLECTIONS\.guilds/u);
+  assert.match(sources['dashboard/server/config.js'], /MONGODB_URI/u);
+  assert.match(sources['dashboard/server/config.js'], /MONGODB_DB_NAME/u);
+  assert.doesNotMatch(sources['src/store.js'], /readFile|writeFile|store\.json/u);
+  assert.doesNotMatch(
+    sources['dashboard/server/bot-store.js'],
+    /readFile|writeFile|store\.json/u,
   );
 });
