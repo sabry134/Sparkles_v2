@@ -270,3 +270,48 @@ test('dashboard rejects unknown and unsafe settings', () => {
     /INVALID_INPUT/u,
   );
 });
+
+
+test('dashboard exposes legacy user policies only as counts and can clear them', async () => {
+  const directory = await mkdtemp(path.join(os.tmpdir(), 'sparkles-dashboard-legacy-'));
+  const file = path.join(directory, 'store.json');
+  const guildId = '823456789012345678';
+
+  await writeFile(
+    file,
+    JSON.stringify({
+      guilds: {
+        [guildId]: {
+          tags: {},
+          blacklist: ['923456789012345678'],
+          whitelist: ['923456789012345679', '923456789012345680'],
+          automod: {
+            exemptUserIds: ['923456789012345681'],
+          },
+        },
+      },
+      warnings: {},
+    }),
+    'utf8',
+  );
+
+  const store = new BotStore(file, defaults);
+  const settings = await store.getGuildSettings(guildId);
+  assert.deepEqual(settings.legacyUserPolicies, {
+    blockedCount: 1,
+    exemptCount: 2,
+  });
+  assert.equal('blacklistedUserIds' in settings.automod, false);
+  assert.equal('exemptUserIds' in settings.automod, false);
+
+  const cleared = await store.clearLegacyUserPolicies(guildId);
+  assert.deepEqual(cleared.legacyUserPolicies, {
+    blockedCount: 0,
+    exemptCount: 0,
+  });
+
+  const persisted = JSON.parse(await readFile(file, 'utf8'));
+  assert.deepEqual(persisted.guilds[guildId].blacklist, []);
+  assert.deepEqual(persisted.guilds[guildId].whitelist, []);
+  assert.equal(persisted.guilds[guildId].automod.exemptUserIds, undefined);
+});
