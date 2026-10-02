@@ -1,120 +1,22 @@
-import { randomBytes } from 'node:crypto';
-import { mkdir, open, readFile, rename, stat, unlink, writeFile } from 'node:fs/promises';
-import path from 'node:path';
-import { AppError } from './errors.js';
-
-const MAX_STORE_BYTES = 64 * 1024 * 1024;
-const LOCK_TIMEOUT_MS = 5_000;
-const STALE_LOCK_MS = 30_000;
-const TRANSIENT_FILE_ERRORS = new Set(['EACCES', 'EBUSY', 'EPERM']);
-
-function delay(milliseconds) {
-  return new Promise((resolve) => setTimeout(resolve, milliseconds));
-}
+import {
+  COLLECTIONS,
+  bumpRevision,
+  changesBetween,
+  connectMongo,
+  ensureMongoIndexes,
+  mongoUpdateFromChanges,
+  nextCounter,
+  withoutMongoId,
+} from '../../src/mongodb.js';
 
 function validRoot(value) {
   return value && typeof value === 'object' && !Array.isArray(value);
 }
 
-function emptyStore() {
-  return { guilds: {}, warnings: {}, moderationCases: {}, dashboardAudit: {} };
-}
-
-function normalizeRoot(value) {
-  if (!validRoot(value)) {
-    throw new AppError('STORE_INVALID', 500);
-  }
-
-  if (!validRoot(value.guilds)) value.guilds = {};
-  if (!validRoot(value.warnings)) value.warnings = {};
-  if (!validRoot(value.moderationCases)) value.moderationCases = {};
-  if (!validRoot(value.dashboardAudit)) value.dashboardAudit = {};
-  return value;
-}
-
-async function readStore(file) {
-  try {
-    const metadata = await stat(file);
-    if (metadata.size > MAX_STORE_BYTES) {
-      throw new AppError('STORE_TOO_LARGE', 500);
-    }
-
-    return normalizeRoot(JSON.parse(await readFile(file, 'utf8')));
-  } catch (error) {
-    if (error.code === 'ENOENT') return emptyStore();
-    if (error instanceof SyntaxError) throw new AppError('STORE_INVALID', 500);
-    throw error;
-  }
-}
-
-async function acquireLock(file) {
-  const lockFile = `${file}.dashboard.lock`;
-  const startedAt = Date.now();
-
-  while (Date.now() - startedAt < LOCK_TIMEOUT_MS) {
-    try {
-      const handle = await open(lockFile, 'wx', 0o600);
-      await handle.writeFile(
-        JSON.stringify({ pid: process.pid, createdAt: new Date().toISOString() }),
-        'utf8',
-      );
-      return async () => {
-        await handle.close().catch(() => {});
-        await unlink(lockFile).catch(() => {});
-      };
-    } catch (error) {
-      if (error.code !== 'EEXIST') throw error;
-
-      const lockMetadata = await stat(lockFile).catch(() => null);
-      if (lockMetadata && Date.now() - lockMetadata.mtimeMs > STALE_LOCK_MS) {
-        await unlink(lockFile).catch(() => {});
-        continue;
-      }
-
-      await delay(50 + Math.floor(Math.random() * 50));
-    }
-  }
-
-  throw new AppError('STORE_BUSY', 503);
-}
-
-async function renameWithRetry(source, destination) {
-  for (let attempt = 0; ; attempt += 1) {
-    try {
-      await rename(source, destination);
-      return;
-    } catch (error) {
-      if (!TRANSIENT_FILE_ERRORS.has(error.code)) throw error;
-      if (attempt >= 5) {
-        throw new AppError('STORE_BUSY', 503, { cause: error });
-      }
-      await delay(40 * 2 ** attempt);
-    }
-  }
-}
-
-async function atomicWrite(file, value) {
-  await mkdir(path.dirname(file), { recursive: true });
-  const temporary = `${file}.${process.pid}.${randomBytes(6).toString('hex')}.tmp`;
-
-  try {
-    await writeFile(temporary, JSON.stringify(value, null, 2), {
-      encoding: 'utf8',
-      mode: 0o600,
-    });
-    await renameWithRetry(temporary, file);
-  } catch (error) {
-    await unlink(temporary).catch(() => {});
-    throw error;
-  }
-}
-
-function guildConfig(store, guildId) {
-  const current = store.guilds[guildId];
-  if (!validRoot(current)) {
-    store.guilds[guildId] = { tags: {} };
-  }
-  return store.guilds[guildId];
+function guildDocument(document) {
+  const config = withoutMongoId(document);
+  if (!validRoot(config.tags)) config.tags = {};
+  return config;
 }
 
 function reactionRoles(config) {
@@ -344,119 +246,132 @@ function publicSettings(config, defaults) {
 }
 
 export class BotStore {
-  #file;
+  #uri;
+  #dbName;
   #defaults;
+  #databaseOverride;
+  #databasePromise = null;
   #writeQueue = Promise.resolve();
 
-  constructor(file, defaults) {
-    this.#file = file;
+  constructor({ uri = null, dbName = null, defaults, database = null }) {
+    this.#uri = uri;
+    this.#dbName = dbName;
     this.#defaults = defaults;
+    this.#databaseOverride = database;
+  }
+
+  async #database() {
+    if (this.#databaseOverride) {
+      await ensureMongoIndexes(this.#databaseOverride);
+      return this.#databaseOverride;
+    }
+
+    if (!this.#databasePromise) {
+      this.#databasePromise = connectMongo({
+        uri: this.#uri,
+        dbName: this.#dbName,
+      }).then(({ db }) => db);
+    }
+    return this.#databasePromise;
   }
 
   async getGuildSettings(guildId) {
-    const store = await readStore(this.#file);
-    return publicSettings(guildConfig(store, guildId), this.#defaults);
+    const db = await this.#database();
+    const document = await db.collection(COLLECTIONS.guilds).findOne({ _id: guildId });
+    return publicSettings(guildDocument(document), this.#defaults);
   }
 
   async getModerationCases(guildId, { limit = 100, userId = null } = {}) {
-    const store = await readStore(this.#file);
-    const raw = Array.isArray(store.moderationCases[guildId])
-      ? store.moderationCases[guildId]
-      : [];
-    const filtered = userId
-      ? raw.filter((entry) => entry?.targetId === userId)
-      : raw;
-    return filtered
-      .slice(-Math.min(250, Math.max(1, limit)))
-      .reverse()
-      .map((entry) => ({
-        id: Number.isSafeInteger(entry?.id) ? entry.id : null,
-        at: typeof entry?.at === 'string' ? entry.at : null,
-        action: typeof entry?.action === 'string' ? entry.action : 'unknown',
-        actorId: typeof entry?.actorId === 'string' ? entry.actorId : null,
-        actorTag: typeof entry?.actorTag === 'string' ? entry.actorTag : null,
-        targetId: typeof entry?.targetId === 'string' ? entry.targetId : null,
-        targetTag: typeof entry?.targetTag === 'string' ? entry.targetTag : null,
-        reason: typeof entry?.reason === 'string' ? entry.reason : null,
-        duration: typeof entry?.duration === 'string' ? entry.duration : null,
-        source: entry?.source === 'automod' ? 'automod' : 'command',
-        evidence: validRoot(entry?.evidence)
-          ? {
-              channelId:
-                typeof entry.evidence.channelId === 'string'
-                  ? entry.evidence.channelId
-                  : null,
-              messageId:
-                typeof entry.evidence.messageId === 'string'
-                  ? entry.evidence.messageId
-                  : null,
-              content:
-                typeof entry.evidence.content === 'string'
-                  ? entry.evidence.content.slice(0, 2_000)
-                  : null,
-              reference:
-                typeof entry.evidence.reference === 'string'
-                  ? entry.evidence.reference.slice(0, 500)
-                  : null,
-              attachments: Array.isArray(entry.evidence.attachments)
-                ? entry.evidence.attachments.slice(0, 10).map((attachment) => ({
-                    name:
-                      typeof attachment?.name === 'string'
-                        ? attachment.name
-                        : null,
-                    url:
-                      typeof attachment?.url === 'string'
-                        ? attachment.url
-                        : null,
-                  }))
-                : [],
-            }
-          : null,
-      }));
+    const db = await this.#database();
+    const query = userId ? { guildId, targetId: userId } : { guildId };
+    const raw = await db
+      .collection(COLLECTIONS.moderationCases)
+      .find(query)
+      .sort({ id: -1 })
+      .limit(Math.min(250, Math.max(1, limit)))
+      .toArray();
+
+    return raw.map((entry) => ({
+      id: Number.isSafeInteger(entry?.id) ? entry.id : null,
+      at: typeof entry?.at === 'string' ? entry.at : null,
+      action: typeof entry?.action === 'string' ? entry.action : 'unknown',
+      actorId: typeof entry?.actorId === 'string' ? entry.actorId : null,
+      actorTag: typeof entry?.actorTag === 'string' ? entry.actorTag : null,
+      targetId: typeof entry?.targetId === 'string' ? entry.targetId : null,
+      targetTag: typeof entry?.targetTag === 'string' ? entry.targetTag : null,
+      reason: typeof entry?.reason === 'string' ? entry.reason : null,
+      duration: typeof entry?.duration === 'string' ? entry.duration : null,
+      source: entry?.source === 'automod' ? 'automod' : 'command',
+      evidence: validRoot(entry?.evidence)
+        ? {
+            channelId:
+              typeof entry.evidence.channelId === 'string'
+                ? entry.evidence.channelId
+                : null,
+            messageId:
+              typeof entry.evidence.messageId === 'string'
+                ? entry.evidence.messageId
+                : null,
+            content:
+              typeof entry.evidence.content === 'string'
+                ? entry.evidence.content.slice(0, 2_000)
+                : null,
+            reference:
+              typeof entry.evidence.reference === 'string'
+                ? entry.evidence.reference.slice(0, 500)
+                : null,
+            attachments: Array.isArray(entry.evidence.attachments)
+              ? entry.evidence.attachments.slice(0, 10).map((attachment) => ({
+                  name:
+                    typeof attachment?.name === 'string'
+                      ? attachment.name
+                      : null,
+                  url:
+                    typeof attachment?.url === 'string'
+                      ? attachment.url
+                      : null,
+                }))
+              : [],
+          }
+        : null,
+    }));
   }
 
   async getDashboardAudit(guildId, { limit = 100 } = {}) {
-    const store = await readStore(this.#file);
-    const raw = Array.isArray(store.dashboardAudit[guildId])
-      ? store.dashboardAudit[guildId]
-      : [];
-    return raw
-      .slice(-Math.min(250, Math.max(1, limit)))
-      .reverse()
-      .map((entry) => ({
-        id: Number.isSafeInteger(entry?.id) ? entry.id : null,
-        at: typeof entry?.at === 'string' ? entry.at : null,
-        actorId: typeof entry?.actorId === 'string' ? entry.actorId : null,
-        actorTag: typeof entry?.actorTag === 'string' ? entry.actorTag : null,
-        changes: Array.isArray(entry?.changes)
-          ? entry.changes.filter((item) => typeof item === 'string').slice(0, 100)
-          : [],
-      }));
+    const db = await this.#database();
+    const raw = await db
+      .collection(COLLECTIONS.dashboardAudit)
+      .find({ guildId })
+      .sort({ id: -1 })
+      .limit(Math.min(250, Math.max(1, limit)))
+      .toArray();
+
+    return raw.map((entry) => ({
+      id: Number.isSafeInteger(entry?.id) ? entry.id : null,
+      at: typeof entry?.at === 'string' ? entry.at : null,
+      actorId: typeof entry?.actorId === 'string' ? entry.actorId : null,
+      actorTag: typeof entry?.actorTag === 'string' ? entry.actorTag : null,
+      changes: Array.isArray(entry?.changes)
+        ? entry.changes.filter((item) => typeof item === 'string').slice(0, 100)
+        : [],
+    }));
   }
 
   appendDashboardAudit(guildId, entry) {
     const operation = this.#writeQueue.then(async () => {
-      await mkdir(path.dirname(this.#file), { recursive: true });
-      const release = await acquireLock(this.#file);
-
-      try {
-        const store = await readStore(this.#file);
-        store.dashboardAudit[guildId] ??= [];
-        const entries = store.dashboardAudit[guildId];
-        const id = (entries.at(-1)?.id ?? 0) + 1;
-        entries.push({
-          id,
-          at: new Date().toISOString(),
-          actorId: entry.actorId,
-          actorTag: entry.actorTag,
-          changes: [...new Set(entry.changes ?? [])].slice(0, 100),
-        });
-        if (entries.length > 2_000) entries.splice(0, entries.length - 2_000);
-        await atomicWrite(this.#file, store);
-        return id;
-      } finally {
-        await release();
-      }
+      const db = await this.#database();
+      const id = await nextCounter(db, `dashboardAudit:${guildId}`);
+      await db.collection(COLLECTIONS.dashboardAudit).insertOne({
+        _id: `${guildId}:${id}`,
+        guildId,
+        id,
+        at: new Date().toISOString(),
+        actorId: entry.actorId,
+        actorTag: entry.actorTag,
+        changes: [...new Set(entry.changes ?? [])].slice(0, 100),
+      });
+      await bumpRevision(db);
+      return id;
     });
 
     this.#writeQueue = operation.catch(() => {});
@@ -604,18 +519,24 @@ export class BotStore {
 
   #mutate(guildId, mutation) {
     const operation = this.#writeQueue.then(async () => {
-      await mkdir(path.dirname(this.#file), { recursive: true });
-      const release = await acquireLock(this.#file);
+      const db = await this.#database();
+      const document = await db.collection(COLLECTIONS.guilds).findOne({ _id: guildId });
+      const before = guildDocument(document);
+      const config = structuredClone(before);
+      mutation(config);
+      const changes = changesBetween(before, config);
 
-      try {
-        const store = await readStore(this.#file);
-        const config = guildConfig(store, guildId);
-        mutation(config);
-        await atomicWrite(this.#file, store);
-        return publicSettings(config, this.#defaults);
-      } finally {
-        await release();
+      if (changes) {
+        const update = mongoUpdateFromChanges(changes);
+        if (Object.keys(update).length) {
+          await db
+            .collection(COLLECTIONS.guilds)
+            .updateOne({ _id: guildId }, update, { upsert: true });
+          await bumpRevision(db);
+        }
       }
+
+      return publicSettings(config, this.#defaults);
     });
 
     this.#writeQueue = operation.catch(() => {});
