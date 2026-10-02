@@ -624,7 +624,7 @@ function Dashboard({ session, onSessionExpired }) {
 
     let cancelled = false;
     setModerationCasesLoading(true);
-    api(\`/api/guilds/\${selectedGuild.id}/moderation-cases?limit=150\`)
+    api(`/api/guilds/${selectedGuild.id}/moderation-cases?limit=150`)
       .then((result) => {
         if (!cancelled) setModerationCases(result.cases ?? []);
       })
@@ -1335,7 +1335,7 @@ function Dashboard({ session, onSessionExpired }) {
                 ) : visibleModerationCases.length ? (
                   <div className="moderation-case-list">
                     {visibleModerationCases.map((entry) => (
-                      <article className="moderation-case" key={\`\${entry.id}-\${entry.at}\`}>
+                      <article className="moderation-case" key={`${entry.id}-${entry.at}`}>
                         <div className="moderation-case-head">
                           <span className="moderation-case-id">
                             #{entry.id ?? '—'}
@@ -1383,7 +1383,7 @@ function Dashboard({ session, onSessionExpired }) {
                                       href={attachment.url}
                                       target="_blank"
                                       rel="noreferrer"
-                                      key={\`\${attachment.url}-\${index}\`}
+                                      key={`${attachment.url}-${index}`}
                                     >
                                       {attachment.name ?? t('moderation.attachment')}
                                       <Icon name="external" size={13} />
