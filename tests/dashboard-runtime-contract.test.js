@@ -25,6 +25,15 @@ test('every dashboard setting has a bot runtime consumer', () => {
     ['server.js', 'config.rules'],
     ['src/modules/automod.js', 'automod?.antiLink'],
     ['src/modules/automod.js', 'automod?.antiSwear'],
+    ['src/modules/automod.js', 'antiSpam'],
+    ['src/modules/automod.js', 'antiMentionSpam'],
+    ['src/modules/automod.js', 'antiCaps'],
+    ['src/modules/automod.js', 'antiEmojiSpam'],
+    ['src/modules/automod.js', 'antiAttachmentSpam'],
+    ['src/modules/automod.js', 'antiLinkSpam'],
+    ['src/modules/automod.js', 'exemptUserIds'],
+    ['src/modules/automod.js', 'exemptRoleIds'],
+    ['src/modules/automod.js', 'exemptChannelIds'],
     ['src/modules/automod.js', 'minimumAccountAgeDays'],
     ['src/modules/automod.js', 'antiRaid'],
     ['src/modules/automod.js', 'warningThreshold'],
@@ -80,4 +89,20 @@ test('dashboard feature module gates match their configured sections', () => {
   assert.match(sources['server.js'], /'set-verification': 'roles'/u);
   assert.match(sources['server.js'], /verify: 'roles'/u);
   assert.match(sources['server.js'], /ticket: 'community'/u);
+});
+
+
+test('advanced moderation commands are wired to runtime handlers', () => {
+  for (const command of [
+    'anti-spam',
+    'automod-test',
+    'purge-user',
+    'purge-links',
+    'purge-attachments',
+    'purge-bots',
+    'unwhitelist',
+    'unblacklist',
+  ]) {
+    assert.match(sources['src/modules/extended.js'], new RegExp(`case '${command}'`, 'u'));
+  }
 });
