@@ -686,7 +686,7 @@ client.on('interactionCreate', async (interaction) => {
         fun: 'fun',
         music: 'music',
         events: 'events',
-        'tools-ai': 'tools',
+        tools: 'tools',
         'custom-premium': 'tools',
       }[commandModules.get(commandName)];
     if (
