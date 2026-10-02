@@ -376,11 +376,9 @@ export const en = {
   'music.defaultVolume': 'Default volume',
   'music.defaultVolumeHelp': 'Initial playback percentage from 1 to 200.',
 
-  'modules.title': 'Modules & AI',
+  'modules.title': 'Modules',
   'modules.description':
     'Choose exactly which Sparkles systems are available to members in this server.',
-  'modules.ai': 'AI assistant',
-  'modules.aiHelp': 'Allow members to use the server AI command.',
   'modules.moduleHelp': 'Enable or disable every command in the {module} module.',
   'modules.commandManagerTitle': 'Command availability',
   'modules.commandManagerDescription':
