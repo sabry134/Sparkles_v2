@@ -482,6 +482,7 @@ function Dashboard({ session, onSessionExpired }) {
   const [moderationCasesLoading, setModerationCasesLoading] = useState(false);
   const [moderationCaseQuery, setModerationCaseQuery] = useState('');
   const [commandQuery, setCommandQuery] = useState('');
+  const [selectedCommandName, setSelectedCommandName] = useState(null);
   const [autoresponderForm, setAutoresponderForm] = useState({
     trigger: '',
     response: '',
@@ -689,6 +690,7 @@ function Dashboard({ session, onSessionExpired }) {
             starboard: settings.starboard,
             modules: settings.modules,
             disabledCommands: settings.disabledCommands,
+            commandPermissions: settings.commandPermissions,
             customCommands: settings.customCommands,
           }
         : null,
@@ -1040,6 +1042,21 @@ function Dashboard({ session, onSessionExpired }) {
       value.toLocaleLowerCase('en-US').includes(normalizedCommandQuery),
     );
   });
+  const selectedCommand = (resources?.commands ?? []).find(
+    (command) => command.name === selectedCommandName,
+  );
+  const selectedCommandRule = selectedCommand
+    ? draft.commandPermissions[selectedCommand.name] ?? {
+        roleMode: 'allow-all-except',
+        roleIds: [],
+        channelMode: 'allow-all-except',
+        channelIds: [],
+      }
+    : null;
+  const commandAccessModes = [
+    { id: 'allow-all-except', label: t('modules.accessAllowAllExcept') },
+    { id: 'deny-all-except', label: t('modules.accessDenyAllExcept') },
+  ];
   const automodActive =
     draft?.automod?.enabled === true &&
     [
@@ -2597,30 +2614,160 @@ function Dashboard({ session, onSessionExpired }) {
                           <strong>/{command.name}</strong>
                           <span>{command.description}</span>
                         </div>
-                        <button
-                          id={`command-${command.name}`}
-                          className={enabled ? 'toggle checked' : 'toggle'}
-                          type="button"
-                          role="switch"
-                          aria-checked={enabled}
-                          onClick={() =>
-                            updateField(
-                              'disabledCommands',
-                              enabled
-                                ? [...draft.disabledCommands, command.name]
-                                : draft.disabledCommands.filter(
-                                    (name) => name !== command.name,
-                                  ),
-                            )
-                          }
-                        >
-                          <span>{enabled ? t('common.on') : t('common.off')}</span>
-                          <i />
-                        </button>
+                        <div className="command-manager-actions">
+                          <button
+                            className={
+                              selectedCommandName === command.name
+                                ? 'button secondary selected'
+                                : 'button secondary'
+                            }
+                            type="button"
+                            onClick={() =>
+                              setSelectedCommandName((current) =>
+                                current === command.name ? null : command.name,
+                              )
+                            }
+                          >
+                            {t('modules.commandConfigure')}
+                          </button>
+                          <button
+                            id={`command-${command.name}`}
+                            className={enabled ? 'toggle checked' : 'toggle'}
+                            type="button"
+                            role="switch"
+                            aria-checked={enabled}
+                            onClick={() =>
+                              updateField(
+                                'disabledCommands',
+                                enabled
+                                  ? [...draft.disabledCommands, command.name]
+                                  : draft.disabledCommands.filter(
+                                      (name) => name !== command.name,
+                                    ),
+                              )
+                            }
+                          >
+                            <span>{enabled ? t('common.on') : t('common.off')}</span>
+                            <i />
+                          </button>
+                        </div>
                       </div>
                     );
                   })}
                 </div>
+                {selectedCommand && selectedCommandRule ? (
+                  <div className="command-permission-panel">
+                    <div className="subsection-heading">
+                      <div>
+                        <h3>{t('modules.commandAccessTitle', { command: selectedCommand.name })}</h3>
+                        <p>{t('modules.commandAccessDescription')}</p>
+                      </div>
+                      <button
+                        className="button secondary"
+                        type="button"
+                        onClick={() => {
+                          setDraft((current) => {
+                            const commandPermissions = { ...current.commandPermissions };
+                            delete commandPermissions[selectedCommand.name];
+                            return { ...current, commandPermissions };
+                          });
+                        }}
+                      >
+                        {t('modules.commandAccessReset')}
+                      </button>
+                    </div>
+                    <div className="field-row">
+                      <div className="field-copy">
+                        <label htmlFor="command-role-mode">{t('modules.commandRoleMode')}</label>
+                        <p>{t('modules.commandRoleModeHelp')}</p>
+                      </div>
+                      <Select
+                        id="command-role-mode"
+                        label={t('modules.commandRoleMode')}
+                        value={selectedCommandRule.roleMode}
+                        onChange={(roleMode) =>
+                          setDraft((current) => ({
+                            ...current,
+                            commandPermissions: {
+                              ...current.commandPermissions,
+                              [selectedCommand.name]: {
+                                ...selectedCommandRule,
+                                roleMode,
+                              },
+                            },
+                          }))
+                        }
+                        options={commandAccessModes}
+                        variant="field-select"
+                      />
+                    </div>
+                    <MultiSelectField
+                      id="command-role-rules"
+                      label={t('modules.commandRoles')}
+                      help={t('modules.commandRolesHelp')}
+                      value={selectedCommandRule.roleIds}
+                      onChange={(roleIds) =>
+                        setDraft((current) => ({
+                          ...current,
+                          commandPermissions: {
+                            ...current.commandPermissions,
+                            [selectedCommand.name]: {
+                              ...selectedCommandRule,
+                              roleIds,
+                            },
+                          },
+                        }))
+                      }
+                      options={allRoleOptions}
+                      icon="role"
+                    />
+                    <div className="field-row">
+                      <div className="field-copy">
+                        <label htmlFor="command-channel-mode">{t('modules.commandChannelMode')}</label>
+                        <p>{t('modules.commandChannelModeHelp')}</p>
+                      </div>
+                      <Select
+                        id="command-channel-mode"
+                        label={t('modules.commandChannelMode')}
+                        value={selectedCommandRule.channelMode}
+                        onChange={(channelMode) =>
+                          setDraft((current) => ({
+                            ...current,
+                            commandPermissions: {
+                              ...current.commandPermissions,
+                              [selectedCommand.name]: {
+                                ...selectedCommandRule,
+                                channelMode,
+                              },
+                            },
+                          }))
+                        }
+                        options={commandAccessModes}
+                        variant="field-select"
+                      />
+                    </div>
+                    <MultiSelectField
+                      id="command-channel-rules"
+                      label={t('modules.commandChannels')}
+                      help={t('modules.commandChannelsHelp')}
+                      value={selectedCommandRule.channelIds}
+                      onChange={(channelIds) =>
+                        setDraft((current) => ({
+                          ...current,
+                          commandPermissions: {
+                            ...current.commandPermissions,
+                            [selectedCommand.name]: {
+                              ...selectedCommandRule,
+                              channelIds,
+                            },
+                          },
+                        }))
+                      }
+                      options={channelOptions}
+                      icon="hash"
+                    />
+                  </div>
+                ) : null}
               </div>
             </SettingSection>
 
