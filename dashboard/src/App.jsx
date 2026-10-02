@@ -38,8 +38,11 @@ function rememberGuild(guildId) {
   try {
     window.localStorage.setItem('sparkles.selectedGuild', guildId);
   } catch {
-    // Selection persistence is optional when browser storage is unavailable.
   }
+}
+
+function scrollBehavior() {
+  return window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
 }
 
 function GuildAvatar({ guild, large = false }) {
@@ -440,7 +443,7 @@ function Dashboard({ session, onSessionExpired }) {
       '.sidebar nav button[aria-current="page"]',
     );
     activeButton?.scrollIntoView({
-      behavior: 'smooth',
+      behavior: scrollBehavior(),
       block: 'nearest',
       inline: 'center',
     });
@@ -652,7 +655,7 @@ function Dashboard({ session, onSessionExpired }) {
               data-section={id}
               onClick={() => {
                 setActiveSection(id);
-                document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+                document.getElementById(id)?.scrollIntoView({ behavior: scrollBehavior() });
               }}
             >
               <Icon name={icon} />
