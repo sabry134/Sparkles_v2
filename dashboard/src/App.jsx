@@ -768,7 +768,6 @@ function Dashboard({ session, onSessionExpired }) {
 
             <SettingSection
               id="overview"
-              icon="grid"
               title={t('overview.title')}
               description={t('overview.description')}
             >
@@ -826,7 +825,6 @@ function Dashboard({ session, onSessionExpired }) {
 
             <SettingSection
               id="moderation"
-              icon="shield"
               title={t('moderation.title')}
               description={t('moderation.description')}
             >
@@ -855,7 +853,6 @@ function Dashboard({ session, onSessionExpired }) {
 
             <SettingSection
               id="automod"
-              icon="spark"
               title={t('automod.title')}
               description={t('automod.description')}
             >
@@ -967,7 +964,6 @@ function Dashboard({ session, onSessionExpired }) {
 
             <SettingSection
               id="roles"
-              icon="users"
               title={t('roles.title')}
               description={t('roles.description')}
             >
@@ -1142,7 +1138,6 @@ function Dashboard({ session, onSessionExpired }) {
 
             <SettingSection
               id="community"
-              icon="message"
               title={t('community.title')}
               description={t('community.description')}
             >
@@ -1224,7 +1219,6 @@ function Dashboard({ session, onSessionExpired }) {
 
             <SettingSection
               id="economy"
-              icon="coin"
               title={t('economy.title')}
               description={t('economy.description')}
             >
@@ -1273,7 +1267,6 @@ function Dashboard({ session, onSessionExpired }) {
 
             <SettingSection
               id="music"
-              icon="music"
               title={t('music.title')}
               description={t('music.description')}
             >
@@ -1293,7 +1286,6 @@ function Dashboard({ session, onSessionExpired }) {
 
             <SettingSection
               id="modules"
-              icon="settings"
               title={t('modules.title')}
               description={t('modules.description')}
             >
@@ -1322,7 +1314,6 @@ function Dashboard({ session, onSessionExpired }) {
 
             <SettingSection
               id="custom"
-              icon="terminal"
               title={t('custom.title')}
               description={t('custom.description')}
             >
