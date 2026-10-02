@@ -116,6 +116,7 @@ export function settingsPatch(value) {
       'autoresponders',
       'starboard',
       'modules',
+      'disabledCommands',
       'customCommands',
     ]),
   );
@@ -369,6 +370,22 @@ export function settingsPatch(value) {
     patch.modules = Object.fromEntries(
       Object.entries(value.modules).map(([key, enabled]) => [key, boolean(enabled)]),
     );
+  }
+
+  if (Object.hasOwn(value, 'disabledCommands')) {
+    assert(Array.isArray(value.disabledCommands), 'INVALID_INPUT');
+    assert(value.disabledCommands.length <= 250, 'INVALID_INPUT');
+    patch.disabledCommands = [
+      ...new Set(
+        value.disabledCommands.map((name) => {
+          assert(
+            typeof name === 'string' && /^[a-z0-9-]{1,64}$/u.test(name),
+            'INVALID_INPUT',
+          );
+          return name;
+        }),
+      ),
+    ];
   }
 
   if (Object.hasOwn(value, 'customCommands')) {
