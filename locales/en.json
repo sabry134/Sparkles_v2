@@ -194,7 +194,7 @@
     "serverBuilt": "Starter server created",
     "serverBuiltBody": "Created {count} new channel(s) inside {category}. Existing channels were preserved.",
     "antiLinkTitle": "Anti-link protection",
-    "antiLinkEnabled": "Link filtering is enabled. Members with Manage Messages bypass the filter.",
+    "antiLinkEnabled": "Link filtering is enabled. Explicitly whitelisted members are exempt.",
     "antiLinkDisabled": "Link filtering is disabled.",
     "manageMessagesRequired": "I need **Manage Messages** to remove prohibited links.",
     "linkRemovedTitle": "Link removed",
