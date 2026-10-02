@@ -1443,6 +1443,15 @@ function Dashboard({ session, onSessionExpired }) {
                   </div>
                 </div>
                 <SnowflakeListField
+                  id="automod-blacklisted-users"
+                  label={t('automod.blacklistedUsers')}
+                  help={t('automod.blacklistedUsersHelp')}
+                  value={draft.automod.blacklistedUserIds}
+                  onChange={(value) =>
+                    updateNested('automod', 'blacklistedUserIds', value)
+                  }
+                />
+                <SnowflakeListField
                   id="automod-exempt-users"
                   label={t('automod.exemptUsers')}
                   help={t('automod.exemptUsersHelp')}
