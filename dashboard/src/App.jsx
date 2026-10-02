@@ -13,6 +13,7 @@ const NAVIGATION = [
   ['roles', 'nav.roles', 'users'],
   ['embeds', 'nav.embeds', 'message'],
   ['community', 'nav.community', 'message'],
+  ['automation', 'nav.automation', 'refresh'],
   ['economy', 'nav.economy', 'coin'],
   ['music', 'nav.music', 'music'],
   ['modules', 'nav.modules', 'settings'],
@@ -465,6 +466,11 @@ function Dashboard({ session, onSessionExpired }) {
   const [moderationCases, setModerationCases] = useState([]);
   const [moderationCasesLoading, setModerationCasesLoading] = useState(false);
   const [moderationCaseQuery, setModerationCaseQuery] = useState('');
+  const [autoresponderForm, setAutoresponderForm] = useState({
+    trigger: '',
+    response: '',
+    match: 'contains',
+  });
   const [customForm, setCustomForm] = useState({ name: '', response: '' });
   const initialRoute = routeState();
   const [activeSection, setActiveSection] = useState(initialRoute.page);
@@ -658,6 +664,9 @@ function Dashboard({ session, onSessionExpired }) {
             goodbye: settings.goodbye,
             giveaways: settings.giveaways,
             music: settings.music,
+            actionLog: settings.actionLog,
+            autoresponders: settings.autoresponders,
+            starboard: settings.starboard,
             modules: settings.modules,
             customCommands: settings.customCommands,
           }
@@ -859,6 +868,44 @@ function Dashboard({ session, onSessionExpired }) {
     } finally {
       setEmbedPending(false);
     }
+  }
+
+  function addAutoresponder(event) {
+    event.preventDefault();
+    const trigger = autoresponderForm.trigger.trim();
+    const response = autoresponderForm.response.trim();
+    if (!trigger || !response) return;
+    const id = crypto.randomUUID().replaceAll('-', '').slice(0, 32);
+    setDraft((current) => ({
+      ...current,
+      autoresponders: [
+        ...current.autoresponders,
+        {
+          id,
+          trigger,
+          response,
+          match: autoresponderForm.match,
+          enabled: true,
+        },
+      ],
+    }));
+    setAutoresponderForm({ trigger: '', response: '', match: 'contains' });
+  }
+
+  function updateAutoresponder(id, patch) {
+    setDraft((current) => ({
+      ...current,
+      autoresponders: current.autoresponders.map((entry) =>
+        entry.id === id ? { ...entry, ...patch } : entry,
+      ),
+    }));
+  }
+
+  function removeAutoresponder(id) {
+    setDraft((current) => ({
+      ...current,
+      autoresponders: current.autoresponders.filter((entry) => entry.id !== id),
+    }));
   }
 
   function saveCustomCommand(event) {
@@ -1180,6 +1227,47 @@ function Dashboard({ session, onSessionExpired }) {
                   multiline
                   placeholder={t('moderation.rulesPlaceholder')}
                 />
+              </div>
+
+              <div className="settings-card">
+                <div className="subsection-heading page-card-heading">
+                  <div>
+                    <h3>{t('moderation.actionLogTitle')}</h3>
+                    <p>{t('moderation.actionLogDescription')}</p>
+                  </div>
+                </div>
+                <ToggleField
+                  id="action-log-enabled"
+                  label={t('moderation.actionLogEnabled')}
+                  help={t('moderation.actionLogEnabledHelp')}
+                  checked={draft.actionLog.enabled}
+                  onChange={(value) => updateNested('actionLog', 'enabled', value)}
+                />
+                <SelectField
+                  id="action-log-channel"
+                  label={t('moderation.actionLogChannel')}
+                  help={t('moderation.actionLogChannelHelp')}
+                  icon="hash"
+                  value={draft.actionLog.channelId}
+                  onChange={(value) => updateNested('actionLog', 'channelId', value)}
+                  options={channelOptions}
+                />
+                {[
+                  ['messageDelete', 'moderation.logMessageDelete'],
+                  ['messageEdit', 'moderation.logMessageEdit'],
+                  ['memberJoin', 'moderation.logMemberJoin'],
+                  ['memberLeave', 'moderation.logMemberLeave'],
+                  ['roleChanges', 'moderation.logRoleChanges'],
+                ].map(([field, label]) => (
+                  <ToggleField
+                    id={`action-log-${field}`}
+                    key={field}
+                    label={t(label)}
+                    help={t(`${label}Help`)}
+                    checked={draft.actionLog[field]}
+                    onChange={(value) => updateNested('actionLog', field, value)}
+                  />
+                ))}
               </div>
 
               <div className="settings-card moderation-history-card">
@@ -2045,6 +2133,194 @@ function Dashboard({ session, onSessionExpired }) {
                   />
                 </div>
               ))}
+            </SettingSection>
+
+            <SettingSection
+              id="automation"
+              active={activeSection === 'automation'}
+              title={t('automation.title')}
+              description={t('automation.description')}
+            >
+              <div className="settings-card automation-card">
+                <div className="subsection-heading page-card-heading">
+                  <div>
+                    <h3>{t('automation.autoresponderTitle')}</h3>
+                    <p>{t('automation.autoresponderDescription')}</p>
+                  </div>
+                  <span className="count-pill">{draft.autoresponders.length}</span>
+                </div>
+
+                {draft.autoresponders.length ? (
+                  <div className="automation-list">
+                    {draft.autoresponders.map((entry) => (
+                      <article className="automation-item" key={entry.id}>
+                        <button
+                          className={entry.enabled ? 'status-dot enabled' : 'status-dot'}
+                          type="button"
+                          aria-label={
+                            entry.enabled
+                              ? t('automation.disableResponder')
+                              : t('automation.enableResponder')
+                          }
+                          onClick={() =>
+                            updateAutoresponder(entry.id, {
+                              enabled: !entry.enabled,
+                            })
+                          }
+                        />
+                        <div>
+                          <strong>{entry.trigger}</strong>
+                          <span>
+                            {entry.match === 'exact'
+                              ? t('automation.exactMatch')
+                              : t('automation.containsMatch')}
+                          </span>
+                          <p>{entry.response}</p>
+                        </div>
+                        <button
+                          className="button danger ghost"
+                          type="button"
+                          onClick={() => removeAutoresponder(entry.id)}
+                        >
+                          <Icon name="trash" size={15} />
+                          {t('common.remove')}
+                        </button>
+                      </article>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="mapping-empty">
+                    <Icon name="message" />
+                    <div>
+                      <strong>{t('automation.autoresponderEmpty')}</strong>
+                      <span>{t('automation.autoresponderEmptyHelp')}</span>
+                    </div>
+                  </div>
+                )}
+
+                <form className="autoresponder-form" onSubmit={addAutoresponder}>
+                  <div className="compact-field">
+                    <label htmlFor="autoresponder-trigger">
+                      {t('automation.trigger')}
+                    </label>
+                    <input
+                      id="autoresponder-trigger"
+                      required
+                      maxLength="100"
+                      value={autoresponderForm.trigger}
+                      placeholder={t('automation.triggerPlaceholder')}
+                      onChange={(event) =>
+                        setAutoresponderForm((current) => ({
+                          ...current,
+                          trigger: event.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                  <div className="compact-field">
+                    <label htmlFor="autoresponder-match">
+                      {t('automation.matchMode')}
+                    </label>
+                    <Select
+                      id="autoresponder-match"
+                      label={t('automation.matchMode')}
+                      value={autoresponderForm.match}
+                      onChange={(match) =>
+                        setAutoresponderForm((current) => ({
+                          ...current,
+                          match,
+                        }))
+                      }
+                      options={[
+                        { id: 'contains', label: t('automation.containsMatch') },
+                        { id: 'exact', label: t('automation.exactMatch') },
+                      ]}
+                    />
+                  </div>
+                  <div className="compact-field autoresponder-response">
+                    <label htmlFor="autoresponder-response">
+                      {t('automation.response')}
+                    </label>
+                    <textarea
+                      id="autoresponder-response"
+                      required
+                      maxLength="1900"
+                      rows="3"
+                      value={autoresponderForm.response}
+                      placeholder={t('automation.responsePlaceholder')}
+                      onChange={(event) =>
+                        setAutoresponderForm((current) => ({
+                          ...current,
+                          response: event.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                  <button className="button primary" type="submit">
+                    <Icon name="spark" size={16} />
+                    {t('automation.addResponder')}
+                  </button>
+                </form>
+              </div>
+
+              <div className="settings-card automation-card">
+                <div className="subsection-heading page-card-heading">
+                  <div>
+                    <h3>{t('automation.starboardTitle')}</h3>
+                    <p>{t('automation.starboardDescription')}</p>
+                  </div>
+                </div>
+                <ToggleField
+                  id="starboard-enabled"
+                  label={t('automation.starboardEnabled')}
+                  help={t('automation.starboardEnabledHelp')}
+                  checked={draft.starboard.enabled}
+                  onChange={(value) => updateNested('starboard', 'enabled', value)}
+                />
+                <SelectField
+                  id="starboard-channel"
+                  label={t('automation.starboardChannel')}
+                  help={t('automation.starboardChannelHelp')}
+                  icon="hash"
+                  value={draft.starboard.channelId}
+                  onChange={(value) => updateNested('starboard', 'channelId', value)}
+                  options={channelOptions}
+                />
+                <InputField
+                  id="starboard-threshold"
+                  label={t('automation.starboardThreshold')}
+                  help={t('automation.starboardThresholdHelp')}
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={draft.starboard.threshold}
+                  onChange={(value) => updateNested('starboard', 'threshold', value)}
+                />
+                <div className="field-row input-field-row">
+                  <div className="field-copy">
+                    <label htmlFor="starboard-emoji">
+                      {t('automation.starboardEmoji')}
+                    </label>
+                    <p>{t('automation.starboardEmojiHelp')}</p>
+                  </div>
+                  <EmojiPicker
+                    id="starboard-emoji"
+                    value={draft.starboard.emoji}
+                    onChange={(value) => updateNested('starboard', 'emoji', value)}
+                  />
+                </div>
+                <MultiSelectField
+                  id="starboard-ignore-channels"
+                  label={t('automation.starboardIgnoredChannels')}
+                  help={t('automation.starboardIgnoredChannelsHelp')}
+                  value={draft.starboard.ignoreChannelIds}
+                  onChange={(value) =>
+                    updateNested('starboard', 'ignoreChannelIds', value)
+                  }
+                  options={channelOptions}
+                  icon="hash"
+                />
+              </div>
             </SettingSection>
 
             <SettingSection
