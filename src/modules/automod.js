@@ -243,7 +243,19 @@ async function enforceViolation(message, t, reason) {
   const deleted = await message
     .delete()
     .then(() => true)
-    .catch(() => false);
+    .catch((error) => {
+      console.error(
+        '[automod-delete]',
+        {
+          guildId: message.guildId,
+          channelId: message.channelId,
+          userId: message.author.id,
+          reason,
+        },
+        error,
+      );
+      return false;
+    });
   if (!deleted) return false;
 
   const config = guildConfig(message.guildId);
@@ -340,17 +352,24 @@ export async function filterAutomodMessage(message, t) {
   if (!message.inGuild() || message.author.bot || !message.content) return false;
 
   const config = guildConfig(message.guildId);
-  if (isAutomodExempt(message, config)) return false;
+  const isBlacklisted = config.blacklist?.includes(message.author.id);
+  if (!isBlacklisted && isAutomodExempt(message, config)) return false;
 
   const automod = config.automod ?? {};
-  const isBlacklisted = config.blacklist?.includes(message.author.id);
   const blockedWords = automod.blockedWords ?? [];
   const blockedWordDetected =
     automod.enabled !== false &&
     automod.antiSwear === true &&
     containsBlockedWord(message.content, blockedWords);
+  const spamEnabled =
+    automod.antiSpam ||
+    automod.antiMentionSpam ||
+    automod.antiCaps ||
+    automod.antiEmojiSpam ||
+    automod.antiAttachmentSpam ||
+    automod.antiLinkSpam;
   const spamReason =
-    automod.enabled !== false ? detectSpam(message, automod) : null;
+    automod.enabled !== false && spamEnabled ? detectSpam(message, automod) : null;
 
   if (!isBlacklisted && !blockedWordDetected && !spamReason) return false;
 
@@ -364,7 +383,8 @@ export async function filterAutomodMessage(message, t) {
 
 export async function protectNewMember(member, t) {
   const config = guildConfig(member.guild.id);
-  if (isMemberExempt(member, config)) return false;
+  const blacklisted = config.blacklist?.includes(member.id);
+  if (!blacklisted && isMemberExempt(member, config)) return false;
 
   const now = Date.now();
   const guildJoins = (recentJoins.get(member.guild.id) ?? []).filter(
@@ -375,7 +395,7 @@ export async function protectNewMember(member, t) {
 
   let reason = null;
   const automodEnabled = config.automod?.enabled !== false;
-  if (config.blacklist?.includes(member.id)) {
+  if (blacklisted) {
     reason = t('modules.blacklistedMember');
   } else if (automodEnabled && config.features?.antiBot && member.user.bot) {
     reason = t('modules.automaticBotBlocked');
