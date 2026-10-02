@@ -56,7 +56,10 @@ export async function configureLinkFilter(interaction, t) {
   }
 
   config.automod.antiLink = action === 'enable';
-  if (config.automod.antiLink) delete config.automod.linkProtocols;
+  if (config.automod.antiLink) {
+    config.automod.enabled = true;
+    delete config.automod.linkProtocols;
+  }
   await saveStore();
 
   return interaction.reply(
