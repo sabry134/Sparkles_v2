@@ -1347,9 +1347,10 @@ client.once('ready', () => {
 });
 client.on('guildMemberAdd', (member) => {
   syncStore()
-    .then(() => protectNewMember(member, t))
-    .then(() => assignAutoRole(member))
     .then(async () => {
+      const removed = await protectNewMember(member, t);
+      if (removed) return;
+      await assignAutoRole(member);
       const welcome = guildConfig(member.guild.id).welcome;
       if (!welcome?.enabled || !welcome.channelId) return;
       const channel = await member.guild.channels
