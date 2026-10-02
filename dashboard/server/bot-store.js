@@ -6,6 +6,7 @@ import { AppError } from './errors.js';
 const MAX_STORE_BYTES = 64 * 1024 * 1024;
 const LOCK_TIMEOUT_MS = 5_000;
 const STALE_LOCK_MS = 30_000;
+const TRANSIENT_FILE_ERRORS = new Set(['EACCES', 'EBUSY', 'EPERM']);
 
 function delay(milliseconds) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
@@ -75,6 +76,18 @@ async function acquireLock(file) {
   throw new AppError('STORE_BUSY', 503);
 }
 
+async function renameWithRetry(source, destination) {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      await rename(source, destination);
+      return;
+    } catch (error) {
+      if (!TRANSIENT_FILE_ERRORS.has(error.code) || attempt >= 5) throw error;
+      await delay(40 * 2 ** attempt);
+    }
+  }
+}
+
 async function atomicWrite(file, value) {
   await mkdir(path.dirname(file), { recursive: true });
   const temporary = `${file}.${process.pid}.${randomBytes(6).toString('hex')}.tmp`;
@@ -84,7 +97,7 @@ async function atomicWrite(file, value) {
       encoding: 'utf8',
       mode: 0o600,
     });
-    await rename(temporary, file);
+    await renameWithRetry(temporary, file);
   } catch (error) {
     await unlink(temporary).catch(() => {});
     throw error;
