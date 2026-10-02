@@ -1567,7 +1567,7 @@ function Dashboard({ session, onSessionExpired }) {
               moduleEnabled={draft.modules.automod}
               onModuleChange={(value) => updateNested('modules', 'automod', value)}
             >
-              <div className="settings-card automod-card">
+              <div className="settings-card automod-card" hidden={!draft.automod.enabled}>
                 <div className="subsection-heading">
                   <div>
                     <h3>{t('automod.contentTitle')}</h3>
@@ -1581,21 +1581,27 @@ function Dashboard({ session, onSessionExpired }) {
                   checked={draft.automod.enabled}
                   onChange={(value) => updateNested('automod', 'enabled', value)}
                 />
-                <ToggleField
-                  id="anti-link"
-                  label={t('automod.antiLink')}
-                  help={t('automod.antiLinkHelp')}
-                  checked={draft.automod.antiLink}
-                  onChange={(value) => updateNested('automod', 'antiLink', value)}
-                />
-                <ToggleField
-                  id="anti-swear"
-                  label={t('automod.antiSwear')}
-                  help={t('automod.antiSwearHelp')}
-                  checked={draft.automod.antiSwear}
-                  onChange={(value) => updateNested('automod', 'antiSwear', value)}
-                />
-                <InputField
+                {draft.automod.enabled ? (
+                  <>
+                    <ToggleField
+                      id="anti-link"
+                      label={t('automod.antiLink')}
+                      help={t('automod.antiLinkHelp')}
+                      checked={draft.automod.antiLink}
+                      onChange={(value) => updateNested('automod', 'antiLink', value)}
+                    />
+                    <ToggleField
+                      id="anti-swear"
+                      label={t('automod.antiSwear')}
+                      help={t('automod.antiSwearHelp')}
+                      checked={draft.automod.antiSwear}
+                      onChange={(value) => updateNested('automod', 'antiSwear', value)}
+                    />
+                  </>
+                ) : null}
+                {draft.automod.enabled && draft.automod.antiSwear ? (
+
+                  <InputField
                   id="blocked-words"
                   label={t('automod.blockedWords')}
                   help={t('automod.blockedWordsHelp')}
@@ -1614,9 +1620,11 @@ function Dashboard({ session, onSessionExpired }) {
                     )
                   }
                 />
+
+                ) : null}
               </div>
 
-              <div className="settings-card automod-card">
+              <div className="settings-card automod-card" hidden={!draft.automod.enabled}>
                 <div className="subsection-heading">
                   <div>
                     <h3>{t('automod.spamTitle')}</h3>
@@ -1630,7 +1638,9 @@ function Dashboard({ session, onSessionExpired }) {
                   checked={draft.automod.antiSpam}
                   onChange={(value) => updateNested('automod', 'antiSpam', value)}
                 />
-                <InputField
+                {draft.automod.antiSpam ? (
+
+                  <InputField
                   id="spam-message-threshold"
                   label={t('automod.spamMessageThreshold')}
                   help={t('automod.spamMessageThresholdHelp')}
@@ -1642,7 +1652,11 @@ function Dashboard({ session, onSessionExpired }) {
                     updateNested('automod', 'spamMessageThreshold', value)
                   }
                 />
-                <InputField
+
+                ) : null}
+                {draft.automod.antiSpam ? (
+
+                  <InputField
                   id="spam-window"
                   label={t('automod.spamWindow')}
                   help={t('automod.spamWindowHelp')}
@@ -1652,7 +1666,11 @@ function Dashboard({ session, onSessionExpired }) {
                   value={draft.automod.spamWindowSeconds}
                   onChange={(value) => updateNested('automod', 'spamWindowSeconds', value)}
                 />
-                <InputField
+
+                ) : null}
+                {draft.automod.antiSpam ? (
+
+                  <InputField
                   id="duplicate-threshold"
                   label={t('automod.duplicateThreshold')}
                   help={t('automod.duplicateThresholdHelp')}
@@ -1664,7 +1682,11 @@ function Dashboard({ session, onSessionExpired }) {
                     updateNested('automod', 'duplicateThreshold', value)
                   }
                 />
-                <InputField
+
+                ) : null}
+                {draft.automod.antiSpam ? (
+
+                  <InputField
                   id="duplicate-window"
                   label={t('automod.duplicateWindow')}
                   help={t('automod.duplicateWindowHelp')}
@@ -1676,6 +1698,8 @@ function Dashboard({ session, onSessionExpired }) {
                     updateNested('automod', 'duplicateWindowSeconds', value)
                   }
                 />
+
+                ) : null}
                 <ToggleField
                   id="anti-mention-spam"
                   label={t('automod.antiMentionSpam')}
@@ -1685,7 +1709,9 @@ function Dashboard({ session, onSessionExpired }) {
                     updateNested('automod', 'antiMentionSpam', value)
                   }
                 />
-                <InputField
+                {draft.automod.antiMentionSpam ? (
+
+                  <InputField
                   id="mention-threshold"
                   label={t('automod.mentionThreshold')}
                   help={t('automod.mentionThresholdHelp')}
@@ -1695,6 +1721,8 @@ function Dashboard({ session, onSessionExpired }) {
                   value={draft.automod.mentionThreshold}
                   onChange={(value) => updateNested('automod', 'mentionThreshold', value)}
                 />
+
+                ) : null}
                 <ToggleField
                   id="anti-caps"
                   label={t('automod.antiCaps')}
@@ -1702,7 +1730,9 @@ function Dashboard({ session, onSessionExpired }) {
                   checked={draft.automod.antiCaps}
                   onChange={(value) => updateNested('automod', 'antiCaps', value)}
                 />
-                <InputField
+                {draft.automod.antiCaps ? (
+
+                  <InputField
                   id="caps-percentage"
                   label={t('automod.capsPercentage')}
                   help={t('automod.capsPercentageHelp')}
@@ -1712,7 +1742,11 @@ function Dashboard({ session, onSessionExpired }) {
                   value={draft.automod.capsPercentage}
                   onChange={(value) => updateNested('automod', 'capsPercentage', value)}
                 />
-                <InputField
+
+                ) : null}
+                {draft.automod.antiCaps ? (
+
+                  <InputField
                   id="caps-minimum"
                   label={t('automod.capsMinimum')}
                   help={t('automod.capsMinimumHelp')}
@@ -1724,6 +1758,8 @@ function Dashboard({ session, onSessionExpired }) {
                     updateNested('automod', 'capsMinimumCharacters', value)
                   }
                 />
+
+                ) : null}
                 <ToggleField
                   id="anti-emoji-spam"
                   label={t('automod.antiEmojiSpam')}
@@ -1733,7 +1769,9 @@ function Dashboard({ session, onSessionExpired }) {
                     updateNested('automod', 'antiEmojiSpam', value)
                   }
                 />
-                <InputField
+                {draft.automod.antiEmojiSpam ? (
+
+                  <InputField
                   id="emoji-threshold"
                   label={t('automod.emojiThreshold')}
                   help={t('automod.emojiThresholdHelp')}
@@ -1743,6 +1781,8 @@ function Dashboard({ session, onSessionExpired }) {
                   value={draft.automod.emojiThreshold}
                   onChange={(value) => updateNested('automod', 'emojiThreshold', value)}
                 />
+
+                ) : null}
                 <ToggleField
                   id="anti-attachment-spam"
                   label={t('automod.antiAttachmentSpam')}
@@ -1752,7 +1792,9 @@ function Dashboard({ session, onSessionExpired }) {
                     updateNested('automod', 'antiAttachmentSpam', value)
                   }
                 />
-                <InputField
+                {draft.automod.antiAttachmentSpam ? (
+
+                  <InputField
                   id="attachment-threshold"
                   label={t('automod.attachmentThreshold')}
                   help={t('automod.attachmentThresholdHelp')}
@@ -1764,7 +1806,11 @@ function Dashboard({ session, onSessionExpired }) {
                     updateNested('automod', 'attachmentThreshold', value)
                   }
                 />
-                <InputField
+
+                ) : null}
+                {draft.automod.antiAttachmentSpam ? (
+
+                  <InputField
                   id="attachment-window"
                   label={t('automod.attachmentWindow')}
                   help={t('automod.attachmentWindowHelp')}
@@ -1776,6 +1822,8 @@ function Dashboard({ session, onSessionExpired }) {
                     updateNested('automod', 'attachmentWindowSeconds', value)
                   }
                 />
+
+                ) : null}
                 <ToggleField
                   id="anti-link-spam"
                   label={t('automod.antiLinkSpam')}
@@ -1783,7 +1831,9 @@ function Dashboard({ session, onSessionExpired }) {
                   checked={draft.automod.antiLinkSpam}
                   onChange={(value) => updateNested('automod', 'antiLinkSpam', value)}
                 />
-                <InputField
+                {draft.automod.antiLinkSpam ? (
+
+                  <InputField
                   id="link-threshold"
                   label={t('automod.linkThreshold')}
                   help={t('automod.linkThresholdHelp')}
@@ -1793,7 +1843,11 @@ function Dashboard({ session, onSessionExpired }) {
                   value={draft.automod.linkThreshold}
                   onChange={(value) => updateNested('automod', 'linkThreshold', value)}
                 />
-                <InputField
+
+                ) : null}
+                {draft.automod.antiLinkSpam ? (
+
+                  <InputField
                   id="link-window"
                   label={t('automod.linkWindow')}
                   help={t('automod.linkWindowHelp')}
@@ -1803,9 +1857,11 @@ function Dashboard({ session, onSessionExpired }) {
                   value={draft.automod.linkWindowSeconds}
                   onChange={(value) => updateNested('automod', 'linkWindowSeconds', value)}
                 />
+
+                ) : null}
               </div>
 
-              <div className="settings-card automod-card">
+              <div className="settings-card automod-card" hidden={!draft.automod.enabled}>
                 <div className="subsection-heading">
                   <div>
                     <h3>{t('automod.joinTitle')}</h3>
@@ -1819,7 +1875,9 @@ function Dashboard({ session, onSessionExpired }) {
                   checked={draft.automod.antiAlt}
                   onChange={(value) => updateNested('automod', 'antiAlt', value)}
                 />
-                <InputField
+                {draft.automod.antiAlt ? (
+
+                  <InputField
                   id="minimum-account-age"
                   label={t('automod.minimumAge')}
                   help={t('automod.minimumAgeHelp')}
@@ -1831,6 +1889,8 @@ function Dashboard({ session, onSessionExpired }) {
                     updateNested('automod', 'minimumAccountAgeDays', value)
                   }
                 />
+
+                ) : null}
                 <ToggleField
                   id="anti-bot"
                   label={t('automod.antiBot')}
@@ -1845,7 +1905,9 @@ function Dashboard({ session, onSessionExpired }) {
                   checked={draft.automod.antiRaid}
                   onChange={(value) => updateNested('automod', 'antiRaid', value)}
                 />
-                <InputField
+                {draft.automod.antiRaid ? (
+
+                  <InputField
                   id="raid-threshold"
                   label={t('automod.raidThreshold')}
                   help={t('automod.raidThresholdHelp')}
@@ -1857,9 +1919,11 @@ function Dashboard({ session, onSessionExpired }) {
                     updateNested('automod', 'raidJoinThreshold', value)
                   }
                 />
+
+                ) : null}
               </div>
 
-              <div className="settings-card automod-card">
+              <div className="settings-card automod-card" hidden={!draft.automod.enabled}>
                 <div className="subsection-heading">
                   <div>
                     <h3>{t('automod.enforcementTitle')}</h3>
