@@ -483,6 +483,21 @@ export function validateSettingsResources(patch, resources) {
     }
   }
 
+  for (const channelId of [
+    patch.actionLog?.channelId,
+    patch.starboard?.channelId,
+  ].filter(Boolean)) {
+    if (!channelIds.has(channelId)) {
+      throw new AppError('INVALID_CHANNEL', 400);
+    }
+  }
+
+  for (const channelId of patch.starboard?.ignoreChannelIds ?? []) {
+    if (!channelIds.has(channelId)) {
+      throw new AppError('INVALID_CHANNEL', 400);
+    }
+  }
+
   for (const channelId of patch.automod?.exemptChannelIds ?? []) {
     if (!channelIds.has(channelId)) {
       throw new AppError('INVALID_CHANNEL', 400);
