@@ -29,7 +29,7 @@ npm install
 Copy-Item .env.example .env
 ```
 
-Fill in `DISCORD_TOKEN` and `DISCORD_CLIENT_ID`, then enable these privileged intents in Discord Developer Portal → Bot:
+Fill in `DISCORD_TOKEN`, `DISCORD_CLIENT_ID`, `MONGODB_URI`, and optionally `MONGODB_DB_NAME` in the root `.env`. Both the bot and dashboard use that same MongoDB database. Then enable these privileged intents in Discord Developer Portal → Bot:
 
 - Server Members Intent
 - Message Content Intent
@@ -41,6 +41,16 @@ npm start
 ```
 
 Commands are registered globally. Discord may take time to propagate a changed global command definition.
+
+MongoDB collections and indexes are created automatically on startup. The database uses `guilds`, `warnings`, `moderation_cases`, `dashboard_audit`, `counters`, and `metadata` collections.
+
+If you still have an old `data/store.json`, migrate it once after configuring MongoDB:
+
+```powershell
+npm run migrate:mongodb
+```
+
+Use `npm run migrate:mongodb -- --replace` only when you intentionally want the migrated JSON data to replace the current Sparkles MongoDB collections.
 
 Optional integrations are documented in [.env.example](./.env.example). `/ask`, voting rewards, and Tanki ratings require their corresponding provider credentials. They contain working provider adapters and return an actionable credential error when the provider is not configured.
 
@@ -74,7 +84,7 @@ Dashboard security includes:
 - origin and CSRF validation on mutations
 - server-side Manage Server checks on every guild request
 - bot-membership, channel, role, and hierarchy validation
-- allow-listed updates and atomic data writes
+- allow-listed field-level MongoDB updates with revision-based bot/dashboard synchronization
 
 ## Project structure
 
@@ -86,7 +96,8 @@ src/modules/extended.js      Explicit grouped-command handlers
 src/command-routes.js        Short routes and exact typed option schemas
 src/ui/components.js         Components V2 response system
 src/errors.js                Centralized interaction errors
-src/store.js                 Atomic persistent server data
+src/store.js                 MongoDB-backed bot state/cache synchronization
+src/mongodb.js               Shared MongoDB connection, indexes, revisions, and helpers
 config/bot.json              Editable economy and automod defaults
 locales/en.json              Bot translations
 dashboard/                   React and Express dashboard
