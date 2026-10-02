@@ -40,9 +40,7 @@
       }
     },
     "robberySuccessPercent": 45,
-    "robberyFailureDivisor": 2,
-    "voteCooldownMs": 43200000,
-    "voteReward": 500
+    "robberyFailureDivisor": 2
   },
   "giveaways": {
     "defaultDurationSeconds": 60,
