@@ -851,6 +851,21 @@ function Dashboard({ session, onSessionExpired }) {
     (resources?.channels ?? []).map((channel) => [channel.id, channel.name]),
   );
   const roleNames = new Map((resources?.roles ?? []).map((role) => [role.id, role.name]));
+  const automodActive =
+    draft?.automod?.enabled === true &&
+    [
+      draft.automod.antiLink,
+      draft.automod.antiSwear,
+      draft.automod.antiSpam,
+      draft.automod.antiMentionSpam,
+      draft.automod.antiCaps,
+      draft.automod.antiEmojiSpam,
+      draft.automod.antiAttachmentSpam,
+      draft.automod.antiLinkSpam,
+      draft.automod.antiAlt,
+      draft.automod.antiBot,
+      draft.automod.antiRaid,
+    ].some(Boolean);
 
   return (
     <div className="app-shell">
@@ -1013,9 +1028,7 @@ function Dashboard({ session, onSessionExpired }) {
                   <div>
                     <small>{t('overview.protection')}</small>
                     <strong>
-                      {draft.automod.enabled && draft.automod.antiLink
-                        ? t('common.on')
-                        : t('common.off')}
+                      {automodActive ? t('common.on') : t('common.off')}
                     </strong>
                   </div>
                 </article>
