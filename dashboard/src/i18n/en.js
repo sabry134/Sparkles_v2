@@ -179,6 +179,9 @@ export const en = {
   'automod.exemptionsTitle': 'Exemptions',
   'automod.exemptionsDescription':
     'Users, roles, and channels listed here bypass message and join protection where applicable.',
+  'automod.blacklistedUsers': 'Blocked users',
+  'automod.blacklistedUsersHelp':
+    'Discord user IDs that are always blocked by protected message and join flows. Existing /blacklist entries appear here.',
   'automod.exemptUsers': 'Exempt users',
   'automod.exemptUsersHelp':
     'Discord user IDs that bypass automod. Existing /whitelist entries appear here.',
