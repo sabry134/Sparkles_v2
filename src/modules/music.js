@@ -68,6 +68,9 @@ export async function joinMemberVoice(interaction, t) {
   }
 
   const state = stateFor(interaction.guildId);
+  state.volume =
+    guildConfig(interaction.guildId).musicSettings?.defaultVolume ??
+    botConfig.music.defaultVolume;
   state.connection?.destroy();
   state.connection = joinVoiceChannel({
     adapterCreator: interaction.guild.voiceAdapterCreator,
