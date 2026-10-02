@@ -515,8 +515,9 @@ export async function handleExtendedCommand(commandName, interaction, t, client)
         ...Object.entries(automod).map(
           ([key, value]) => `**${key}:** ${JSON.stringify(value)}`,
         ),
-        `**exempt users:** ${(config.whitelist ?? []).length}`,
-        `**blacklisted users:** ${(config.blacklist ?? []).length}`,
+        `**exempt roles:** ${(automod.exemptRoleIds ?? []).length}`,
+        `**exempt channels:** ${(automod.exemptChannelIds ?? []).length}`,
+        `**blocked roles:** ${(automod.blockedRoleIds ?? []).length}`,
       ].join('\n');
       return completed(
         interaction,
