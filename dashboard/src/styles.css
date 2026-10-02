@@ -644,11 +644,8 @@ button:disabled {
 }
 
 .section-heading {
-  display: grid;
+  display: block;
   margin-bottom: 16px;
-  grid-template-columns: 24px minmax(0, 1fr);
-  align-items: start;
-  gap: 11px;
 }
 
 .section-icon {
@@ -1741,16 +1738,6 @@ button:disabled {
 
   .settings-section {
     padding-top: 34px;
-  }
-
-  .section-heading {
-    grid-template-columns: 20px minmax(0, 1fr);
-    gap: 9px;
-  }
-
-  .section-icon {
-    width: 20px;
-    height: 20px;
   }
 
   .stat-grid {
