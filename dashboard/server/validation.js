@@ -118,6 +118,7 @@ export function settingsPatch(value) {
       'starboard',
       'modules',
       'disabledCommands',
+      'commandPermissions',
       'customCommands',
     ]),
   );
@@ -404,6 +405,44 @@ export function settingsPatch(value) {
         }),
       ),
     ];
+  }
+
+  if (Object.hasOwn(value, 'commandPermissions')) {
+    assert(plainObject(value.commandPermissions), 'INVALID_INPUT');
+    const commandNames = new Set(catalog.map(({ name }) => name));
+    const entries = Object.entries(value.commandPermissions);
+    assert(entries.length <= 250, 'INVALID_INPUT');
+    patch.commandPermissions = Object.fromEntries(
+      entries.map(([name, rule]) => {
+        assert(commandNames.has(name), 'INVALID_INPUT');
+        assert(plainObject(rule), 'INVALID_INPUT');
+        onlyKeys(rule, new Set(['roleMode', 'roleIds', 'channelMode', 'channelIds']));
+        assert(
+          ['allow-all-except', 'deny-all-except'].includes(rule.roleMode),
+          'INVALID_INPUT',
+        );
+        assert(
+          ['allow-all-except', 'deny-all-except'].includes(rule.channelMode),
+          'INVALID_INPUT',
+        );
+        assert(Array.isArray(rule.roleIds) && rule.roleIds.length <= 50, 'INVALID_INPUT');
+        assert(
+          Array.isArray(rule.channelIds) && rule.channelIds.length <= 50,
+          'INVALID_INPUT',
+        );
+        return [
+          name,
+          {
+            roleMode: rule.roleMode,
+            roleIds: [...new Set(rule.roleIds.map((id) => snowflake(id, 'roleId')))],
+            channelMode: rule.channelMode,
+            channelIds: [
+              ...new Set(rule.channelIds.map((id) => snowflake(id, 'channelId'))),
+            ],
+          },
+        ];
+      }),
+    );
   }
 
   if (Object.hasOwn(value, 'customCommands')) {
