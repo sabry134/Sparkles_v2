@@ -76,8 +76,7 @@ const AUTOMOD_FIELDS = new Set([
   'linkThreshold',
   'linkWindowSeconds',
   'blockedWords',
-  'blacklistedUserIds',
-  'exemptUserIds',
+  'blockedRoleIds',
   'exemptRoleIds',
   'exemptChannelIds',
 ]);
@@ -196,8 +195,7 @@ export function settingsPatch(value) {
       }
     }
     for (const field of [
-      'blacklistedUserIds',
-      'exemptUserIds',
+      'blockedRoleIds',
       'exemptRoleIds',
       'exemptChannelIds',
     ]) {
