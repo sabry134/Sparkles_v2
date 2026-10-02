@@ -506,7 +506,13 @@ function Dashboard({ session, onSessionExpired }) {
   function updateNested(section, field, value) {
     setDraft((current) => ({
       ...current,
-      [section]: { ...current[section], [field]: value },
+      [section]: {
+        ...current[section],
+        [field]: value,
+        ...(section === 'automod' && field !== 'enabled' && value === true
+          ? { enabled: true }
+          : {}),
+      },
     }));
   }
 
