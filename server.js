@@ -137,10 +137,9 @@ const protectedCommands = new Map([
     name,
     [PermissionFlagsBits.ModerateMembers, 'Moderate Members'],
   ]),
-  ...['clear'].map((name) => [
-    name,
-    [PermissionFlagsBits.ManageMessages, 'Manage Messages'],
-  ]),
+  ...['clear', 'purge-user', 'purge-links', 'purge-attachments', 'purge-bots'].map(
+    (name) => [name, [PermissionFlagsBits.ManageMessages, 'Manage Messages']],
+  ),
   ...[
     'add-role',
     'remove-role',
@@ -182,7 +181,9 @@ const protectedCommands = new Map([
     'anti-bot',
     'anti-link',
     'anti-raid',
+    'anti-spam',
     'anti-swear',
+    'automod-test',
     'disable-links',
     'enable-links',
     'filter-http',
@@ -190,6 +191,8 @@ const protectedCommands = new Map([
     'start',
     'stop',
     'custom',
+    'unblacklist',
+    'unwhitelist',
   ].map((name) => [name, [PermissionFlagsBits.ManageGuild, 'Manage Server']]),
   ...['verify'].map((name) => [name, [PermissionFlagsBits.ManageRoles, 'Manage Roles']]),
 ]);
