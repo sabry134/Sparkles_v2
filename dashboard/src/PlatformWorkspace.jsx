@@ -1,9 +1,25 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Button,
+  Checkbox,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  FormControl,
+  FormControlLabel,
+  InputLabel,
+  MenuItem,
+  Select as MuiSelect,
+  TextField,
+} from '@mui/material';
 import { api } from './api.js';
 import { t } from './i18n/index.js';
 import MessageStudio, { MessagePreview, downloadJson } from './MessageStudio.jsx';
 import { ACTION_FIELDS, FEATURES, emptyResource, configurationDiff } from '../../shared/platform-schema.js';
 import { EMPTY_MESSAGE } from '../../shared/discord-limits.js';
+import { useUiDialog } from './MuiProvider.jsx';
 import './platform.css';
 
 export const PLATFORM_PAGES = ['rules', 'tickets', 'forms', 'giveaways', 'polls', 'feeds', 'members', 'activity', 'jobs', 'access', 'blueprints'];
@@ -24,13 +40,33 @@ function Pager({ cursor, onNext, onFirst, busy }) { return <div className="platf
 function Status({ value }) { return <span className={`platform-badge status-${value}`}>{t(`status.${value}`)}</span>; }
 
 function useUnsaved(dirty) {
+  const dialogs = useUiDialog();
+
   useEffect(() => {
     if (!dirty) return undefined;
-    const beforeUnload = event => { event.preventDefault(); event.returnValue = ''; };
-    const navigate = event => { if (!window.confirm(t('platform.unsavedConfirm'))) event.preventDefault(); };
-    window.addEventListener('beforeunload', beforeUnload); window.addEventListener('sparkles:navigate', navigate);
-    return () => { window.removeEventListener('beforeunload', beforeUnload); window.removeEventListener('sparkles:navigate', navigate); };
-  }, [dirty]);
+
+    const beforeUnload = (event) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    const guard = () =>
+      dialogs.confirm({
+        title: t('platform.unsavedTitle'),
+        message: t('platform.unsavedConfirm'),
+        confirmLabel: t('platform.leaveAnyway'),
+        cancelLabel: t('platform.keepEditing'),
+      });
+
+    window.__sparklesNavigationGuard = guard;
+    window.addEventListener('beforeunload', beforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', beforeUnload);
+      if (window.__sparklesNavigationGuard === guard) {
+        delete window.__sparklesNavigationGuard;
+      }
+    };
+  }, [dirty, dialogs]);
 }
 
 function defaultField(spec, limits) {
