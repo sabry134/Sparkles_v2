@@ -11,7 +11,7 @@ A React + Vite control panel backed by an Express server. It signs administrator
 - bot-membership, role hierarchy, channel, message, and role validation through Discord
 - moderation logs, server rules, suggestions, giveaways, tickets, and welcome/goodbye flows
 - complete automod controls for links, new accounts, bots, raids, blocked words, and warning thresholds
-- economy rewards, currency, box price, robbery chance, music volume, AI, and per-module availability
+- economy rewards, currency, box price, robbery chance, music volume, and per-module availability
 - automatic roles, verification roles, and live channel/category/manageable-role selectors
 - reaction-role creation and removal, including adding the bot reaction to the Discord message
 - custom-command creation, editing, listing, and removal
