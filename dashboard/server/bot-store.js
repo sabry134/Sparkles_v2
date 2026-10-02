@@ -231,15 +231,9 @@ function publicSettings(config, defaults) {
       blockedWords: Array.isArray(config.automod?.blockedWords)
         ? config.automod.blockedWords
         : [],
-      blacklistedUserIds: Array.isArray(config.blacklist) ? config.blacklist : [],
-      exemptUserIds: [
-        ...new Set([
-          ...(Array.isArray(config.whitelist) ? config.whitelist : []),
-          ...(Array.isArray(config.automod?.exemptUserIds)
-            ? config.automod.exemptUserIds
-            : []),
-        ]),
-      ],
+      blockedRoleIds: Array.isArray(config.automod?.blockedRoleIds)
+        ? config.automod.blockedRoleIds
+        : [],
       exemptRoleIds: Array.isArray(config.automod?.exemptRoleIds)
         ? config.automod.exemptRoleIds
         : [],
@@ -348,6 +342,7 @@ export class BotStore {
           'linkThreshold',
           'linkWindowSeconds',
           'blockedWords',
+          'blockedRoleIds',
           'exemptRoleIds',
           'exemptChannelIds',
         ]) {
@@ -357,21 +352,6 @@ export class BotStore {
         }
         if (Object.hasOwn(patch.automod, 'antiBot')) {
           config.features.antiBot = patch.automod.antiBot;
-        }
-        if (
-          Object.hasOwn(patch.automod, 'blacklistedUserIds') ||
-          Object.hasOwn(patch.automod, 'exemptUserIds')
-        ) {
-          const blacklist = Object.hasOwn(patch.automod, 'blacklistedUserIds')
-            ? [...patch.automod.blacklistedUserIds]
-            : [...(config.blacklist ?? [])];
-          const whitelist = Object.hasOwn(patch.automod, 'exemptUserIds')
-            ? [...patch.automod.exemptUserIds]
-            : [...(config.whitelist ?? [])];
-          const blacklisted = new Set(blacklist);
-          config.blacklist = blacklist;
-          config.whitelist = whitelist.filter((id) => !blacklisted.has(id));
-          delete config.automod.exemptUserIds;
         }
         if (Object.hasOwn(patch.automod, 'antiLink')) {
           delete config.automod.linkProtocols;
