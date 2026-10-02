@@ -1039,7 +1039,7 @@ client.on('interactionCreate', async (interaction) => {
         return interaction.reply(
           componentMessage({
             title: t('responses.rulesTitle'),
-            description: config.rules ?? t('responses.rulesMissing'),
+            description: config.rules?.trim() || t('responses.rulesMissing'),
           }),
         );
       }
