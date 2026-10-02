@@ -8,6 +8,7 @@ import { BotStore } from './bot-store.js';
 import { config } from './config.js';
 import {
   authorizeGuild,
+  createReactionRoleEmbed,
   dashboardGuilds,
   exchangeAuthorizationCode,
   fetchCurrentUser,
@@ -15,6 +16,7 @@ import {
   oauthStart,
   removeBotReaction,
   revokeOauthToken,
+  sendDashboardEmbed,
   validOauthState,
   validateAndAddReaction,
   validateSettingsResources,
@@ -22,7 +24,9 @@ import {
 import { AppError, errorResponse } from './errors.js';
 import { EncryptedFileSessionStore } from './session-store.js';
 import {
+  dashboardEmbedInput,
   guildId as validatedGuildId,
+  reactionRoleEmbedInput,
   reactionRoleInput,
   reactionRoleKeyInput,
   settingsPatch,
@@ -304,12 +308,54 @@ app.post(
   csrfProtected,
   asyncRoute(async (request, response) => {
     const guildId = validatedGuild(request);
-    const mapping = reactionRoleInput(request.body);
+    const mapping = reactionRoleInput(request.body, guildId);
     await authorizeGuild(request, guildId, discordConfig());
     const resources = await guildResources(guildId, discordConfig());
     await validateAndAddReaction(guildId, mapping, resources, discordConfig());
     const settings = await botStore.setReactionRole(guildId, mapping);
     response.status(201).json({ settings });
+  }),
+);
+
+app.post(
+  '/api/guilds/:guildId/reaction-role-embeds',
+  authenticated,
+  csrfProtected,
+  asyncRoute(async (request, response) => {
+    const guildId = validatedGuild(request);
+    const input = reactionRoleEmbedInput(request.body);
+    await authorizeGuild(request, guildId, discordConfig());
+    const resources = await guildResources(guildId, discordConfig());
+    const created = await createReactionRoleEmbed(
+      guildId,
+      input,
+      resources,
+      discordConfig(),
+    );
+    const settings = await botStore.setReactionRole(guildId, created.mapping);
+    response.status(201).json({
+      settings,
+      messageLink: created.messageLink,
+    });
+  }),
+);
+
+app.post(
+  '/api/guilds/:guildId/embeds',
+  authenticated,
+  csrfProtected,
+  asyncRoute(async (request, response) => {
+    const guildId = validatedGuild(request);
+    const input = dashboardEmbedInput(request.body);
+    await authorizeGuild(request, guildId, discordConfig());
+    const resources = await guildResources(guildId, discordConfig());
+    const message = await sendDashboardEmbed(
+      guildId,
+      input,
+      resources,
+      discordConfig(),
+    );
+    response.status(201).json(message);
   }),
 );
 
