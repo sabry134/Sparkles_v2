@@ -1498,6 +1498,34 @@ button:disabled {
   border-bottom: 1px solid var(--border);
 }
 
+.legacy-policy-warning {
+  display: flex;
+  margin: 0 var(--space-5) 14px;
+  padding: 12px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  color: var(--text-secondary);
+  border: 1px solid rgba(221, 180, 111, 0.28);
+  border-radius: var(--radius-md);
+  background: var(--warning-soft);
+}
+
+.legacy-policy-warning > div {
+  display: grid;
+  gap: 3px;
+}
+
+.legacy-policy-warning strong {
+  color: #efd39e;
+  font-size: 0.74rem;
+}
+
+.legacy-policy-warning span {
+  font-size: 0.7rem;
+  line-height: 1.45;
+}
+
 .automod-self-exempt {
   margin-bottom: 12px;
   border: 1px solid rgba(221, 180, 111, 0.3);
@@ -2518,7 +2546,8 @@ button:disabled {
     justify-self: start;
   }
 
-  .automod-self-exempt {
+  .automod-self-exempt,
+  .legacy-policy-warning {
     align-items: flex-start;
     flex-wrap: wrap;
   }
