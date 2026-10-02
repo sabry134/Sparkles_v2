@@ -366,6 +366,10 @@ export class BotStore {
                 typeof entry.evidence.content === 'string'
                   ? entry.evidence.content.slice(0, 2_000)
                   : null,
+              reference:
+                typeof entry.evidence.reference === 'string'
+                  ? entry.evidence.reference.slice(0, 500)
+                  : null,
               attachments: Array.isArray(entry.evidence.attachments)
                 ? entry.evidence.attachments.slice(0, 10).map((attachment) => ({
                     name:
