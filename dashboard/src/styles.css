@@ -305,7 +305,6 @@ button:disabled {
   border-radius: 0;
   background: transparent;
   box-shadow: none;
-  backdrop-filter: none;
   animation: none;
   transform: none;
 }
@@ -1172,7 +1171,6 @@ button:disabled {
   border-radius: var(--radius-lg);
   background: #18231d;
   box-shadow: var(--toast-shadow);
-  backdrop-filter: none;
   animation: toast-in 130ms ease-out;
 }
 
@@ -1307,7 +1305,6 @@ button:disabled {
   background: #181c25;
   box-shadow: var(--menu-shadow);
   list-style: none;
-  backdrop-filter: none;
   animation: select-menu-in 100ms ease-out;
   scrollbar-width: thin;
   scrollbar-color: #485161 transparent;
