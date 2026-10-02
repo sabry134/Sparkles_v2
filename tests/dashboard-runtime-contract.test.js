@@ -62,6 +62,7 @@ test('every dashboard setting has a bot runtime consumer', () => {
     ['src/modules/automation.js', 'starboard'],
     ['src/modules/action-log.js', 'actionLog'],
     ['server.js', 'disabledCommands'],
+    ['server.js', 'commandPermissions'],
   ];
 
   for (const [file, expected] of contracts) {
@@ -186,4 +187,23 @@ test('moderation history action log autoresponders and starboard are wired', () 
   assert.match(sources['src/modules/action-log.js'], /logRoleChanges/u);
   assert.match(sources['server.js'], /handleAutoresponder\(message\)/u);
   assert.match(sources['server.js'], /handleStarboardReaction\(reaction, user\)/u);
+});
+
+
+test('dashboard command access rules are enforced by role and channel', () => {
+  assert.match(sources['server.js'], /function commandAccessDenied/u);
+  assert.match(sources['server.js'], /roleMode === 'deny-all-except'/u);
+  assert.match(sources['server.js'], /channelMode === 'deny-all-except'/u);
+  assert.match(sources['server.js'], /commandAccessDenied\(interaction, commandName\)/u);
+  assert.match(sources['dashboard/src/App.jsx'], /selectedCommandRule/u);
+  assert.match(sources['dashboard/src/App.jsx'], /commandPermissions/u);
+});
+
+test('dashboard configuration changes are auditable', () => {
+  assert.match(
+    sources['dashboard/server/index.js'],
+    /\/api\/guilds\/:guildId\/dashboard-audit/u,
+  );
+  assert.match(sources['dashboard/server/index.js'], /appendDashboardAudit/u);
+  assert.match(sources['dashboard/src/App.jsx'], /dashboardAudit/u);
 });
