@@ -384,6 +384,23 @@ export const en = {
   'modules.commandManagerDescription':
     'Override individual commands without disabling their entire module.',
   'modules.commandSearch': 'Search commands…',
+  'modules.commandConfigure': 'Access',
+  'modules.commandAccessTitle': '/{command} access',
+  'modules.commandAccessDescription':
+    'Restrict this command by Discord roles and channels without changing its module.',
+  'modules.commandAccessReset': 'Reset access rules',
+  'modules.accessAllowAllExcept': 'Allow everyone except selected',
+  'modules.accessDenyAllExcept': 'Deny everyone except selected',
+  'modules.commandRoleMode': 'Role rule',
+  'modules.commandRoleModeHelp':
+    'Choose whether the selected roles are denied or are the only roles allowed.',
+  'modules.commandRoles': 'Roles',
+  'modules.commandRolesHelp': 'Select the roles used by the role rule.',
+  'modules.commandChannelMode': 'Channel rule',
+  'modules.commandChannelModeHelp':
+    'Choose whether the selected channels are denied or are the only channels allowed.',
+  'modules.commandChannels': 'Channels',
+  'modules.commandChannelsHelp': 'Select the channels used by the channel rule.',
   'modules.moderation': 'Moderation',
   'modules.automod': 'Auto moderation',
   'modules.roles': 'Roles',
