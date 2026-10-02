@@ -105,7 +105,7 @@ test('dashboard validates and persists every exposed guild setting', async () =>
     },
     customCommands: {
       hello: 'Welcome to the server!',
-      rules-short: 'Read the rules channel.',
+      'rules-short': 'Read the rules channel.',
     },
   });
 
