@@ -597,6 +597,31 @@ async function modLog(interaction, title, description, details = {}) {
   return moderationCase;
 }
 
+function commandAccessDenied(interaction, commandName) {
+  if (interaction.memberPermissions?.has(PermissionFlagsBits.Administrator)) {
+    return false;
+  }
+
+  const rule = guildConfig(interaction.guildId).commandPermissions?.[commandName];
+  if (!rule) return false;
+
+  const memberRoleIds = new Set(
+    interaction.member?.roles?.cache?.keys?.() ??
+      (Array.isArray(interaction.member?.roles) ? interaction.member.roles : []),
+  );
+  const roleMatches = (rule.roleIds ?? []).some((roleId) =>
+    memberRoleIds.has(roleId),
+  );
+  if (rule.roleMode === 'deny-all-except' && !roleMatches) return true;
+  if (rule.roleMode === 'allow-all-except' && roleMatches) return true;
+
+  const channelMatches = (rule.channelIds ?? []).includes(interaction.channelId);
+  if (rule.channelMode === 'deny-all-except' && !channelMatches) return true;
+  if (rule.channelMode === 'allow-all-except' && channelMatches) return true;
+
+  return false;
+}
+
 client.on('interactionCreate', async (interaction) => {
   await syncStore().catch((error) =>
     console.error('[store-sync]', { guildId: interaction.guildId }, error),
@@ -634,6 +659,12 @@ client.on('interactionCreate', async (interaction) => {
     if ((guildConfig(interaction.guildId).disabledCommands ?? []).includes(commandName)) {
       return interaction.reply(
         ephemeral(t('errors.commandDisabled', { command: commandName })),
+      );
+    }
+
+    if (commandName !== 'module' && commandAccessDenied(interaction, commandName)) {
+      return interaction.reply(
+        ephemeral(t('errors.commandPermission', { command: commandName })),
       );
     }
 
