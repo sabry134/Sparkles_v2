@@ -21,24 +21,25 @@ export const en = {
   'common.separator': ' · ',
   'common.chooseChannel': 'Choose a channel',
   'common.referenceUnavailable': 'unavailable',
+  'select.required': 'Choose an option.',
 
-  'login.eyebrow': 'Discord server management, refined',
-  'login.title': 'Your community, under control.',
+  'login.eyebrow': 'Sparkles dashboard',
+  'login.title': 'Manage your Discord server in one place.',
   'login.description':
-    'Configure moderation, automations, suggestions, and roles from one focused workspace.',
+    'Configure moderation, roles, community tools, economy, music, and modules.',
   'login.connect': 'Continue with Discord',
-  'login.securityTitle': 'Secure by design',
+  'login.securityTitle': 'Discord sign-in and permissions',
   'login.securityBody':
-    'Discord sign-in, server-side permission checks, and protected sessions keep your settings private.',
-  'login.featureModerationTitle': 'Confident moderation',
+    'Sparkles checks your Discord permissions before server settings can be viewed or changed.',
+  'login.featureModerationTitle': 'Moderation settings',
   'login.featureModerationBody':
-    'Route audit events and turn protections on without digging through configuration files.',
-  'login.featureAutomationTitle': 'Useful automation',
+    'Choose log channels, server rules, and automatic moderation settings.',
+  'login.featureAutomationTitle': 'Role automation',
   'login.featureAutomationBody':
-    'Welcome members with automatic roles and maintain reaction-role menus visually.',
-  'login.featureCommunityTitle': 'Community workflows',
+    'Set automatic roles, verification roles, and reaction-role mappings.',
+  'login.featureCommunityTitle': 'Community tools',
   'login.featureCommunityBody':
-    'Send suggestions to the right place and let your staff review them in Discord.',
+    'Configure suggestions, welcomes, giveaways, departures, and tickets.',
 
   'nav.workspace': 'Workspace',
   'nav.overview': 'Overview',
@@ -66,15 +67,15 @@ export const en = {
   'guild.initial': '{name} initial',
 
   'header.serverSettings': 'Server settings',
-  'header.title': 'Make {server} run beautifully.',
+  'header.title': '{server} settings',
   'header.description':
-    'Changes are permission-checked and applied to the same configuration used by your Discord bot.',
+    'Changes here update the configuration Sparkles uses in this server.',
   'header.unsaved': 'Unsaved changes',
   'header.saved': 'Everything is saved',
   'header.mobileGuild': 'Current server',
 
-  'overview.title': 'At a glance',
-  'overview.description': 'The essentials for your current Sparkles configuration.',
+  'overview.title': 'Overview',
+  'overview.description': 'Current status of key server settings.',
   'overview.protection': 'Link protection',
   'overview.logging': 'Moderation logs',
   'overview.autoRole': 'Automatic role',
