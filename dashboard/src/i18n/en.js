@@ -5,7 +5,6 @@ export const en = {
   'brand.dashboard': 'Dashboard',
   'common.loading': 'Loading dashboard…',
   'common.none': 'Disabled',
-  'common.save': 'Save changes',
   'common.saving': 'Saving…',
   'common.add': 'Add reaction role',
   'common.adding': 'Adding…',
@@ -70,7 +69,7 @@ export const en = {
   'header.title': '{server} settings',
   'header.description':
     'Changes here update the configuration Sparkles uses in this server.',
-  'header.unsaved': 'Unsaved changes',
+  'header.autosavePending': 'Saving automatically…',
   'header.saved': 'Everything is saved',
   'header.mobileGuild': 'Current server',
 
@@ -229,10 +228,9 @@ export const en = {
   'custom.namePlaceholder': 'welcome-info',
   'custom.response': 'Command response',
   'custom.responsePlaceholder': 'Write the message Sparkles should return.',
-  'custom.stage': 'Add to changes',
-  'custom.saveNote': 'Use Save changes at the top to publish library updates.',
+  'custom.stage': 'Add command',
 
-  'status.saved': 'Settings saved.',
+  'status.saved': 'Saved',
   'status.reactionAdded': 'Reaction role added.',
   'status.reactionRemoved': 'Reaction role removed.',
   'status.loggedOut': 'You have been signed out.',
