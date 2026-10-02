@@ -17,13 +17,21 @@ const NAVIGATION = [
 ];
 
 function translatedError(error) {
-  const code = error instanceof ApiError ? error.code : 'INTERNAL_ERROR';
-  const key = `error.${code}`;
-  const variables = {
-    reference: error?.requestId ?? t('common.referenceUnavailable'),
-  };
+  if (!(error instanceof ApiError)) return t('error.client');
+
+  const key = `error.${error.code}`;
+  const variables = { reference: error.requestId };
   const value = t(key, variables);
-  return value === key ? t('error.fallback', variables) : value;
+  if (value !== key) {
+    if (error.code === 'INTERNAL_ERROR' && !error.requestId) {
+      return t('error.internalNoReference');
+    }
+    return value;
+  }
+
+  return error.requestId
+    ? t('error.fallback', variables)
+    : t('error.fallbackNoReference');
 }
 
 function rememberedGuild() {
