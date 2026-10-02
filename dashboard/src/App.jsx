@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api, ApiError } from './api.js';
 import { t } from './i18n/index.js';
+import Icon from './Icon.jsx';
 
 const NAVIGATION = [
   ['overview', 'nav.overview', 'grid'],
