@@ -1408,9 +1408,9 @@ client.on('guildMemberRemove', (member) => {
 client.on('messageCreate', (message) => {
   syncStore()
     .then(() => filterAutomodMessage(message, t))
-    .then(() => filterLinks(message, t))
+    .then((handled) => (handled ? true : filterLinks(message, t)))
     .catch((error) =>
-      console.error('[anti-link-event]', { guildId: message.guildId }, error),
+      console.error('[automod-event]', { guildId: message.guildId }, error),
     );
 });
 client.on('messageReactionAdd', (reaction, user) => {
