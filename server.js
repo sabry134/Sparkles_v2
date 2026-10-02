@@ -203,8 +203,6 @@ const protectedCommands = new Map([
     'enable-links',
     'filter-http',
     'filter-https',
-    'start',
-    'stop',
     'custom',
     'unblacklist',
     'unwhitelist',
