@@ -1,7 +1,12 @@
 import { mkdir, open, readFile, rename, stat, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const file = path.resolve(process.env.STORE_PATH ?? path.join('data', 'store.json'));
+const projectDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const configuredStorePath = process.env.STORE_PATH?.trim() || 'data/store.json';
+const file = path.isAbsolute(configuredStorePath)
+  ? configuredStorePath
+  : path.resolve(projectDirectory, configuredStorePath);
 const directory = path.dirname(file);
 let state = { guilds: {}, warnings: {}, moderationCases: {} };
 let baselineState = structuredClone(state);
