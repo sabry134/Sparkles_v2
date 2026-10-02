@@ -13,6 +13,7 @@ import {
 } from 'discord.js';
 import { catalog } from './src/catalog.js';
 import {
+  addModerationCase,
   addWarning,
   clearWarnings,
   guildConfig,
@@ -542,17 +543,38 @@ async function getManageableTarget(interaction, botPermission, permissionName) {
   return member;
 }
 
-async function modLog(interaction, title, description) {
+async function modLog(interaction, title, description, details = {}) {
+  const moderationCase = addModerationCase(interaction.guildId, {
+    action: title,
+    actorId: interaction.user.id,
+    actorTag: interaction.user.tag,
+    targetId: details.targetId ?? null,
+    targetTag: details.targetTag ?? null,
+    reason: details.reason ?? null,
+    duration: details.duration ?? null,
+    source: 'command',
+    evidence: details.evidence ?? {
+      channelId: interaction.channelId,
+      interactionId: interaction.id,
+    },
+  });
+  await saveStore();
+
   const channelId = guildConfig(interaction.guildId).logsChannelId;
-  if (!channelId) {
-    return;
-  }
+  if (!channelId) return moderationCase;
   const channel = await interaction.guild.channels.fetch(channelId).catch(() => null);
   if (channel?.isTextBased()) {
     await channel
-      .send(componentMessage({ title, description, footer: new Date().toISOString() }))
+      .send(
+        componentMessage({
+          title: `#${moderationCase.id} · ${title}`,
+          description,
+          footer: moderationCase.at,
+        }),
+      )
       .catch(() => {});
   }
+  return moderationCase;
 }
 
 client.on('interactionCreate', async (interaction) => {
@@ -721,6 +743,11 @@ client.on('interactionCreate', async (interaction) => {
           interaction,
           'ban',
           `${interaction.user.tag} -> ${member.user.tag}: ${moderationReason}`,
+          {
+            targetId: member.id,
+            targetTag: member.user.tag,
+            reason: moderationReason,
+          },
         );
       }
       case 'kick': {
@@ -751,6 +778,11 @@ client.on('interactionCreate', async (interaction) => {
           interaction,
           'kick',
           `${interaction.user.tag} -> ${member.user.tag}: ${moderationReason}`,
+          {
+            targetId: member.id,
+            targetTag: member.user.tag,
+            reason: moderationReason,
+          },
         );
       }
       case 'soft-ban': {
@@ -780,6 +812,11 @@ client.on('interactionCreate', async (interaction) => {
           interaction,
           'soft-ban',
           `${interaction.user.tag} -> ${member.user.tag}: ${moderationReason}`,
+          {
+            targetId: member.id,
+            targetTag: member.user.tag,
+            reason: moderationReason,
+          },
         );
       }
       case 'unban': {
@@ -793,6 +830,10 @@ client.on('interactionCreate', async (interaction) => {
           return;
         const id = interaction.options.getString('user-id');
         await interaction.guild.members.unban(id);
+        await modLog(interaction, 'unban', `${interaction.user.tag} -> ${id}`, {
+          targetId: id,
+          reason: reason(interaction),
+        });
         return interaction.reply(commandSuccess(interaction, t('common.done')));
       }
       case 'timeout': {
@@ -810,14 +851,26 @@ client.on('interactionCreate', async (interaction) => {
         const duration = interaction.options.getString('duration');
         const ms = durationMs(duration);
         if (!ms) return interaction.reply(ephemeral(t('errors.invalidDuration')));
-        await member.timeout(ms, reason(interaction));
+        const moderationReason = reason(interaction);
+        await member.timeout(ms, moderationReason);
+        await modLog(
+          interaction,
+          'timeout',
+          `${interaction.user.tag} -> ${member.user.tag}: ${moderationReason}`,
+          {
+            targetId: member.id,
+            targetTag: member.user.tag,
+            reason: moderationReason,
+            duration,
+          },
+        );
         return interaction.reply(
           commandSuccess(
             interaction,
             t('responses.timeout', {
               user: member.user.tag,
               duration,
-              reason: reason(interaction),
+              reason: moderationReason,
             }),
           ),
         );
@@ -834,7 +887,18 @@ client.on('interactionCreate', async (interaction) => {
         const member = await targetMember(interaction);
         if (!manageable(interaction, member))
           return interaction.reply(ephemeral(t('errors.hierarchy')));
-        await member.timeout(null, reason(interaction));
+        const moderationReason = reason(interaction);
+        await member.timeout(null, moderationReason);
+        await modLog(
+          interaction,
+          'untimeout',
+          `${interaction.user.tag} -> ${member.user.tag}: ${moderationReason}`,
+          {
+            targetId: member.id,
+            targetTag: member.user.tag,
+            reason: moderationReason,
+          },
+        );
         return interaction.reply(
           commandSuccess(
             interaction,
@@ -922,6 +986,11 @@ client.on('interactionCreate', async (interaction) => {
           interaction,
           'warn',
           `${interaction.user.tag} → ${member.user.tag}: ${reason(interaction)}`,
+          {
+            targetId: member.id,
+            targetTag: member.user.tag,
+            reason: reason(interaction),
+          },
         );
         return interaction.reply(
           commandSuccess(
