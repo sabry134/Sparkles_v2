@@ -33,6 +33,7 @@ export async function configureLinkFilter(interaction, t) {
   }
 
   config.automod.antiLink = action === 'enable';
+  if (config.automod.antiLink) delete config.automod.linkProtocols;
   await saveStore();
 
   return interaction.reply(
@@ -46,10 +47,11 @@ export async function configureLinkFilter(interaction, t) {
 
 export async function filterLinks(message, t) {
   if (!message.inGuild() || message.author.bot || !message.content) return;
-  const automod = guildConfig(message.guildId).automod;
+  const config = guildConfig(message.guildId);
+  if (config.whitelist?.includes(message.author.id)) return;
+  const automod = config.automod;
   if (automod?.enabled === false || !automod?.antiLink) return;
-  if (message.member?.permissions.has(PermissionFlagsBits.ManageMessages)) return;
-  if (!URL_PATTERN.test(message.content)) return;
+  if (!hasBlockedLink(message.content, automod.linkProtocols)) return;
 
   const deleted = await message
     .delete()
@@ -74,7 +76,7 @@ export async function filterLinks(message, t) {
     ).unref();
   }
 
-  const logChannelId = guildConfig(message.guildId).logsChannelId;
+  const logChannelId = config.logsChannelId;
   if (!logChannelId) return;
 
   const logChannel = await message.guild.channels.fetch(logChannelId).catch(() => null);
@@ -99,29 +101,22 @@ export async function filterAutomodMessage(message, t) {
 
   const config = guildConfig(message.guildId);
   if (config.whitelist?.includes(message.author.id)) return;
-  if (message.member?.permissions.has(PermissionFlagsBits.ManageMessages)) return;
 
   const isBlacklisted = config.blacklist?.includes(message.author.id);
   const blockedWords = config.automod?.blockedWords ?? [];
-  const normalized = message.content.toLocaleLowerCase('en-US');
-  const containsBlockedWord =
+  const blockedWordDetected =
     config.automod?.enabled !== false &&
     config.automod?.antiSwear === true &&
-    blockedWords.some((word) =>
-      new RegExp(
-        `(?:^|\\W)${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:$|\\W)`,
-        'iu',
-      ).test(normalized),
-    );
+    containsBlockedWord(message.content, blockedWords);
 
-  if (!isBlacklisted && !containsBlockedWord) return;
+  if (!isBlacklisted && !blockedWordDetected) return;
   const deleted = await message
     .delete()
     .then(() => true)
     .catch(() => false);
   if (!deleted) return;
 
-  if (containsBlockedWord) {
+  if (blockedWordDetected) {
     const count = addWarning(message.guildId, message.author.id, {
       at: new Date().toISOString(),
       moderatorId: message.client.user.id,
