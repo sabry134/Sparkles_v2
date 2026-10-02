@@ -2500,6 +2500,41 @@ a.moderation-evidence-reference:hover {
   justify-self: end;
 }
 
+.command-manager-actions {
+  display: flex !important;
+  min-width: auto !important;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px !important;
+}
+
+.command-manager-actions .button {
+  min-height: 32px;
+  padding: 0 10px;
+  font-size: 0.7rem;
+}
+
+.command-manager-actions .button.selected {
+  color: #ebe8ff;
+  border-color: rgba(139, 124, 246, 0.45);
+  background: var(--primary-soft);
+}
+
+.command-permission-panel {
+  border-top: 1px solid var(--border);
+  background: var(--surface-subtle);
+}
+
+.command-permission-panel > .subsection-heading {
+  margin: 0;
+  padding: 18px var(--space-5) 10px;
+  align-items: center;
+}
+
+.command-permission-panel > .field-row {
+  background: transparent;
+}
+
 @media (min-width: 1440px) {
   :root {
     --content-width: 1100px;
@@ -2851,6 +2886,20 @@ a.moderation-evidence-reference:hover {
   .automation-item .button {
     grid-column: 1 / -1;
     justify-self: start;
+  }
+
+  .command-manager-item {
+    grid-template-columns: 1fr;
+  }
+
+  .command-manager-actions {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .command-permission-panel > .subsection-heading {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .automation-item {
