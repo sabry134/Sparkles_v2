@@ -95,7 +95,7 @@ export const en = {
 
   'automod.title': 'Auto moderation',
   'automod.description':
-    'Stop unwanted links before they derail a conversation. Members with Manage Messages bypass the filter.',
+    'Apply automatic protections to member messages and joins. Explicitly whitelisted members are exempt.',
   'automod.antiLink': 'Anti-link protection',
   'automod.antiLinkHelp':
     'Delete HTTP links and Discord invite links from regular members.',
