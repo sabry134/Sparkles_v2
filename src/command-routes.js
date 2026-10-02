@@ -303,8 +303,6 @@ export const GROUPED_COMMAND_OPTIONS = Object.freeze({
   'now-playing': [],
   open: [],
   organize: [],
-    string('text', 'content', 'options.pasteContent', true, { maxLength: 2_000 }),
-  ],
   play: [string('text', 'query', 'options.songQuery', true, { maxLength: 300 })],
   'prefix-only': [
     string('id', 'name', 'options.customCommandName', true, { maxLength: 32 }),
