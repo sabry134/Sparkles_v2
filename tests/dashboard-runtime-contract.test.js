@@ -12,6 +12,10 @@ const sources = Object.fromEntries(
       'src/modules/economy.js',
       'src/modules/music.js',
       'src/modules/extended.js',
+      'src/modules/automation.js',
+      'src/modules/action-log.js',
+      'dashboard/src/App.jsx',
+      'dashboard/server/index.js',
     ].map(async (file) => [
       file,
       await readFile(new URL(`../${file}`, import.meta.url), 'utf8'),
@@ -105,4 +109,77 @@ test('advanced moderation commands are wired to runtime handlers', () => {
   ]) {
     assert.match(sources['src/modules/extended.js'], new RegExp(`case '${command}'`, 'u'));
   }
+});
+
+
+test('dashboard uses real routed module pages instead of hash navigation', () => {
+  assert.match(
+    sources['dashboard/src/App.jsx'],
+    /\/servers\/\$\{guildId\}\/\$\{PAGE_IDS\.has\(page\)/u,
+  );
+  assert.doesNotMatch(
+    sources['dashboard/src/App.jsx'],
+    /document\.getElementById\(id\)\?\.scrollIntoView/u,
+  );
+  for (const page of [
+    'overview',
+    'moderation',
+    'automod',
+    'roles',
+    'embeds',
+    'community',
+    'automation',
+    'economy',
+    'music',
+    'modules',
+    'custom',
+  ]) {
+    assert.match(
+      sources['dashboard/src/App.jsx'],
+      new RegExp(`id="${page}"[\\s\\S]*?active=\\{activeSection === '${page}'\\}`, 'u'),
+    );
+  }
+});
+
+test('dashboard session failures return to the login route', () => {
+  assert.match(
+    sources['dashboard/src/App.jsx'],
+    /AUTH_REQUIRED'[\s\S]*DISCORD_SESSION_EXPIRED'[\s\S]*INVALID_CSRF/u,
+  );
+  assert.match(
+    sources['dashboard/src/App.jsx'],
+    /window\.history\.replaceState\(\{\}, '', '\/'\)/u,
+  );
+});
+
+test('reaction roles and embed maker are backed by server endpoints', () => {
+  assert.match(
+    sources['dashboard/server/index.js'],
+    /\/api\/guilds\/:guildId\/reaction-role-embeds/u,
+  );
+  assert.match(
+    sources['dashboard/server/index.js'],
+    /\/api\/guilds\/:guildId\/embeds/u,
+  );
+  assert.match(
+    sources['dashboard/src/App.jsx'],
+    /reactionMode === 'embed'/u,
+  );
+  assert.match(
+    sources['dashboard/src/App.jsx'],
+    /messageLink: reactionForm\.messageLink/u,
+  );
+});
+
+test('moderation history action log autoresponders and starboard are wired', () => {
+  assert.match(
+    sources['dashboard/server/index.js'],
+    /\/api\/guilds\/:guildId\/moderation-cases/u,
+  );
+  assert.match(sources['src/modules/automation.js'], /handleAutoresponder/u);
+  assert.match(sources['src/modules/automation.js'], /handleStarboardReaction/u);
+  assert.match(sources['src/modules/action-log.js'], /logMessageDelete/u);
+  assert.match(sources['src/modules/action-log.js'], /logRoleChanges/u);
+  assert.match(sources['server.js'], /handleAutoresponder\(message\)/u);
+  assert.match(sources['server.js'], /handleStarboardReaction\(reaction, user\)/u);
 });
