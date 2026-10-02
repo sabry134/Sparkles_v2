@@ -1,148 +1,192 @@
-import { mkdir, open, readFile, rename, stat, unlink, writeFile } from 'node:fs/promises';
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import {
+  COLLECTIONS,
+  DELETE_VALUE,
+  applyChanges,
+  bumpRevision,
+  changesBetween,
+  connectMongo,
+  currentRevision,
+  ensureMongoIndexes,
+  isPlainObject,
+  mongoUpdateFromChanges,
+  withoutMongoId,
+} from './mongodb.js';
 
-const projectDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const configuredStorePath = process.env.STORE_PATH?.trim() || 'data/store.json';
-const file = path.isAbsolute(configuredStorePath)
-  ? configuredStorePath
-  : path.resolve(projectDirectory, configuredStorePath);
-export const storeFilePath = file;
-const directory = path.dirname(file);
 let state = { guilds: {}, warnings: {}, moderationCases: {} };
 let baselineState = structuredClone(state);
 let writeQueue = Promise.resolve();
-let lastFileSignature = null;
-const DELETE_VALUE = Symbol('delete-value');
-const lockFile = `${file}.dashboard.lock`;
-const transientFileErrors = new Set(['EACCES', 'EBUSY', 'EPERM']);
+let lastRevision = -1;
+let databaseOverride = null;
+let databasePromise = null;
 
-function fileSignature(metadata) {
-  return [
-    metadata.dev,
-    metadata.ino,
-    metadata.size,
-    metadata.mtimeMs,
-    metadata.ctimeMs,
-  ].join(':');
+function mongoConfiguration() {
+  return {
+    uri: process.env.MONGODB_URI,
+    dbName: process.env.MONGODB_DB_NAME ?? 'sparkles',
+  };
 }
 
-function normalizeStore(parsed) {
-  return parsed && typeof parsed === 'object'
-    ? { guilds: {}, warnings: {}, moderationCases: {}, ...parsed }
-    : { guilds: {}, warnings: {}, moderationCases: {} };
+async function database() {
+  if (databaseOverride) {
+    await ensureMongoIndexes(databaseOverride);
+    return databaseOverride;
+  }
+
+  if (!databasePromise) {
+    databasePromise = connectMongo(mongoConfiguration()).then(({ db }) => db);
+  }
+  return databasePromise;
 }
 
-function isRecord(value) {
-  return value && typeof value === 'object' && !Array.isArray(value);
+export function setMongoDatabaseForTests(db) {
+  databaseOverride = db;
+  databasePromise = null;
+  state = { guilds: {}, warnings: {}, moderationCases: {} };
+  baselineState = structuredClone(state);
+  writeQueue = Promise.resolve();
+  lastRevision = -1;
 }
 
-function changesBetween(previous, current) {
-  if (Object.is(previous, current)) return undefined;
-  if (!isRecord(previous) || !isRecord(current)) return structuredClone(current);
+export function storeBackendDescription() {
+  return `MongoDB/${process.env.MONGODB_DB_NAME?.trim() || 'sparkles'}`;
+}
 
-  const changes = {};
-  let changed = false;
-  for (const key of new Set([...Object.keys(previous), ...Object.keys(current)])) {
-    if (!Object.hasOwn(current, key)) {
-      changes[key] = DELETE_VALUE;
-      changed = true;
+async function readSnapshot(db) {
+  const [guildDocuments, warningDocuments, caseDocuments] = await Promise.all([
+    db.collection(COLLECTIONS.guilds).find({}).toArray(),
+    db.collection(COLLECTIONS.warnings).find({}).toArray(),
+    db
+      .collection(COLLECTIONS.moderationCases)
+      .find({})
+      .sort({ guildId: 1, id: 1 })
+      .toArray(),
+  ]);
+
+  const guilds = Object.fromEntries(
+    guildDocuments.map((document) => [String(document._id), withoutMongoId(document)]),
+  );
+
+  const warnings = Object.fromEntries(
+    warningDocuments.map((document) => [
+      `${document.guildId}:${document.userId}`,
+      Array.isArray(document.entries) ? structuredClone(document.entries) : [],
+    ]),
+  );
+
+  const moderationCases = {};
+  for (const document of caseDocuments) {
+    const guildId = String(document.guildId);
+    moderationCases[guildId] ??= [];
+    const { _id, guildId: ignoredGuildId, ...entry } = document;
+    moderationCases[guildId].push(structuredClone(entry));
+  }
+
+  return { guilds, warnings, moderationCases };
+}
+
+function parseWarningKey(key) {
+  const separator = key.indexOf(':');
+  if (separator === -1) throw new Error(`Invalid warning key: ${key}`);
+  return {
+    guildId: key.slice(0, separator),
+    userId: key.slice(separator + 1),
+  };
+}
+
+async function persistGuildChanges(db, changes) {
+  if (!isPlainObject(changes)) return;
+
+  for (const [guildId, guildChanges] of Object.entries(changes)) {
+    if (guildChanges === DELETE_VALUE) {
+      await db.collection(COLLECTIONS.guilds).deleteOne({ _id: guildId });
       continue;
     }
 
-    const nested = changesBetween(previous[key], current[key]);
-    if (nested !== undefined) {
-      changes[key] = nested;
-      changed = true;
+    const update = mongoUpdateFromChanges(guildChanges);
+    if (!Object.keys(update).length) continue;
+    await db
+      .collection(COLLECTIONS.guilds)
+      .updateOne({ _id: guildId }, update, { upsert: true });
+  }
+}
+
+async function persistWarningChanges(db, changes) {
+  if (!isPlainObject(changes)) return;
+
+  for (const [key, entries] of Object.entries(changes)) {
+    const { guildId, userId } = parseWarningKey(key);
+    if (entries === DELETE_VALUE) {
+      await db.collection(COLLECTIONS.warnings).deleteOne({ guildId, userId });
+      continue;
     }
+
+    await db.collection(COLLECTIONS.warnings).updateOne(
+      { guildId, userId },
+      {
+        $set: {
+          guildId,
+          userId,
+          entries: structuredClone(state.warnings[key] ?? []),
+        },
+      },
+      { upsert: true },
+    );
   }
-  return changed ? changes : undefined;
 }
 
-function applyChanges(target, changes) {
-  if (!isRecord(changes)) return structuredClone(changes);
-  const result = isRecord(target) ? structuredClone(target) : {};
-  for (const [key, value] of Object.entries(changes)) {
-    if (value === DELETE_VALUE) delete result[key];
-    else result[key] = applyChanges(result[key], value);
-  }
-  return result;
-}
+async function persistModerationCaseChanges(db, changes) {
+  if (!isPlainObject(changes)) return;
 
-async function acquireLock() {
-  const startedAt = Date.now();
-  while (Date.now() - startedAt < 5_000) {
-    try {
-      const handle = await open(lockFile, 'wx', 0o600);
-      await handle.writeFile(
-        JSON.stringify({ pid: process.pid, createdAt: new Date().toISOString() }),
-        'utf8',
-      );
-      return async () => {
-        await handle.close().catch(() => {});
-        await unlink(lockFile).catch(() => {});
-      };
-    } catch (error) {
-      if (error.code !== 'EEXIST') throw error;
-      const metadata = await stat(lockFile).catch(() => null);
-      if (metadata && Date.now() - metadata.mtimeMs > 30_000) {
-        await unlink(lockFile).catch(() => {});
-        continue;
-      }
-      await new Promise((resolve) => setTimeout(resolve, 75));
+  for (const [guildId, casesChange] of Object.entries(changes)) {
+    if (casesChange === DELETE_VALUE) {
+      await db.collection(COLLECTIONS.moderationCases).deleteMany({ guildId });
+      continue;
     }
+
+    const cases = state.moderationCases[guildId] ?? [];
+    if (!cases.length) continue;
+    await db.collection(COLLECTIONS.moderationCases).bulkWrite(
+      cases.map((entry) => ({
+        replaceOne: {
+          filter: { guildId, id: entry.id },
+          replacement: {
+            _id: `${guildId}:${entry.id}`,
+            guildId,
+            ...structuredClone(entry),
+          },
+          upsert: true,
+        },
+      })),
+      { ordered: false },
+    );
   }
-  throw new Error('Timed out waiting for the shared store lock');
 }
 
-async function renameWithRetry(source, destination) {
-  for (let attempt = 0; ; attempt += 1) {
-    try {
-      await rename(source, destination);
-      return;
-    } catch (error) {
-      if (!transientFileErrors.has(error.code) || attempt >= 5) throw error;
-      await new Promise((resolve) => setTimeout(resolve, 40 * 2 ** attempt));
-    }
-  }
-}
-
-async function readStoreFile() {
-  try {
-    return normalizeStore(JSON.parse(await readFile(file, 'utf8')));
-  } catch (error) {
-    if (error.code === 'ENOENT') return normalizeStore({});
-    throw error;
-  }
+async function persistChanges(db, pendingChanges) {
+  await persistGuildChanges(db, pendingChanges?.guilds);
+  await persistWarningChanges(db, pendingChanges?.warnings);
+  await persistModerationCaseChanges(db, pendingChanges?.moderationCases);
 }
 
 export async function loadStore() {
-  await mkdir(directory, { recursive: true });
-  try {
-    state = await readStoreFile();
-    baselineState = structuredClone(state);
-    lastFileSignature = fileSignature(await stat(file));
-  } catch (error) {
-    if (error.code !== 'ENOENT') throw error;
-  }
+  const db = await database();
+  const snapshot = await readSnapshot(db);
+  state = snapshot;
+  baselineState = structuredClone(snapshot);
+  lastRevision = await currentRevision(db);
 }
 
 export async function syncStore() {
-  try {
-    const fileStats = await stat(file);
-    const currentSignature = fileSignature(fileStats);
-    if (currentSignature === lastFileSignature) return false;
+  const db = await database();
+  const revision = await currentRevision(db);
+  if (revision === lastRevision) return false;
 
-    const externalState = await readStoreFile();
-    const pendingChanges = changesBetween(baselineState, state);
-    baselineState = structuredClone(externalState);
-    state = pendingChanges ? applyChanges(externalState, pendingChanges) : externalState;
-    lastFileSignature = currentSignature;
-    return true;
-  } catch (error) {
-    if (error.code === 'ENOENT') return false;
-    throw error;
-  }
+  const externalState = await readSnapshot(db);
+  const pendingChanges = changesBetween(baselineState, state);
+  baselineState = structuredClone(externalState);
+  state = pendingChanges ? applyChanges(externalState, pendingChanges) : externalState;
+  lastRevision = revision;
+  return true;
 }
 
 export function guildConfig(guildId) {
@@ -200,27 +244,17 @@ export function saveStore() {
       console.error('[store-write-recovery]', error);
     })
     .then(async () => {
-      const release = await acquireLock();
-      const temporary = `${file}.tmp`;
-      try {
-        const externalState = await readStoreFile();
-        const pendingChanges = changesBetween(baselineState, state);
-        const mergedState = pendingChanges
-          ? applyChanges(externalState, pendingChanges)
-          : externalState;
+      const pendingChanges = changesBetween(baselineState, state);
+      if (!pendingChanges) return;
 
-        await writeFile(temporary, JSON.stringify(mergedState, null, 2), {
-          encoding: 'utf8',
-          mode: 0o600,
-        });
-        await renameWithRetry(temporary, file);
-        state = mergedState;
-        baselineState = structuredClone(mergedState);
-        lastFileSignature = fileSignature(await stat(file));
-      } finally {
-        await unlink(temporary).catch(() => {});
-        await release();
-      }
+      const db = await database();
+      await persistChanges(db, pendingChanges);
+      lastRevision = await bumpRevision(db);
+
+      const snapshot = await readSnapshot(db);
+      state = snapshot;
+      baselineState = structuredClone(snapshot);
     });
+
   return writeQueue;
 }
