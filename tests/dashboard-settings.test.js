@@ -302,7 +302,7 @@ test('dashboard exposes legacy user policies only as counts and can clear them',
   const settings = await store.getGuildSettings(guildId);
   assert.deepEqual(settings.legacyUserPolicies, {
     blockedCount: 1,
-    exemptCount: 2,
+    exemptCount: 3,
   });
   assert.equal('blacklistedUserIds' in settings.automod, false);
   assert.equal('exemptUserIds' in settings.automod, false);
