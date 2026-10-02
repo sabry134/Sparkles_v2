@@ -480,6 +480,7 @@ function Dashboard({ session, onSessionExpired }) {
   const [moderationCases, setModerationCases] = useState([]);
   const [moderationCasesLoading, setModerationCasesLoading] = useState(false);
   const [moderationCaseQuery, setModerationCaseQuery] = useState('');
+  const [commandQuery, setCommandQuery] = useState('');
   const [autoresponderForm, setAutoresponderForm] = useState({
     trigger: '',
     response: '',
@@ -681,6 +682,7 @@ function Dashboard({ session, onSessionExpired }) {
             autoresponders: settings.autoresponders,
             starboard: settings.starboard,
             modules: settings.modules,
+            disabledCommands: settings.disabledCommands,
             customCommands: settings.customCommands,
           }
         : null,
@@ -1025,6 +1027,13 @@ function Dashboard({ session, onSessionExpired }) {
   const activePageDescription = t(
     PAGE_DESCRIPTION_KEYS[activeSection] ?? 'overview.description',
   );
+  const normalizedCommandQuery = commandQuery.trim().toLocaleLowerCase('en-US');
+  const visibleCommands = (resources?.commands ?? []).filter((command) => {
+    if (!normalizedCommandQuery) return true;
+    return [command.name, command.description].some((value) =>
+      value.toLocaleLowerCase('en-US').includes(normalizedCommandQuery),
+    );
+  });
   const automodActive =
     draft?.automod?.enabled === true &&
     [
@@ -2484,6 +2493,50 @@ function Dashboard({ session, onSessionExpired }) {
                     onChange={(value) => updateNested('modules', module, value)}
                   />
                 ))}
+              </div>
+
+              <div className="settings-card command-manager">
+                <div className="subsection-heading page-card-heading">
+                  <div>
+                    <h3>{t('modules.commandManagerTitle')}</h3>
+                    <p>{t('modules.commandManagerDescription')}</p>
+                  </div>
+                  <input
+                    className="command-search"
+                    value={commandQuery}
+                    placeholder={t('modules.commandSearch')}
+                    onChange={(event) => setCommandQuery(event.target.value)}
+                  />
+                </div>
+                <div className="command-manager-list">
+                  {visibleCommands.map((command) => {
+                    const enabled = !draft.disabledCommands.includes(command.name);
+                    return (
+                      <div className="command-manager-item" key={command.name}>
+                        <div>
+                          <strong>/{command.name}</strong>
+                          <span>{command.description}</span>
+                        </div>
+                        <ToggleField
+                          id={`command-${command.name}`}
+                          label={enabled ? t('common.on') : t('common.off')}
+                          help=""
+                          checked={enabled}
+                          onChange={(value) =>
+                            updateField(
+                              'disabledCommands',
+                              value
+                                ? draft.disabledCommands.filter(
+                                    (name) => name !== command.name,
+                                  )
+                                : [...draft.disabledCommands, command.name],
+                            )
+                          }
+                        />
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </SettingSection>
 
