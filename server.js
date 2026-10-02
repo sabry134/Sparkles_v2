@@ -47,6 +47,17 @@ import {
 import { handleExtendedButton, handleExtendedCommand } from './src/modules/extended.js';
 import { buildStarterServer, createServerChannel } from './src/modules/server-builder.js';
 import { restoreGiveaways } from './src/modules/giveaways.js';
+import {
+  handleAutoresponder,
+  handleStarboardReaction,
+} from './src/modules/automation.js';
+import {
+  logMemberJoin,
+  logMemberLeave,
+  logMessageDelete,
+  logMessageUpdate,
+  logRoleChanges,
+} from './src/modules/action-log.js';
 import { TOP_LEVEL_COMMANDS } from './src/top-level-commands.js';
 import {
   addGroupedCommandOptions,
@@ -1426,6 +1437,7 @@ client.once('ready', () => {
 client.on('guildMemberAdd', (member) => {
   syncStore()
     .then(async () => {
+      await logMemberJoin(member);
       const removed = await protectNewMember(member, t);
       if (removed) return;
       await assignAutoRole(member);
@@ -1455,6 +1467,7 @@ client.on('guildMemberAdd', (member) => {
 client.on('guildMemberRemove', (member) => {
   syncStore()
     .then(async () => {
+      await logMemberLeave(member);
       const goodbye = guildConfig(member.guild.id).goodbye;
       if (!goodbye?.enabled || !goodbye.channelId) return;
       const channel = await member.guild.channels
@@ -1481,17 +1494,45 @@ client.on('messageCreate', (message) => {
   syncStore()
     .then(() => filterAutomodMessage(message, t))
     .then((handled) => (handled ? true : filterLinks(message, t)))
+    .then((handled) => (handled ? true : handleAutoresponder(message)))
     .catch((error) =>
-      console.error('[automod-event]', { guildId: message.guildId }, error),
+      console.error('[message-automation-event]', { guildId: message.guildId }, error),
     );
 });
 client.on('messageReactionAdd', (reaction, user) => {
   syncStore()
-    .then(() => applyReactionRole(reaction, user, true))
+    .then(async () => {
+      await applyReactionRole(reaction, user, true);
+      await handleStarboardReaction(reaction, user);
+    })
     .catch((error) =>
-      console.error('[reaction-role-add-event]', { userId: user.id }, error),
+      console.error('[reaction-add-event]', { userId: user.id }, error),
     );
 });
+client.on('messageDelete', (message) => {
+  syncStore()
+    .then(() => logMessageDelete(message))
+    .catch((error) =>
+      console.error('[message-delete-log]', { guildId: message.guildId }, error),
+    );
+});
+
+client.on('messageUpdate', (before, after) => {
+  syncStore()
+    .then(() => logMessageUpdate(before, after))
+    .catch((error) =>
+      console.error('[message-update-log]', { guildId: after.guildId }, error),
+    );
+});
+
+client.on('guildMemberUpdate', (before, after) => {
+  syncStore()
+    .then(() => logRoleChanges(before, after))
+    .catch((error) =>
+      console.error('[member-role-log]', { guildId: after.guild.id }, error),
+    );
+});
+
 client.on('messageReactionRemove', (reaction, user) => {
   syncStore()
     .then(() => applyReactionRole(reaction, user, false))
