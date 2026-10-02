@@ -11,6 +11,19 @@ const defaults = {
     defaultAccountAgeDays: 7,
     defaultRaidJoinThreshold: 8,
     defaultWarningThreshold: 3,
+    defaultSpamMessageThreshold: 5,
+    defaultSpamWindowSeconds: 5,
+    defaultDuplicateThreshold: 3,
+    defaultDuplicateWindowSeconds: 20,
+    defaultMentionThreshold: 5,
+    defaultCapsPercentage: 80,
+    defaultCapsMinimumCharacters: 12,
+    defaultEmojiThreshold: 10,
+    defaultAttachmentThreshold: 4,
+    defaultAttachmentWindowSeconds: 10,
+    defaultLinkThreshold: 4,
+    defaultLinkWindowSeconds: 10,
+    defaultTimeoutSeconds: 600,
   },
   economy: {
     boxPrice: 500,
@@ -63,10 +76,32 @@ test('dashboard validates and persists every exposed guild setting', async () =>
       antiBot: true,
       antiRaid: true,
       antiSwear: true,
+      antiSpam: true,
+      antiMentionSpam: true,
+      antiCaps: true,
+      antiEmojiSpam: true,
+      antiAttachmentSpam: true,
+      antiLinkSpam: true,
       minimumAccountAgeDays: 14,
       raidJoinThreshold: 12,
       warningThreshold: 4,
-      blockedWords: [' Spam ', 'spam', 'Scam'],
+      timeoutSeconds: 900,
+      spamMessageThreshold: 6,
+      spamWindowSeconds: 8,
+      duplicateThreshold: 3,
+      duplicateWindowSeconds: 25,
+      mentionThreshold: 6,
+      capsPercentage: 75,
+      capsMinimumCharacters: 10,
+      emojiThreshold: 9,
+      attachmentThreshold: 5,
+      attachmentWindowSeconds: 12,
+      linkThreshold: 3,
+      linkWindowSeconds: 15,
+      blockedWords: [' Spam ', 'spam', 'Scam', 'free nitro'],
+      exemptUserIds: ['523456789012345678'],
+      exemptRoleIds: ['623456789012345678'],
+      exemptChannelIds: ['723456789012345678'],
     },
     welcome: {
       enabled: true,
@@ -122,7 +157,18 @@ test('dashboard validates and persists every exposed guild setting', async () =>
   assert.equal(settings.aiChatEnabled, true);
   assert.equal(settings.automod.antiLink, true);
   assert.equal(settings.automod.antiBot, true);
-  assert.deepEqual(settings.automod.blockedWords, ['spam', 'scam']);
+  assert.deepEqual(settings.automod.blockedWords, [
+    'spam',
+    'scam',
+    'free nitro',
+  ]);
+  assert.equal(settings.automod.antiSpam, true);
+  assert.equal(settings.automod.antiMentionSpam, true);
+  assert.equal(settings.automod.spamMessageThreshold, 6);
+  assert.equal(settings.automod.timeoutSeconds, 900);
+  assert.deepEqual(settings.automod.exemptUserIds, ['523456789012345678']);
+  assert.deepEqual(settings.automod.exemptRoleIds, ['623456789012345678']);
+  assert.deepEqual(settings.automod.exemptChannelIds, ['723456789012345678']);
   assert.equal(settings.welcome.enabled, true);
   assert.equal(settings.welcome.channelId, '223456789012345682');
   assert.equal(settings.goodbye.enabled, true);
@@ -147,6 +193,13 @@ test('dashboard validates and persists every exposed guild setting', async () =>
   assert.equal(guild.verificationRoleId, '323456789012345679');
   assert.equal(guild.features.antiBot, true);
   assert.equal(guild.automod.linkProtocols, undefined);
+  assert.equal(guild.automod.antiSpam, true);
+  assert.equal(guild.automod.antiMentionSpam, true);
+  assert.equal(guild.automod.spamMessageThreshold, 6);
+  assert.equal(guild.automod.timeoutSeconds, 900);
+  assert.deepEqual(guild.whitelist, ['523456789012345678']);
+  assert.deepEqual(guild.automod.exemptRoleIds, ['623456789012345678']);
+  assert.deepEqual(guild.automod.exemptChannelIds, ['723456789012345678']);
   assert.equal(guild.welcome.channelId, '223456789012345682');
   assert.equal(guild.goodbye.channelId, '223456789012345683');
   assert.equal(guild.giveawaySettings.defaultDurationSeconds, 180);
