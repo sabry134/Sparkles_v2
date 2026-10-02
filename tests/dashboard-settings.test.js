@@ -151,6 +151,7 @@ test('dashboard validates and persists every exposed guild setting', async () =>
       emoji: '⭐',
       ignoreChannelIds: ['223456789012345680'],
     },
+    disabledCommands: ['weather', 'lyrics'],
     modules: {
       moderation: true,
       automod: true,
@@ -207,6 +208,7 @@ test('dashboard validates and persists every exposed guild setting', async () =>
   assert.equal(settings.autoresponders[0].trigger, 'rules');
   assert.equal(settings.starboard.threshold, 4);
   assert.deepEqual(settings.starboard.ignoreChannelIds, ['223456789012345680']);
+  assert.deepEqual(settings.disabledCommands, ['weather', 'lyrics']);
   assert.equal(settings.modules.server, false);
   assert.equal(settings.modules.music, false);
   assert.equal(settings.customCommands.hello, 'Welcome to the server!');
@@ -238,6 +240,7 @@ test('dashboard validates and persists every exposed guild setting', async () =>
   assert.equal(guild.actionLog.enabled, true);
   assert.equal(guild.autoresponders[0].response, 'Read #rules, {user}.');
   assert.equal(guild.starboard.threshold, 4);
+  assert.deepEqual(guild.disabledCommands, ['weather', 'lyrics']);
   assert.equal(guild.modules.server, false);
   assert.equal(guild.customCommands.hello, 'Welcome to the server!');
 });
