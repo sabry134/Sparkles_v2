@@ -31,6 +31,10 @@ test('dashboard accepts settings when bot capabilities are sufficient', () => {
           antiBot: true,
           antiRaid: true,
           antiSwear: true,
+          antiSpam: true,
+          antiMentionSpam: true,
+          exemptRoleIds: ['423456789012345678'],
+          exemptChannelIds: ['223456789012345678'],
         },
       },
       resources(),
@@ -79,5 +83,36 @@ test('dashboard rejects ticket categories without Manage Channels', () => {
         resources({ canManageChannels: false }),
       ),
     /BOT_MISSING_PERMISSION/u,
+  );
+});
+
+
+test('dashboard rejects spam filters without Manage Messages', () => {
+  assert.throws(
+    () =>
+      validateSettingsResources(
+        { automod: { antiSpam: true } },
+        resources({ canManageMessages: false }),
+      ),
+    /BOT_MISSING_PERMISSION/u,
+  );
+});
+
+test('dashboard validates automod role and channel exemptions', () => {
+  assert.throws(
+    () =>
+      validateSettingsResources(
+        { automod: { exemptRoleIds: ['523456789012345678'] } },
+        resources(),
+      ),
+    /INVALID_ROLE/u,
+  );
+  assert.throws(
+    () =>
+      validateSettingsResources(
+        { automod: { exemptChannelIds: ['523456789012345678'] } },
+        resources(),
+      ),
+    /INVALID_CHANNEL/u,
   );
 });
