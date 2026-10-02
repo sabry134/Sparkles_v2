@@ -260,6 +260,36 @@ function publicSettings(config, defaults) {
     music: {
       defaultVolume: config.musicSettings?.defaultVolume ?? defaults.music.defaultVolume,
     },
+    actionLog: {
+      enabled: config.actionLog?.enabled === true,
+      channelId: config.actionLog?.channelId ?? null,
+      messageDelete: config.actionLog?.messageDelete !== false,
+      messageEdit: config.actionLog?.messageEdit !== false,
+      memberJoin: config.actionLog?.memberJoin !== false,
+      memberLeave: config.actionLog?.memberLeave !== false,
+      roleChanges: config.actionLog?.roleChanges !== false,
+    },
+    autoresponders: Array.isArray(config.autoresponders)
+      ? config.autoresponders
+          .filter((entry) => validRoot(entry))
+          .slice(0, 50)
+          .map((entry) => ({
+            id: typeof entry.id === 'string' ? entry.id : '',
+            trigger: typeof entry.trigger === 'string' ? entry.trigger : '',
+            response: typeof entry.response === 'string' ? entry.response : '',
+            match: entry.match === 'exact' ? 'exact' : 'contains',
+            enabled: entry.enabled !== false,
+          }))
+      : [],
+    starboard: {
+      enabled: config.starboard?.enabled === true,
+      channelId: config.starboard?.channelId ?? null,
+      threshold: config.starboard?.threshold ?? 3,
+      emoji: typeof config.starboard?.emoji === 'string' ? config.starboard.emoji : '⭐',
+      ignoreChannelIds: Array.isArray(config.starboard?.ignoreChannelIds)
+        ? config.starboard.ignoreChannelIds
+        : [],
+    },
     modules: moduleSettings(config),
     customCommands: validRoot(config.customCommands)
       ? Object.fromEntries(
@@ -422,6 +452,15 @@ export class BotStore {
       }
       if (patch.music) {
         config.musicSettings = { ...(config.musicSettings ?? {}), ...patch.music };
+      }
+      if (patch.actionLog) {
+        config.actionLog = { ...(config.actionLog ?? {}), ...patch.actionLog };
+      }
+      if (patch.autoresponders) {
+        config.autoresponders = patch.autoresponders.map((entry) => ({ ...entry }));
+      }
+      if (patch.starboard) {
+        config.starboard = { ...(config.starboard ?? {}), ...patch.starboard };
       }
       if (patch.economy) {
         config.economySettings = {
