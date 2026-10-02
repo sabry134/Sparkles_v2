@@ -145,7 +145,8 @@ async function persistModerationCaseChanges(db, changes) {
 
     const cases = state.moderationCases[guildId] ?? [];
     if (!cases.length) continue;
-    await db.collection(COLLECTIONS.moderationCases).bulkWrite(
+    const collection = db.collection(COLLECTIONS.moderationCases);
+    await collection.bulkWrite(
       cases.map((entry) => ({
         replaceOne: {
           filter: { guildId, id: entry.id },
@@ -159,6 +160,14 @@ async function persistModerationCaseChanges(db, changes) {
       })),
       { ordered: false },
     );
+
+    const currentIds = new Set(cases.map((entry) => entry.id));
+    const existing = await collection.find({ guildId }).toArray();
+    for (const document of existing) {
+      if (!currentIds.has(document.id)) {
+        await collection.deleteOne({ _id: document._id });
+      }
+    }
   }
 }
 
