@@ -535,6 +535,19 @@ export function validateSettingsResources(patch, resources) {
     }
   }
 
+  for (const rule of Object.values(patch.commandPermissions ?? {})) {
+    for (const roleId of rule.roleIds ?? []) {
+      if (!roleIds.has(roleId)) {
+        throw new AppError('INVALID_ROLE', 400);
+      }
+    }
+    for (const channelId of rule.channelIds ?? []) {
+      if (!channelIds.has(channelId)) {
+        throw new AppError('INVALID_CHANNEL', 400);
+      }
+    }
+  }
+
   for (const field of ['welcome', 'goodbye']) {
     if (
       patch[field]?.channelId !== undefined &&
