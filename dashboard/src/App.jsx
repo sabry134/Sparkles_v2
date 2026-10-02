@@ -238,12 +238,16 @@ function InputField({
     value,
     maxLength,
     placeholder,
-    onChange: (event) =>
-      onChange(
-        type === 'number'
-          ? Number.parseInt(event.target.value, 10) || min || 0
-          : event.target.value,
-      ),
+    onChange: (event) => {
+      if (type !== 'number') {
+        onChange(event.target.value);
+        return;
+      }
+      const parsed = Number.parseInt(event.target.value, 10);
+      const fallback = min ?? 0;
+      const value = Number.isNaN(parsed) ? fallback : parsed;
+      onChange(Math.min(max ?? value, Math.max(min ?? value, value)));
+    },
   };
 
   return (
