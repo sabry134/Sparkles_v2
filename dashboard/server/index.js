@@ -6,6 +6,7 @@ import express from 'express';
 import session from 'express-session';
 import helmet from 'helmet';
 import { BotStore } from './bot-store.js';
+import { closeMongoConnections } from '../../src/mongodb.js';
 import { config } from './config.js';
 import {
   authorizeGuild,
@@ -520,6 +521,7 @@ app.use((error, request, response, _next) => {
 });
 
 await sessionStore.ready();
+await botStore.ready();
 
 const server = app.listen(config.port, () => {
   console.log(
@@ -529,7 +531,8 @@ const server = app.listen(config.port, () => {
 
 function shutdown(signal) {
   console.log(`Received ${signal}; shutting down dashboard.`);
-  server.close((error) => {
+  server.close(async (error) => {
+    await closeMongoConnections().catch(() => {});
     process.exitCode = error ? 1 : 0;
   });
 }
