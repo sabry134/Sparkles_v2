@@ -908,6 +908,12 @@ button:disabled {
   box-shadow: none;
 }
 
+.compact-warning {
+  margin: 10px var(--space-5) 4px;
+  padding: 9px 11px;
+  font-size: 0.7rem;
+}
+
 .warning-banner {
   display: flex;
   min-height: 42px;
@@ -1625,8 +1631,9 @@ button:disabled {
 }
 
 
-.module-page[hidden] {
-  display: none;
+.module-page[hidden],
+.settings-card[hidden] {
+  display: none !important;
 }
 
 .module-page {
