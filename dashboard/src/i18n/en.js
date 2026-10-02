@@ -410,7 +410,7 @@ export const en = {
   'modules.fun': 'Fun',
   'modules.music': 'Music',
   'modules.events': 'Events',
-  'modules.tools': 'Tools & AI',
+  'modules.tools': 'Tools',
 
   'custom.title': 'Custom commands',
   'custom.description':
