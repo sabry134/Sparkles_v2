@@ -2196,6 +2196,24 @@ button:disabled {
   line-height: 1.45;
 }
 
+.moderation-evidence-reference {
+  display: inline-flex;
+  max-width: 100%;
+  margin: 0;
+  align-items: center;
+  gap: 6px;
+  overflow-wrap: anywhere;
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+  line-height: 1.45;
+  text-decoration: none;
+}
+
+a.moderation-evidence-reference:hover {
+  color: var(--primary-hover);
+  text-decoration: underline;
+}
+
 .moderation-evidence-files {
   display: flex;
   flex-wrap: wrap;
