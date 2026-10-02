@@ -49,6 +49,7 @@ export const en = {
   'nav.moderation': 'Moderation',
   'nav.automod': 'Auto moderation',
   'nav.roles': 'Roles',
+  'nav.embeds': 'Embeds',
   'nav.community': 'Community',
   'nav.economy': 'Economy',
   'nav.music': 'Music',
@@ -206,18 +207,36 @@ export const en = {
     'Role members receive from the secure verification button.',
   'roles.reactionTitle': 'Reaction roles',
   'roles.reactionDescription':
-    'Add a reaction to an existing Discord message and assign a role when members use it.',
-  'roles.channel': 'Message channel',
-  'roles.messageId': 'Message ID',
-  'roles.messageIdPlaceholder': 'Paste a Discord message ID',
-  'roles.emoji': 'Emoji',
-  'roles.emojiPlaceholder': 'Example: 🎨 or a custom emoji',
+    'Attach roles to an existing Discord message link, or publish a new embed and reaction-role message directly.',
+  'roles.sourceMode': 'Reaction role source',
+  'roles.existingMessage': 'Existing message',
+  'roles.newEmbed': 'New embed',
+  'roles.channel': 'Publish channel',
+  'roles.messageLink': 'Discord message link',
+  'roles.messageLinkPlaceholder':
+    'https://discord.com/channels/server/channel/message',
+  'roles.messageLinkHelp':
+    'Right-click a Discord message and choose Copy Message Link. The channel and message are detected automatically.',
+  'roles.emoji': 'Reaction emoji',
+  'roles.emojiPlaceholder': 'Choose an emoji or enter a custom Discord emoji',
+  'roles.publishAndCreate': 'Publish embed & create role',
   'roles.role': 'Role to assign',
   'roles.emptyTitle': 'No reaction roles yet',
   'roles.emptyBody': 'Create your first mapping with the form below.',
   'roles.mappingDescription': '{emoji} on message {messageId}',
   'roles.capabilityWarning':
     'Sparkles needs Manage Roles and its role must sit above the roles it assigns.',
+
+  'embeds.title': 'Embed builder',
+  'embeds.description':
+    'Compose Discord embeds visually, preview them live, and publish them directly to a server channel.',
+  'embeds.channel': 'Publish channel',
+  'embeds.channelHelp': 'Choose where Sparkles should publish this embed.',
+  'embeds.content': 'Message content',
+  'embeds.contentHelp': 'Optional plain text displayed above the embed.',
+  'embeds.contentPlaceholder': 'Optional message above the embed',
+  'embeds.publish': 'Publish embed',
+  'embeds.openMessage': 'Open published message',
 
   'suggestions.title': 'Suggestions',
   'suggestions.description':
@@ -304,7 +323,9 @@ export const en = {
 
   'status.saved': 'Saved',
   'status.reactionAdded': 'Reaction role added.',
+  'status.reactionEmbedAdded': 'Embed published and reaction role created.',
   'status.reactionRemoved': 'Reaction role removed.',
+  'status.embedPublished': 'Embed published.',
   'status.loggedOut': 'You have been signed out.',
 
   'error.title': 'Something needs attention',
@@ -315,8 +336,10 @@ export const en = {
   'error.BOT_NOT_INSTALLED': 'Sparkles is not installed in this server.',
   'error.INVALID_CHANNEL': 'Choose a valid text channel from this server.',
   'error.INVALID_ROLE': 'Choose a role that Sparkles is allowed to assign.',
-  'error.INVALID_EMOJI': 'Enter one valid Unicode or custom Discord emoji.',
-  'error.MESSAGE_NOT_FOUND': 'That message was not found in the selected channel.',
+  'error.INVALID_EMOJI': 'Choose one valid Unicode or custom Discord emoji.',
+  'error.INVALID_MESSAGE_LINK':
+    'Paste a valid Discord message link from this server.',
+  'error.MESSAGE_NOT_FOUND': 'That Discord message could not be found.',
   'error.BOT_MISSING_PERMISSION':
     'Sparkles is missing a Discord permission needed for that action.',
   'error.REACTION_ROLE_NOT_FOUND': 'That reaction-role mapping no longer exists.',
