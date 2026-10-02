@@ -176,6 +176,9 @@ export function settingsPatch(value) {
     if (Object.hasOwn(value[field], 'message')) {
       patch[field].message = text(value[field].message, 1_900);
     }
+    if (patch[field].enabled === true && patch[field].channelId === null) {
+      throw new AppError('INVALID_CHANNEL', 400);
+    }
   }
 
   if (Object.hasOwn(value, 'giveaways')) {
