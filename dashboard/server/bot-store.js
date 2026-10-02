@@ -17,7 +17,7 @@ function validRoot(value) {
 }
 
 function emptyStore() {
-  return { guilds: {}, warnings: {} };
+  return { guilds: {}, warnings: {}, moderationCases: {} };
 }
 
 function normalizeRoot(value) {
@@ -27,6 +27,7 @@ function normalizeRoot(value) {
 
   if (!validRoot(value.guilds)) value.guilds = {};
   if (!validRoot(value.warnings)) value.warnings = {};
+  if (!validRoot(value.moderationCases)) value.moderationCases = {};
   return value;
 }
 
@@ -285,6 +286,59 @@ export class BotStore {
   async getGuildSettings(guildId) {
     const store = await readStore(this.#file);
     return publicSettings(guildConfig(store, guildId), this.#defaults);
+  }
+
+  async getModerationCases(guildId, { limit = 100, userId = null } = {}) {
+    const store = await readStore(this.#file);
+    const raw = Array.isArray(store.moderationCases[guildId])
+      ? store.moderationCases[guildId]
+      : [];
+    const filtered = userId
+      ? raw.filter((entry) => entry?.targetId === userId)
+      : raw;
+    return filtered
+      .slice(-Math.min(250, Math.max(1, limit)))
+      .reverse()
+      .map((entry) => ({
+        id: Number.isSafeInteger(entry?.id) ? entry.id : null,
+        at: typeof entry?.at === 'string' ? entry.at : null,
+        action: typeof entry?.action === 'string' ? entry.action : 'unknown',
+        actorId: typeof entry?.actorId === 'string' ? entry.actorId : null,
+        actorTag: typeof entry?.actorTag === 'string' ? entry.actorTag : null,
+        targetId: typeof entry?.targetId === 'string' ? entry.targetId : null,
+        targetTag: typeof entry?.targetTag === 'string' ? entry.targetTag : null,
+        reason: typeof entry?.reason === 'string' ? entry.reason : null,
+        duration: typeof entry?.duration === 'string' ? entry.duration : null,
+        source: entry?.source === 'automod' ? 'automod' : 'command',
+        evidence: validRoot(entry?.evidence)
+          ? {
+              channelId:
+                typeof entry.evidence.channelId === 'string'
+                  ? entry.evidence.channelId
+                  : null,
+              messageId:
+                typeof entry.evidence.messageId === 'string'
+                  ? entry.evidence.messageId
+                  : null,
+              content:
+                typeof entry.evidence.content === 'string'
+                  ? entry.evidence.content.slice(0, 2_000)
+                  : null,
+              attachments: Array.isArray(entry.evidence.attachments)
+                ? entry.evidence.attachments.slice(0, 10).map((attachment) => ({
+                    name:
+                      typeof attachment?.name === 'string'
+                        ? attachment.name
+                        : null,
+                    url:
+                      typeof attachment?.url === 'string'
+                        ? attachment.url
+                        : null,
+                  }))
+                : [],
+            }
+          : null,
+      }));
   }
 
   updateGuildSettings(guildId, patch) {
