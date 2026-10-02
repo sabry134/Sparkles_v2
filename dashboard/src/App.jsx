@@ -1326,6 +1326,24 @@ function Dashboard({ session, onSessionExpired }) {
                     onChange={(value) => updateNested('actionLog', field, value)}
                   />
                 ))}
+                <MultiSelectField
+                  id="action-log-ignore-roles"
+                  label={t('moderation.actionLogIgnoreRoles')}
+                  help={t('moderation.actionLogIgnoreRolesHelp')}
+                  value={draft.actionLog.ignoreRoleIds ?? []}
+                  onChange={(value) => updateNested('actionLog', 'ignoreRoleIds', value)}
+                  options={allRoleOptions}
+                  icon="role"
+                />
+                <MultiSelectField
+                  id="action-log-ignore-channels"
+                  label={t('moderation.actionLogIgnoreChannels')}
+                  help={t('moderation.actionLogIgnoreChannelsHelp')}
+                  value={draft.actionLog.ignoreChannelIds ?? []}
+                  onChange={(value) => updateNested('actionLog', 'ignoreChannelIds', value)}
+                  options={channelOptions}
+                  icon="hash"
+                />
               </div>
 
               <div className="settings-card moderation-history-card">
