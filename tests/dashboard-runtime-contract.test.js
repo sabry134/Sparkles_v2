@@ -74,3 +74,10 @@ test('event and interaction settings are refreshed from the shared store', () =>
     /client\.on\('messageReactionAdd'[\s\S]*?syncStore\(\)/u,
   );
 });
+
+
+test('dashboard feature module gates match their configured sections', () => {
+  assert.match(sources['server.js'], /'set-verification': 'roles'/u);
+  assert.match(sources['server.js'], /verify: 'roles'/u);
+  assert.match(sources['server.js'], /ticket: 'community'/u);
+});
