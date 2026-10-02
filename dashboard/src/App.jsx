@@ -1372,7 +1372,10 @@ function Dashboard({ session, onSessionExpired }) {
                             <span>{entry.source}</span>
                           </div>
                         </div>
-                        {entry.evidence?.content ? (
+                        {entry.evidence &&
+                        (entry.evidence.content ||
+                          entry.evidence.reference ||
+                          entry.evidence.attachments?.length) ? (
                           <div className="moderation-evidence">
                             <div className="moderation-evidence-head">
                               <strong>{t('moderation.evidence')}</strong>
@@ -1383,7 +1386,26 @@ function Dashboard({ session, onSessionExpired }) {
                                 </span>
                               ) : null}
                             </div>
-                            <pre>{entry.evidence.content}</pre>
+                            {entry.evidence.content ? (
+                              <pre>{entry.evidence.content}</pre>
+                            ) : null}
+                            {entry.evidence.reference ? (
+                              /^https?:\/\//iu.test(entry.evidence.reference) ? (
+                                <a
+                                  className="moderation-evidence-reference"
+                                  href={entry.evidence.reference}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                >
+                                  {entry.evidence.reference}
+                                  <Icon name="external" size={13} />
+                                </a>
+                              ) : (
+                                <p className="moderation-evidence-reference">
+                                  {entry.evidence.reference}
+                                </p>
+                              )
+                            ) : null}
                             {entry.evidence.attachments?.length ? (
                               <div className="moderation-evidence-files">
                                 {entry.evidence.attachments.map((attachment, index) =>
