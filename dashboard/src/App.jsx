@@ -501,12 +501,22 @@ function Dashboard({ session, onSessionExpired }) {
   async function saveSettings() {
     if (!dirty || !selectedGuild || !draft) return;
     setSaving(true);
+    const path = `/api/guilds/${selectedGuild.id}/settings`;
+    const options = {
+      method: 'PATCH',
+      csrfToken: session.csrfToken,
+      body: editableSettings(draft),
+    };
+
     try {
-      const result = await api(`/api/guilds/${selectedGuild.id}/settings`, {
-        method: 'PATCH',
-        csrfToken: session.csrfToken,
-        body: editableSettings(draft),
-      });
+      let result;
+      try {
+        result = await api(path, options);
+      } catch (error) {
+        if (!(error instanceof ApiError) || error.code !== 'NETWORK_ERROR') throw error;
+        await new Promise((resolve) => window.setTimeout(resolve, 500));
+        result = await api(path, options);
+      }
       setSavedSettings(result.settings);
       setDraft(result.settings);
       setToast({ type: 'success', message: t('status.saved') });
