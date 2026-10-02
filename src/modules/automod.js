@@ -139,7 +139,7 @@ function spamDefaults(automod) {
   };
 }
 
-function detectSpam(message, automod) {
+export function detectSpam(message, automod) {
   const settings = spamDefaults(automod);
   const now = Date.now();
   const maximumWindow =
