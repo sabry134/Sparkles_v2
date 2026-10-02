@@ -322,6 +322,18 @@ app.patch(
   }),
 );
 
+app.delete(
+  '/api/guilds/:guildId/legacy-user-policies',
+  authenticated,
+  csrfProtected,
+  asyncRoute(async (request, response) => {
+    const guildId = validatedGuild(request);
+    await authorizeGuild(request, guildId, discordConfig());
+    const settings = await botStore.clearLegacyUserPolicies(guildId);
+    response.json({ settings });
+  }),
+);
+
 app.post(
   '/api/guilds/:guildId/reaction-roles',
   authenticated,
