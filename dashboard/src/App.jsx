@@ -2263,14 +2263,21 @@ export default function App() {
     }
 
     api('/api/session')
-      .then(setSession)
+      .then((result) => {
+        if (!result.authenticated && window.location.pathname !== '/') {
+          window.history.replaceState({}, '', '/');
+        }
+        setSession(result);
+      })
       .catch((error) => {
         setLoginError(translatedError(error));
+        window.history.replaceState({}, '', '/');
         setSession({ authenticated: false });
       });
   }, []);
 
   const expireSession = useCallback((error) => {
+    window.history.replaceState({}, '', '/');
     setSession({ authenticated: false });
     if (error) setLoginError(translatedError(error));
   }, []);
