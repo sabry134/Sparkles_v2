@@ -515,11 +515,23 @@ export function validateSettingsResources(patch, resources) {
     }
   }
 
+  for (const channelId of patch.actionLog?.ignoreChannelIds ?? []) {
+    if (!channelIds.has(channelId)) {
+      throw new AppError('INVALID_CHANNEL', 400);
+    }
+  }
+
   for (const field of ['blockedRoleIds', 'exemptRoleIds']) {
     for (const roleId of patch.automod?.[field] ?? []) {
       if (!roleIds.has(roleId)) {
         throw new AppError('INVALID_ROLE', 400);
       }
+    }
+  }
+
+  for (const roleId of patch.actionLog?.ignoreRoleIds ?? []) {
+    if (!roleIds.has(roleId)) {
+      throw new AppError('INVALID_ROLE', 400);
     }
   }
 
