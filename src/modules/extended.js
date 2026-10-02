@@ -719,6 +719,7 @@ export async function handleExtendedCommand(commandName, interaction, t, client)
     case 'enable-links': {
       config.automod ??= {};
       config.automod.antiLink = true;
+      delete config.automod.linkProtocols;
       await saveStore();
       return completed(interaction, t, t('extended.enabled'));
     }
