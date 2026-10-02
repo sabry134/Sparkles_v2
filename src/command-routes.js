@@ -17,6 +17,8 @@ export const CATEGORY_SLASH_NAMES = Object.freeze({
 });
 
 const SUBCOMMAND_NAMES = Object.freeze({
+  'anti-spam': 'spam',
+  'automod-test': 'test',
   'auto-status': 'status',
   'join-voice': 'join',
   'now-playing': 'now',
