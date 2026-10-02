@@ -68,8 +68,6 @@ function GuildAvatar({ guild, large = false }) {
 function Login({ error, onDismiss }) {
   return (
     <main className="login-shell">
-      <div className="ambient ambient-one" />
-      <div className="ambient ambient-two" />
       <header className="login-header">
         <div className="brand-lockup">
           <span className="brand-mark">{t('brand.mark')}</span>
@@ -339,6 +337,7 @@ function Dashboard({ session, onSessionExpired }) {
     roleId: '',
   });
   const [customForm, setCustomForm] = useState({ name: '', response: '' });
+  const [activeSection, setActiveSection] = useState('overview');
   const requestSequence = useRef(0);
 
   const showError = useCallback(
@@ -417,6 +416,28 @@ function Dashboard({ session, onSessionExpired }) {
     loadSettings(selectedGuild);
   }, [selectedGuildId, selectedGuild, loadSettings]);
 
+  useEffect(() => {
+    if (loadingSettings || settingsError || !draft || !resources) return;
+    const sections = NAVIGATION.map(([id]) => document.getElementById(id)).filter(Boolean);
+    if (!sections.length) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((left, right) => right.intersectionRatio - left.intersectionRatio)[0];
+        if (visible) setActiveSection(visible.target.id);
+      },
+      {
+        rootMargin: '-18% 0px -68% 0px',
+        threshold: [0, 0.2, 0.5, 0.8],
+      },
+    );
+
+    sections.forEach((section) => observer.observe(section));
+    return () => observer.disconnect();
+  }, [selectedGuildId, loadingSettings, settingsError, draft, resources]);
+
   const editableSettings = useCallback(
     (settings) =>
       settings
@@ -452,6 +473,7 @@ function Dashboard({ session, onSessionExpired }) {
 
   function chooseGuild(value) {
     setSelectedGuildId(value);
+    setActiveSection('overview');
     setToast(null);
   }
 
@@ -618,9 +640,11 @@ function Dashboard({ session, onSessionExpired }) {
             <button
               key={id}
               type="button"
-              onClick={() =>
-                document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
-              }
+              aria-current={activeSection === id ? 'page' : undefined}
+              onClick={() => {
+                setActiveSection(id);
+                document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+              }}
             >
               <Icon name={icon} />
               {t(label)}
