@@ -12,6 +12,7 @@ import {
   SlashCommandBuilder,
 } from 'discord.js';
 import { catalog } from './src/catalog.js';
+import { closeMongoConnections } from './src/mongodb.js';
 import {
   addModerationCase,
   addWarning,
@@ -1599,6 +1600,7 @@ export const registeredCommands = commands;
 
 const shutdown = async () => {
   await saveStore().catch(() => {});
+  await closeMongoConnections().catch(() => {});
   client.destroy();
   process.exit(0);
 };
