@@ -622,6 +622,15 @@ client.on('interactionCreate', async (interaction) => {
       );
     }
 
+    if (
+      commandName !== 'module' &&
+      (guildConfig(interaction.guildId).disabledCommands ?? []).includes(commandName)
+    ) {
+      return interaction.reply(
+        ephemeral(t('errors.commandDisabled', { command: commandName })),
+      );
+    }
+
     const moduleKey =
       {
         'set-verification': 'roles',
