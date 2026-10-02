@@ -14,12 +14,15 @@ const sources = Object.fromEntries(
       'src/modules/extended.js',
       'src/modules/automation.js',
       'src/modules/action-log.js',
+      'src/catalog.js',
+      'src/command-routes.js',
       'src/store.js',
       'src/mongodb.js',
       'dashboard/src/App.jsx',
       'dashboard/server/index.js',
       'dashboard/server/bot-store.js',
       'dashboard/server/config.js',
+      '.env.example',
     ].map(async (file) => [
       file,
       await readFile(new URL(`../${file}`, import.meta.url), 'utf8'),
@@ -295,9 +298,10 @@ test('bot and dashboard persist shared state in MongoDB instead of store.json', 
 
 test('removed provider commands and credentials stay removed', () => {
   const removedCommands = ['ask', 'pastebin', 'ratings', 'reward', 'start', 'stop'];
-  const catalogSource = sources['server.js'];
+  const catalogSource = sources['src/catalog.js'];
   const extendedSource = sources['src/modules/extended.js'];
   const routesSource = sources['src/command-routes.js'];
+  const environmentSource = sources['.env.example'];
   const environmentNames = [
     'OPENAI_API_KEY',
     'OPENAI_MODEL',
@@ -316,11 +320,17 @@ test('removed provider commands and credentials stay removed', () => {
       routesSource,
       new RegExp(`(?:^|\\n)\\s*['"]?${command}['"]?\\s*:`, 'u'),
     );
+    assert.doesNotMatch(
+      catalogSource,
+      new RegExp(`(?:^|\\n)${command}\\|`, 'u'),
+    );
   }
 
   for (const variable of environmentNames) {
     assert.doesNotMatch(extendedSource, new RegExp(variable, 'u'));
+    assert.doesNotMatch(environmentSource, new RegExp(variable, 'u'));
   }
 
-  assert.doesNotMatch(catalogSource, /aiChatEnabled/u);
+  assert.doesNotMatch(sources['dashboard/src/App.jsx'], /aiChatEnabled|ai-chat/u);
+  assert.doesNotMatch(sources['dashboard/server/bot-store.js'], /aiChatEnabled/u);
 });
