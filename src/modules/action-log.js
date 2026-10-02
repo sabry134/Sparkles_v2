@@ -32,7 +32,7 @@ export async function logMessageDelete(message) {
   await sendLog(
     message.guild,
     'Message deleted',
-    \`**User:** \${message.author?.tag ?? 'Unknown'}\n**Channel:** \${message.channel}\n**Content:**\n\${content}\`,
+    `**User:** ${message.author?.tag ?? 'Unknown'}\n**Channel:** ${message.channel}\n**Content:**\n${content}`,
   );
 }
 
@@ -44,7 +44,7 @@ export async function logMessageUpdate(before, after) {
   await sendLog(
     after.guild,
     'Message edited',
-    \`**User:** \${after.author?.tag ?? 'Unknown'}\n**Channel:** \${after.channel}\n**Before:**\n\${(before.content ?? 'Unavailable').slice(0, 700)}\n**After:**\n\${(after.content ?? 'Unavailable').slice(0, 700)}\`,
+    `**User:** ${after.author?.tag ?? 'Unknown'}\n**Channel:** ${after.channel}\n**Before:**\n${(before.content ?? 'Unavailable').slice(0, 700)}\n**After:**\n${(after.content ?? 'Unavailable').slice(0, 700)}`,
   );
 }
 
@@ -54,7 +54,7 @@ export async function logMemberJoin(member) {
   await sendLog(
     member.guild,
     'Member joined',
-    \`**User:** \${member.user.tag}\n**User ID:** \${member.id}\n**Account created:** \${member.user.createdAt.toISOString()}\`,
+    `**User:** ${member.user.tag}\n**User ID:** ${member.id}\n**Account created:** ${member.user.createdAt.toISOString()}`,
   );
 }
 
@@ -64,7 +64,7 @@ export async function logMemberLeave(member) {
   await sendLog(
     member.guild,
     'Member left',
-    \`**User:** \${member.user.tag}\n**User ID:** \${member.id}\`,
+    `**User:** ${member.user.tag}\n**User ID:** ${member.id}`,
   );
 }
 
@@ -88,6 +88,6 @@ export async function logRoleChanges(before, after) {
   await sendLog(
     after.guild,
     'Member roles changed',
-    \`**User:** \${after.user.tag}\n**Added:** \${addedText || 'None'}\n**Removed:** \${removedText || 'None'}\`,
+    `**User:** ${after.user.tag}\n**Added:** ${addedText || 'None'}\n**Removed:** ${removedText || 'None'}`,
   );
 }
