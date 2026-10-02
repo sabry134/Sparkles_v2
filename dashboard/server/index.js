@@ -349,8 +349,11 @@ if (config.isProduction && existsSync(distributionDirectory)) {
 
 app.use((error, request, response, _next) => {
   const result = errorResponse(error, request.id);
-  if (!(error instanceof AppError)) {
-    console.error(`[dashboard:${request.id}]`, error);
+  if (!(error instanceof AppError) || error.status >= 500) {
+    console.error(
+      `[dashboard:${request.id}] ${request.method} ${request.originalUrl}`,
+      error,
+    );
   }
 
   if (request.path === '/auth/discord/callback' && !response.headersSent) {
