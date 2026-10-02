@@ -1921,9 +1921,48 @@ button:disabled {
 
 .embed-field-row {
   display: grid;
-  grid-template-columns: minmax(120px, 0.45fr) minmax(180px, 1fr) auto 36px;
+  grid-template-columns: minmax(120px, 0.45fr) minmax(180px, 1fr) auto auto;
   align-items: center;
   gap: 8px;
+}
+
+.embed-toggle-row {
+  display: flex !important;
+  min-height: var(--control-height);
+  padding: 0 11px;
+  align-items: center;
+  justify-content: space-between;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface-subtle);
+}
+
+.embed-toggle-row input {
+  width: 16px;
+  height: 16px;
+}
+
+.embed-field-actions {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.embed-field-actions .icon-button {
+  width: 30px;
+  height: 30px;
+  font-size: 0.78rem;
+}
+
+.embed-editor-footer {
+  display: flex;
+  padding-top: 12px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--text-tertiary);
+  border-top: 1px solid var(--border);
+  font-size: 0.69rem;
 }
 
 .embed-inline-check {
