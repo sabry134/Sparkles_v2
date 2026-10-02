@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { Button, Chip, IconButton, TextField } from '@mui/material';
 
 const EMOJI_GROUPS = [
   {
@@ -36,48 +37,57 @@ export default function EmojiPicker({ value, onChange, id }) {
   }, [query]);
 
   return (
-    <div className="emoji-picker">
+    <div className="emoji-picker mui-emoji-picker">
       <div className="emoji-picker-toolbar">
-        <input
+        <TextField
           id={id}
+          size="small"
           value={query}
           placeholder="Search categories"
           onChange={(event) => setQuery(event.target.value)}
         />
-        <span className="emoji-selected" aria-live="polite">
-          {value || '—'}
-        </span>
+        <Chip
+          className="emoji-selected"
+          label={value || '—'}
+          variant="outlined"
+          aria-live="polite"
+        />
       </div>
+
       <div className="emoji-groups">
         {visibleGroups.map((group) => (
           <section className="emoji-group" key={group.name}>
             <strong>{group.name}</strong>
             <div className="emoji-grid">
               {group.values.map((emoji) => (
-                <button
-                  className={value === emoji ? 'emoji-choice selected' : 'emoji-choice'}
-                  type="button"
+                <IconButton
+                  className={
+                    value === emoji ? 'emoji-choice selected' : 'emoji-choice'
+                  }
+                  size="small"
                   key={emoji}
                   onClick={() => onChange(emoji)}
                   aria-label={emoji}
                 >
-                  {emoji}
-                </button>
+                  <span aria-hidden="true">{emoji}</span>
+                </IconButton>
               ))}
             </div>
           </section>
         ))}
       </div>
+
       <div className="emoji-custom">
-        <input
+        <TextField
+          size="small"
+          fullWidth
           value={custom}
-          maxLength="64"
+          inputProps={{ maxLength: 64 }}
           placeholder="Custom Discord emoji, e.g. <:name:123456789012345678>"
           onChange={(event) => setCustom(event.target.value)}
         />
-        <button
-          className="button secondary"
-          type="button"
+        <Button
+          variant="outlined"
           disabled={!custom.trim()}
           onClick={() => {
             onChange(custom.trim());
@@ -85,7 +95,7 @@ export default function EmojiPicker({ value, onChange, id }) {
           }}
         >
           Use custom
-        </button>
+        </Button>
       </div>
     </div>
   );
