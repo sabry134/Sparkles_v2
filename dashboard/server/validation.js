@@ -242,9 +242,6 @@ export function settingsPatch(value) {
     if (Object.hasOwn(value[field], 'message')) {
       patch[field].message = text(value[field].message, 1_900);
     }
-    if (patch[field].enabled === true && patch[field].channelId === null) {
-      throw new AppError('INVALID_CHANNEL', 400);
-    }
   }
 
   if (Object.hasOwn(value, 'giveaways')) {
@@ -329,9 +326,6 @@ export function settingsPatch(value) {
           ]
         : [],
     };
-    if (patch.actionLog.enabled && !patch.actionLog.channelId) {
-      throw new AppError('INVALID_CHANNEL', 400);
-    }
   }
 
   if (Object.hasOwn(value, 'autoresponders')) {
@@ -376,9 +370,6 @@ export function settingsPatch(value) {
         ),
       ],
     };
-    if (patch.starboard.enabled && !patch.starboard.channelId) {
-      throw new AppError('INVALID_CHANNEL', 400);
-    }
   }
 
   if (Object.hasOwn(value, 'modules')) {
