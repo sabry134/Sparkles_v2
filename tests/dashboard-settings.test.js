@@ -99,8 +99,7 @@ test('dashboard validates and persists every exposed guild setting', async () =>
       linkThreshold: 3,
       linkWindowSeconds: 15,
       blockedWords: [' Spam ', 'spam', 'Scam', 'free nitro'],
-      blacklistedUserIds: ['523456789012345677'],
-      exemptUserIds: ['523456789012345678'],
+      blockedRoleIds: ['623456789012345677'],
       exemptRoleIds: ['623456789012345678'],
       exemptChannelIds: ['723456789012345678'],
     },
@@ -126,6 +125,31 @@ test('dashboard validates and persists every exposed guild setting', async () =>
       weeklyReward: 2_000,
       boxPrice: 600,
       robberySuccessPercent: 40,
+    },
+    actionLog: {
+      enabled: true,
+      channelId: '223456789012345678',
+      messageDelete: true,
+      messageEdit: true,
+      memberJoin: true,
+      memberLeave: true,
+      roleChanges: true,
+    },
+    autoresponders: [
+      {
+        id: 'rules-help',
+        trigger: 'rules',
+        response: 'Read #rules, {user}.',
+        match: 'contains',
+        enabled: true,
+      },
+    ],
+    starboard: {
+      enabled: true,
+      channelId: '223456789012345679',
+      threshold: 4,
+      emoji: '⭐',
+      ignoreChannelIds: ['223456789012345680'],
     },
     modules: {
       moderation: true,
@@ -167,8 +191,7 @@ test('dashboard validates and persists every exposed guild setting', async () =>
   assert.equal(settings.automod.antiMentionSpam, true);
   assert.equal(settings.automod.spamMessageThreshold, 6);
   assert.equal(settings.automod.timeoutSeconds, 900);
-  assert.deepEqual(settings.automod.blacklistedUserIds, ['523456789012345677']);
-  assert.deepEqual(settings.automod.exemptUserIds, ['523456789012345678']);
+  assert.deepEqual(settings.automod.blockedRoleIds, ['623456789012345677']);
   assert.deepEqual(settings.automod.exemptRoleIds, ['623456789012345678']);
   assert.deepEqual(settings.automod.exemptChannelIds, ['723456789012345678']);
   assert.equal(settings.welcome.enabled, true);
@@ -179,6 +202,11 @@ test('dashboard validates and persists every exposed guild setting', async () =>
   assert.equal(settings.music.defaultVolume, 72);
   assert.equal(settings.economy.dailyReward, 300);
   assert.equal(settings.economy.robberySuccessPercent, 40);
+  assert.equal(settings.actionLog.enabled, true);
+  assert.equal(settings.actionLog.channelId, '223456789012345678');
+  assert.equal(settings.autoresponders[0].trigger, 'rules');
+  assert.equal(settings.starboard.threshold, 4);
+  assert.deepEqual(settings.starboard.ignoreChannelIds, ['223456789012345680']);
   assert.equal(settings.modules.server, false);
   assert.equal(settings.modules.music, false);
   assert.equal(settings.customCommands.hello, 'Welcome to the server!');
@@ -199,8 +227,7 @@ test('dashboard validates and persists every exposed guild setting', async () =>
   assert.equal(guild.automod.antiMentionSpam, true);
   assert.equal(guild.automod.spamMessageThreshold, 6);
   assert.equal(guild.automod.timeoutSeconds, 900);
-  assert.deepEqual(guild.blacklist, ['523456789012345677']);
-  assert.deepEqual(guild.whitelist, ['523456789012345678']);
+  assert.deepEqual(guild.automod.blockedRoleIds, ['623456789012345677']);
   assert.deepEqual(guild.automod.exemptRoleIds, ['623456789012345678']);
   assert.deepEqual(guild.automod.exemptChannelIds, ['723456789012345678']);
   assert.equal(guild.welcome.channelId, '223456789012345682');
@@ -208,6 +235,9 @@ test('dashboard validates and persists every exposed guild setting', async () =>
   assert.equal(guild.giveawaySettings.defaultDurationSeconds, 180);
   assert.equal(guild.musicSettings.defaultVolume, 72);
   assert.equal(guild.economySettings.boxPrice, 600);
+  assert.equal(guild.actionLog.enabled, true);
+  assert.equal(guild.autoresponders[0].response, 'Read #rules, {user}.');
+  assert.equal(guild.starboard.threshold, 4);
   assert.equal(guild.modules.server, false);
   assert.equal(guild.customCommands.hello, 'Welcome to the server!');
 });
@@ -239,48 +269,4 @@ test('dashboard rejects unknown and unsafe settings', () => {
     () => settingsPatch({ automod: { blockedWords: [''] } }),
     /INVALID_INPUT/u,
   );
-});
-
-
-test('dashboard exposes and normalizes legacy automod user exemptions', async () => {
-  const directory = await mkdtemp(path.join(os.tmpdir(), 'sparkles-dashboard-exempt-'));
-  const file = path.join(directory, 'store.json');
-  const guildId = '823456789012345678';
-
-  await writeFile(
-    file,
-    JSON.stringify({
-      guilds: {
-        [guildId]: {
-          tags: {},
-          whitelist: ['923456789012345678'],
-          automod: {
-            exemptUserIds: ['923456789012345679'],
-          },
-        },
-      },
-      warnings: {},
-    }),
-    'utf8',
-  );
-
-  const store = new BotStore(file, defaults);
-  const settings = await store.getGuildSettings(guildId);
-  assert.deepEqual(settings.automod.exemptUserIds, [
-    '923456789012345678',
-    '923456789012345679',
-  ]);
-
-  await store.updateGuildSettings(
-    guildId,
-    settingsPatch({
-      automod: {
-        exemptUserIds: ['923456789012345679'],
-      },
-    }),
-  );
-
-  const persisted = JSON.parse(await readFile(file, 'utf8'));
-  assert.deepEqual(persisted.guilds[guildId].whitelist, ['923456789012345679']);
-  assert.equal(persisted.guilds[guildId].automod.exemptUserIds, undefined);
 });
