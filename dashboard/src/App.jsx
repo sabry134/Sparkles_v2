@@ -115,6 +115,28 @@ function scrollBehavior() {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
 }
 
+function auditChangeLabel(path) {
+  const labels = {
+    actionLog: 'Action log',
+    automod: 'Auto moderation',
+    commandPermissions: 'Command access',
+    customCommands: 'Custom commands',
+    disabledCommands: 'Command availability',
+    reactionRoles: 'Reaction roles',
+    starboard: 'Starboard',
+  };
+  return String(path)
+    .split('.')
+    .map((part) => {
+      if (labels[part]) return labels[part];
+      return part
+        .replace(/([a-z])([A-Z])/gu, '$1 $2')
+        .replace(/[_-]+/gu, ' ')
+        .replace(/^./u, (character) => character.toLocaleUpperCase('en-US'));
+    })
+    .join(' · ');
+}
+
 function GuildAvatar({ guild, large = false }) {
   if (guild.iconUrl) {
     return (
@@ -1298,14 +1320,14 @@ function Dashboard({ session, onSessionExpired }) {
                     {dashboardAudit.map((entry) => (
                       <article className="dashboard-audit-entry" key={entry.id ?? entry.at}>
                         <div className="dashboard-audit-meta">
-                          <strong>{entry.actorTag ?? entry.actorId ?? '—'}</strong>
+                          <strong>{entry.actorTag ?? t('platform.notAvailable')}</strong>
                           <time dateTime={entry.at ?? undefined}>
                             {entry.at ? new Date(entry.at).toLocaleString() : '—'}
                           </time>
                         </div>
                         <div className="dashboard-audit-changes">
                           {entry.changes.map((change) => (
-                            <span key={change}>{change}</span>
+                            <span key={change}>{auditChangeLabel(change)}</span>
                           ))}
                         </div>
                       </article>
