@@ -118,13 +118,45 @@
 .platform-record-heading { display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap; }
 .platform-record-heading time { margin-left: auto; color: var(--text-tertiary); font-size: .75rem; }
 .platform-table-wrap { max-width: 100%; overflow-x: auto; }
-.platform-table { width: 100%; border-collapse: collapse; text-align: left; font-size: .8rem; }
-.platform-table td, .platform-table th { padding: 12px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
-.platform-table th { font-weight: 500; color: var(--text-tertiary); white-space: nowrap; }
-.platform-table td strong, .platform-table td small, .platform-table td > span { display: block; margin-bottom: 6px; }
-.platform-table td small { color: var(--text-secondary); font-size: .72rem; }
-.platform-table td a { color: var(--primary); }
-.platform-table td > .button { margin: 0 5px 5px 0; font-size: .72rem; padding: 5px 8px; min-height: 30px; }
+.mui-table-surface {
+  border-radius: 12px !important;
+  background: var(--surface) !important;
+  box-shadow: 0 12px 36px rgb(0 0 0 / .16);
+}
+.platform-table { width: 100%; text-align: left; }
+.platform-table .MuiTableCell-root {
+  padding: 13px 14px;
+  vertical-align: top;
+}
+.platform-table .MuiTableHead-root {
+  background: color-mix(in srgb, var(--surface-subtle) 88%, transparent);
+}
+.platform-table .MuiButton-root {
+  font-size: .74rem;
+}
+.mui-inline-accordion {
+  border: 1px solid var(--border) !important;
+  border-radius: 8px !important;
+  background: var(--surface-subtle) !important;
+}
+.mui-inline-accordion::before {
+  display: none;
+}
+.mui-inline-accordion .MuiAccordionSummary-root {
+  min-height: 34px;
+  padding: 0 10px;
+  color: var(--text-secondary);
+}
+.mui-inline-accordion .MuiAccordionSummary-content {
+  margin: 7px 0;
+}
+.mui-inline-accordion .MuiAccordionDetails-root {
+  padding: 0 10px 10px;
+}
+.mui-platform-error {
+  border-radius: 10px !important;
+  margin: var(--space-3) 0;
+}
 .platform-filterbar { display: flex; gap: var(--space-3); margin: var(--space-4) 0; }
 .platform-trace { list-style: none; padding: 0; }
 .platform-trace li { display: flex; flex-wrap: wrap; gap: 10px; justify-content: space-between; padding: 12px; border-left: 2px solid var(--danger); background: var(--surface-subtle); margin: 7px 0; font-size: .8rem; }
