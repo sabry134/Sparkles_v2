@@ -25,9 +25,9 @@ function pageQuery(request) {
 const blockedJsonKeys = new Set(['__proto__', 'prototype', 'constructor']);
 
 function safeJsonValue(value, depth = 0, state = { nodes: 0 }) {
-  ensure(depth <= 24);
+  ensure(depth <= limits.maximumBlueprintDepth);
   state.nodes += 1;
-  ensure(state.nodes <= 10000);
+  ensure(state.nodes <= limits.maximumBlueprintNodes);
 
   if (
     value === null ||
@@ -41,7 +41,7 @@ function safeJsonValue(value, depth = 0, state = { nodes: 0 }) {
     return;
   }
   if (Array.isArray(value)) {
-    ensure(value.length <= limits.maximumResourcesPerKind * Object.keys(FEATURES).length);
+    ensure(value.length <= limits.maximumBlueprintObjects);
     for (const item of value) safeJsonValue(item, depth + 1, state);
     return;
   }
@@ -92,7 +92,7 @@ function validateBlueprintEnvelope(blueprint) {
   }
 
   const validateMetadata = (items, name) => {
-    ensure(items.length <= limits.maximumPageSize);
+    ensure(items.length <= limits.maximumBlueprintObjects);
     const seen = new Set();
     for (const [index, item] of items.entries()) {
       onlyKeys(item, ['id', 'name']);
@@ -502,8 +502,15 @@ export function createPlatformApi(config, { store = new PlatformStore({ uri: con
         new Set(kinds).size === kinds.length &&
         kinds.every((kind) => Object.hasOwn(FEATURES, kind)),
     );
+    const sourceObjectIds = new Set([
+      ...blueprint.channels,
+      ...blueprint.categories,
+      ...blueprint.roles,
+    ].map((item) => item.id));
+    ensure(Object.keys(mapping).length <= limits.maximumBlueprintObjects);
     for (const [oldId, newId] of Object.entries(mapping)) {
       id(oldId, `mapping.${oldId}.sourceId`);
+      ensure(sourceObjectIds.has(oldId));
       id(newId, `mapping.${oldId}.destinationId`);
     }
     const ids = new Map(blueprint.resources.map(item => [item.sourceId, randomUUID()]));
