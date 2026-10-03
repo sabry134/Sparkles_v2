@@ -18,8 +18,6 @@ export const TOP_LEVEL_COMMANDS = new Set([
   'user-warnings',
   'clear-warnings',
   'logs',
-  'set-suggestions',
-  'reset-suggestions',
   'suggest',
   'say',
   'slowmode',
