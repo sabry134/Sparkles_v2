@@ -34,8 +34,15 @@
   "regexMemoryMb": 32,
   "maximumCursorLength": 256,
   "defaultRangeDays": 7,
-  "dateRangeDays": [1, 7, 30],
+  "dateRangeDays": [
+    1,
+    7,
+    30
+  ],
   "defaultTicketLimit": 1,
   "defaultGiveawayWinners": 1,
-  "defaultTimezone": "UTC"
+  "defaultTimezone": "UTC",
+  "maximumBlueprintObjects": 1000,
+  "maximumBlueprintDepth": 24,
+  "maximumBlueprintNodes": 10000
 }
