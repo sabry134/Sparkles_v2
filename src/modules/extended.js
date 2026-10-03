@@ -856,13 +856,19 @@ export async function handleExtendedCommand(commandName, interaction, t, client)
         return denied(interaction, t, 'Manage Events');
       }
       if (!input.text) return missing(interaction, t, 'text');
-      const configuredTarget = config.giveawayChannelId
+      const target = config.giveawayChannelId
         ? await interaction.guild.channels
             .fetch(config.giveawayChannelId)
             .catch(() => null)
         : null;
-      const target = input.channel ?? configuredTarget ?? interaction.channel;
-      if (!target?.isTextBased()) return missing(interaction, t, 'channel');
+      if (!target?.isTextBased()) {
+        return interaction.reply(
+          errorMessage(
+            t('extended.configurationRequiredTitle'),
+            t('extended.giveawayChannelRequired'),
+          ),
+        );
+      }
       const duration = Math.min(
         Math.max(
           input.amount ??
@@ -1366,17 +1372,19 @@ export async function handleExtendedCommand(commandName, interaction, t, client)
     }
 
     case 'ticket': {
-      const configuredCategory = config.ticketCategoryId
+      const category = config.ticketCategoryId
         ? await interaction.guild.channels
             .fetch(config.ticketCategoryId)
             .catch(() => null)
         : null;
-      const category =
-        input.channel?.type === ChannelType.GuildCategory
-          ? input.channel
-          : configuredCategory?.type === ChannelType.GuildCategory
-            ? configuredCategory
-            : null;
+      if (category?.type !== ChannelType.GuildCategory) {
+        return interaction.reply(
+          errorMessage(
+            t('extended.configurationRequiredTitle'),
+            t('extended.ticketCategoryRequired'),
+          ),
+        );
+      }
       const channel = await interaction.guild.channels.create({
         name: `ticket-${interaction.user.username}`
           .toLowerCase()
