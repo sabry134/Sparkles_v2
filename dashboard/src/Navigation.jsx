@@ -193,8 +193,8 @@ export default function Navigation({ items, active, onNavigate, guildId }) {
         aria-label={t('navigation.palette')}
       >
         {pins.length && matches.some(([id]) => pins.includes(id)) ? (
-          <Box component="li" className="nav-group">
-            <ListSubheader disableSticky className="nav-group-label">
+          <Box className="nav-group">
+            <ListSubheader component="div" disableSticky className="nav-group-label">
               {t('navigation.pinned')}
             </ListSubheader>
             {matches.filter(([id]) => pins.includes(id)).map(entry)}
@@ -205,8 +205,8 @@ export default function Navigation({ items, active, onNavigate, guildId }) {
           const groupItems = matches.filter(([id]) => pages.includes(id));
           if (!groupItems.length) return null;
           return (
-            <Box component="li" className="nav-group" key={group}>
-              <ListSubheader disableSticky className="nav-group-label">
+            <Box className="nav-group" key={group}>
+              <ListSubheader component="div" disableSticky className="nav-group-label">
                 {t(`navigation.${group}`)}
               </ListSubheader>
               {groupItems.map(entry)}
