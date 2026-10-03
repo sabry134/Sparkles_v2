@@ -48,22 +48,6 @@ const NAVIGATION = [
 ];
 
 const PAGE_IDS = new Set(NAVIGATION.map(([id]) => id));
-const PAGE_DESCRIPTION_KEYS = {
-  overview: 'overview.description',
-  moderation: 'moderation.description',
-  automod: 'automod.description',
-  roles: 'roles.description',
-  embeds: 'embeds.description',
-  community: 'community.description',
-  automation: 'automation.description',
-  economy: 'economy.description',
-  music: 'music.description',
-  modules: 'modules.description',
-  custom: 'custom.description',
-  rules: 'feature.rules.description', tickets: 'feature.ticket-panels.description', forms: 'feature.forms.description',
-  giveaways: 'feature.giveaways.description', polls: 'feature.polls.description', feeds: 'feature.feeds.description',
-  members: 'cases.help', activity: 'records.events.help', jobs: 'records.jobs.help', access: 'access.help', blueprints: 'blueprints.help',
-};
 
 function routeState() {
   const match = /^\/servers\/(\d{17,20})\/([a-z-]+)\/?$/u.exec(
@@ -1062,9 +1046,6 @@ function Dashboard({ session, onSessionExpired }) {
   const activeNavigation =
     NAVIGATION.find(([id]) => id === activeSection) ?? NAVIGATION[0];
   const activePageTitle = t(activeNavigation[1]);
-  const activePageDescription = t(
-    PAGE_DESCRIPTION_KEYS[activeSection] ?? 'overview.description',
-  );
   const normalizedCommandQuery = commandQuery.trim().toLocaleLowerCase('en-US');
   const visibleCommands = (resources?.commands ?? []).filter((command) => {
     if (!normalizedCommandQuery) return true;
