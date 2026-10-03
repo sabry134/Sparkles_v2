@@ -451,9 +451,7 @@ function ImpactDialog({ preview, resources, onClose, onConfirm, busy }) {
             <p>{t('platform.targetsCount', { count: preview.impact.targets.length })}</p>
             <ul>
               {preview.impact.targets.map((target) => (
-                <li key={target.id}>
-                  {target.name} <code>{target.id}</code>
-                </li>
+                <li key={target.id}>{target.name}</li>
               ))}
             </ul>
             <p>{preview.impact.reason}</p>
