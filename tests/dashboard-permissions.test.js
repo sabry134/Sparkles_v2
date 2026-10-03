@@ -214,3 +214,67 @@ test('dashboard validates command role and channel access selectors', () => {
     /INVALID_CHANNEL/u,
   );
 });
+
+
+test('dashboard permission errors identify the missing permission', () => {
+  assert.throws(
+    () =>
+      validateSettingsResources(
+        { automod: { antiLink: true } },
+        resources({ canManageMessages: false }),
+      ),
+    (error) => {
+      assert.equal(error.code, 'BOT_MISSING_PERMISSION');
+      assert.deepEqual(error.details, [
+        {
+          code: 'bot_permissions',
+          permissions: ['Manage Messages'],
+          path: 'automod',
+        },
+      ]);
+      return true;
+    },
+  );
+});
+
+test('dashboard resource errors identify the exact invalid role and channel IDs', () => {
+  assert.throws(
+    () =>
+      validateSettingsResources(
+        { automod: { exemptRoleIds: ['523456789012345678'] } },
+        resources(),
+      ),
+    (error) => {
+      assert.equal(error.code, 'INVALID_ROLE');
+      assert.equal(error.details[0].path, 'automod.exemptRoleIds');
+      assert.equal(error.details[0].roleId, '523456789012345678');
+      return true;
+    },
+  );
+
+  assert.throws(
+    () =>
+      validateSettingsResources(
+        {
+          commandPermissions: {
+            weather: {
+              roleMode: 'allow-all-except',
+              roleIds: [],
+              channelMode: 'deny-all-except',
+              channelIds: ['523456789012345678'],
+            },
+          },
+        },
+        resources(),
+      ),
+    (error) => {
+      assert.equal(error.code, 'INVALID_CHANNEL');
+      assert.equal(
+        error.details[0].path,
+        'commandPermissions.weather.channelIds',
+      );
+      assert.equal(error.details[0].channelId, '523456789012345678');
+      return true;
+    },
+  );
+});
