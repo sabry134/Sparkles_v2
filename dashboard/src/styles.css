@@ -3745,3 +3745,188 @@ body {
 .subsection-heading > div > p {
   margin-top: 8px;
 }
+
+
+/* Dashboard layout refinement */
+.dashboard-content,
+.settings-section,
+.settings-card,
+.page-settings-stack {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.server-heading > div,
+.section-heading,
+.subsection-heading > div,
+.page-card-heading > div {
+  min-width: 0;
+}
+
+.server-heading > div {
+  display: grid;
+  gap: 5px;
+}
+
+.server-heading .eyebrow {
+  margin: 0;
+}
+
+.section-heading {
+  display: grid;
+  gap: 8px;
+}
+
+.section-heading h2,
+.section-heading p {
+  margin: 0;
+}
+
+.subsection-heading > div,
+.page-card-heading > div {
+  display: grid;
+  gap: 6px;
+}
+
+.subsection-heading h3,
+.subsection-heading p,
+.page-card-heading h3,
+.page-card-heading p {
+  margin: 0;
+}
+
+.command-manager .page-card-heading {
+  align-items: center;
+  gap: 18px;
+}
+
+.command-search.MuiTextField-root {
+  width: min(280px, 100%);
+  flex: 0 0 min(280px, 100%);
+}
+
+.command-search .MuiOutlinedInput-root {
+  height: 38px;
+}
+
+.command-manager-list {
+  overflow-x: hidden;
+}
+
+.command-access-accordion.MuiAccordion-root {
+  margin: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.command-access-accordion.MuiAccordion-root + .command-access-accordion.MuiAccordion-root {
+  border-top: 1px solid var(--border) !important;
+}
+
+.command-access-summary.MuiAccordionSummary-root {
+  min-height: 64px;
+  padding: 0 var(--space-5);
+}
+
+.command-access-summary.MuiAccordionSummary-root.Mui-expanded {
+  min-height: 64px;
+}
+
+.command-access-summary .MuiAccordionSummary-content,
+.command-access-summary .MuiAccordionSummary-content.Mui-expanded {
+  min-width: 0;
+  margin: 0;
+}
+
+.command-access-summary .MuiAccordionSummary-expandIconWrapper {
+  margin-left: 8px;
+  color: var(--text-tertiary);
+  transform: rotate(0deg);
+}
+
+.command-access-summary .MuiAccordionSummary-expandIconWrapper.Mui-expanded {
+  transform: rotate(90deg);
+}
+
+.command-manager-item {
+  width: 100%;
+  min-height: 64px;
+  padding: 0;
+}
+
+.command-manager-copy {
+  min-width: 0;
+}
+
+.command-access-label {
+  display: inline-flex;
+  min-height: 30px;
+  padding: 0 10px;
+  align-items: center;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: var(--surface-subtle);
+  font-size: 0.7rem;
+  font-weight: 650;
+}
+
+.command-access-details.MuiAccordionDetails-root {
+  padding: 0;
+}
+
+.command-permission-panel {
+  border-top: 1px solid var(--border);
+}
+
+.command-access-heading {
+  display: flex;
+  padding: 16px var(--space-5) 10px;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.command-access-heading > div {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
+}
+
+.command-access-heading h4,
+.command-access-heading p {
+  margin: 0;
+}
+
+.command-access-heading h4 {
+  font-size: 0.82rem;
+}
+
+.command-access-heading p {
+  color: var(--text-secondary);
+  font-size: 0.74rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 720px) {
+  .command-manager .page-card-heading,
+  .command-access-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .command-search.MuiTextField-root {
+    width: 100%;
+    flex-basis: auto;
+  }
+
+  .command-manager-item {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .command-access-label {
+    display: none;
+  }
+}
