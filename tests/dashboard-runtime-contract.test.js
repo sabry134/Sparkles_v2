@@ -19,6 +19,7 @@ const sources = Object.fromEntries(
       'src/store.js',
       'src/mongodb.js',
       'src/platform/discord.js',
+      'src/platform/store.js',
       'shared/platform-schema.js',
       'dashboard/src/App.jsx',
       'dashboard/src/MuiProvider.jsx',
@@ -32,6 +33,7 @@ const sources = Object.fromEntries(
       'dashboard/server/index.js',
       'dashboard/server/bot-store.js',
       'dashboard/server/config.js',
+      'dashboard/server/platform-api.js',
       '.env.example',
     ].map(async (file) => [
       file,
@@ -211,8 +213,9 @@ test('dashboard command access rules are enforced by role and channel', () => {
   assert.match(sources['server.js'], /roleMode === 'deny-all-except'/u);
   assert.match(sources['server.js'], /channelMode === 'deny-all-except'/u);
   assert.match(sources['server.js'], /commandAccessDenied\(interaction, commandName\)/u);
-  assert.match(sources['dashboard/src/App.jsx'], /selectedCommandRule/u);
+  assert.match(sources['dashboard/src/App.jsx'], /command-access-accordion/u);
   assert.match(sources['dashboard/src/App.jsx'], /commandPermissions/u);
+  assert.match(sources['dashboard/src/App.jsx'], /AccordionSummary/u);
 });
 
 test('dashboard configuration changes are auditable', () => {
@@ -272,11 +275,11 @@ test('disabled dashboard features hide settings that only apply while enabled', 
   );
   assert.match(
     app,
-    /\{enabled \? \([\s\S]*?modules\.commandConfigure[\s\S]*?\) : null\}/u,
+    /const expanded = enabled && selectedCommandName === command\.name/u,
   );
   assert.match(
     app,
-    /selectedCommandRule &&[\s\S]*?!draft\.disabledCommands\.includes\(selectedCommand\.name\)/u,
+    /expanded=\{expanded\}[\s\S]*?command-access-details/u,
   );
 });
 
@@ -449,4 +452,37 @@ test('dashboard errors explain permissions and IDs before the support reference'
     sources['dashboard/src/i18n/platform.en.js'],
     /Invalid Discord ID in \{path\}/u,
   );
+});
+
+
+test('platform resources expose safe draft deletion', () => {
+  assert.match(
+    sources['dashboard/server/platform-api.js'],
+    /router\.delete\('\/resources\/:kind\/:resourceId'/u,
+  );
+  assert.match(
+    sources['src/platform/store.js'],
+    /async remove\(guildId, kind, resourceId, actorId, expectedRevision\)/u,
+  );
+  assert.match(
+    sources['src/platform/store.js'],
+    /resource\.live\?\.enabled !== true/u,
+  );
+  assert.match(
+    sources['dashboard/src/PlatformWorkspace.jsx'],
+    /platform-resource-delete/u,
+  );
+});
+
+test('blueprint imports reject executable and unsafe JSON shapes', () => {
+  const api = sources['dashboard/server/platform-api.js'];
+  const workspace = sources['dashboard/src/PlatformWorkspace.jsx'];
+  assert.match(api, /validateBlueprintEnvelope/u);
+  assert.match(api, /blockedJsonKeys/u);
+  assert.match(api, /__proto__/u);
+  assert.match(api, /validateResource\(item\.kind, remap\(item\.value\), limits\)/u);
+  assert.doesNotMatch(api, /\beval\s*\(/u);
+  assert.doesNotMatch(api, /new Function/u);
+  assert.match(workspace, /validBlueprintFile/u);
+  assert.match(workspace, /maximumImportBytes/u);
 });
