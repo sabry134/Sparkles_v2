@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
+  Box,
   Button,
   Checkbox,
   Chip,
@@ -8,11 +12,22 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  Divider,
   FormControl,
   FormControlLabel,
   MenuItem,
+  Paper,
   Select as MuiSelect,
+  Stack,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
   TextField,
+  Tooltip,
+  Typography,
 } from '@mui/material';
 import { api } from './api.js';
 import { t } from './i18n/index.js';
@@ -31,8 +46,47 @@ const textValue = value => value === null || value === undefined ? t('platform.e
 
 export function PlatformErrorView({ error }) {
   if (!error) return null;
-  const key = `error.${error.code}`; const message = t(key);
-  return <div className="platform-error" role="alert"><strong>{message === key ? t('platform.requestFailed') : message}</strong>{error.requestId && <small>{t('platform.requestReference', { reference: error.requestId })}</small>}{error.details?.length > 0 && <ul>{error.details.map((detail, index) => <li key={index}>{detail.path}: {t(`studio.issue.${detail.code}`, { path: detail.path, limit: detail.limit })}</li>)}</ul>}</div>;
+  const key = `error.${error.code}`;
+  const message = t(key);
+  return (
+    <Paper
+      className="platform-error mui-platform-error"
+      elevation={0}
+      sx={{
+        p: 2,
+        border: '1px solid',
+        borderColor: 'error.dark',
+        backgroundColor: 'rgba(239, 109, 120, 0.08)',
+      }}
+    >
+      <Stack direction="row" spacing={1.25} alignItems="flex-start">
+        <Box sx={{ color: 'error.main', pt: 0.25 }}>●</Box>
+        <Box sx={{ minWidth: 0 }}>
+          <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
+            {message === key ? t('platform.requestFailed') : message}
+          </Typography>
+          {error.requestId ? (
+            <Typography variant="caption" color="text.secondary">
+              {t('platform.requestReference', { reference: error.requestId })}
+            </Typography>
+          ) : null}
+          {error.details?.length > 0 ? (
+            <Stack component="ul" spacing={0.5} sx={{ pl: 2.5, mb: 0, mt: 1 }}>
+              {error.details.map((detail, index) => (
+                <Typography component="li" variant="body2" key={index}>
+                  {detail.path}:{' '}
+                  {t(`studio.issue.${detail.code}`, {
+                    path: detail.path,
+                    limit: detail.limit,
+                  })}
+                </Typography>
+              ))}
+            </Stack>
+          ) : null}
+        </Box>
+      </Stack>
+    </Paper>
+  );
 }
 function Empty({ text = 'platform.empty', children }) { return <div className="platform-empty"><p>{t(text)}</p>{children}</div>; }
 function Busy() { return <div className="platform-skeleton" role="status" aria-label={t('common.loading')}><span /><span /><span /></div>; }
