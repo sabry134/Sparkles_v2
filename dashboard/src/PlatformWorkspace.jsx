@@ -15,6 +15,7 @@ import {
   Divider,
   FormControl,
   FormControlLabel,
+  IconButton,
   MenuItem,
   Paper,
   Select as MuiSelect,
@@ -32,6 +33,7 @@ import {
 import { api } from './api.js';
 import { t } from './i18n/index.js';
 import { errorDetailsText } from './error-details.js';
+import Icon from './Icon.jsx';
 import MessageStudio, { MessagePreview, downloadJson } from './MessageStudio.jsx';
 import { ACTION_FIELDS, FEATURES, emptyResource, configurationDiff } from '../../shared/platform-schema.js';
 import { EMPTY_MESSAGE } from '../../shared/discord-limits.js';
@@ -743,6 +745,32 @@ function ResourcePage({ kind, request, bootstrap, selectedId, onNavigate }) {
     }
     open(id);
   };
+  const removeResource = async (item) => {
+    if (item.live?.enabled || item.pendingJobId) return;
+    const confirmed = await dialogs.confirm({
+      title: t('platform.deleteResourceTitle', { name: item.draft.name }),
+      message: t('platform.deleteResourceBody'),
+      confirmLabel: t('platform.delete'),
+      cancelLabel: t('common.cancel'),
+    });
+    if (!confirmed) return;
+
+    await run(async () => {
+      await request(`${endpoint}/${item.id}`, {
+        method: 'DELETE',
+        body: { revision: item.revision },
+      });
+      if (document?.id === item.id) {
+        setDocument(null);
+        setValue(null);
+        setHistory({ items: [], nextCursor: null });
+        setRuns({ items: [], nextCursor: null });
+        setTab('configure');
+      }
+      setNotice(t('platform.deleted'));
+      await load();
+    });
+  };
   const publish = action => run(async () => { setPreview(await request(`${endpoint}/${document.id}/preview`, { method: 'POST', body: { revision: document.revision, action } })); });
   const activeValue = document?.live?.revision === document?.revision ? 'published' : document?.live ? 'changed' : 'draft';
   const showMessage = FEATURES[kind].publish === 'message' || ['commands', 'feeds'].includes(kind);
@@ -765,7 +793,64 @@ function ResourcePage({ kind, request, bootstrap, selectedId, onNavigate }) {
             setCursor(null);
           }}
         />
-        {loading ? <Busy /> : listing.items.length ? <div className="platform-resource-list">{listing.items.map(item => <Button key={item.id} type="button" aria-pressed={document?.id === item.id} onClick={() => openSafely(item.id)}><strong>{item.draft.name}</strong><span><Status value={item.live?.enabled ? item.live.revision === item.revision ? 'published' : 'changed' : 'draft'} /><small>{t('platform.versionShort', { version: item.revision })}</small></span></Button>)}</div> : <Empty text="platform.noResources" />}
+        {loading ? (
+          <Busy />
+        ) : listing.items.length ? (
+          <div className="platform-resource-list">
+            {listing.items.map((item) => {
+              const deletionBlocked = item.live?.enabled || item.pendingJobId;
+              const deleteHint = item.pendingJobId
+                ? t('platform.deleteResourceBusy')
+                : item.live?.enabled
+                  ? t('platform.deleteResourceActive')
+                  : t('platform.delete');
+
+              return (
+                <div className="platform-resource-item" key={item.id}>
+                  <Button
+                    className="platform-resource-open"
+                    type="button"
+                    aria-pressed={document?.id === item.id}
+                    onClick={() => openSafely(item.id)}
+                  >
+                    <strong>{item.draft.name}</strong>
+                    <span>
+                      <Status
+                        value={
+                          item.live?.enabled
+                            ? item.live.revision === item.revision
+                              ? 'published'
+                              : 'changed'
+                            : 'draft'
+                        }
+                      />
+                      <small>
+                        {t('platform.versionShort', { version: item.revision })}
+                      </small>
+                    </span>
+                  </Button>
+                  <Tooltip title={deleteHint}>
+                    <span className="platform-resource-delete-wrap">
+                      <IconButton
+                        className="platform-resource-delete"
+                        size="small"
+                        aria-label={t('platform.deleteResourceTitle', {
+                          name: item.draft.name,
+                        })}
+                        disabled={busy || deletionBlocked}
+                        onClick={() => removeResource(item)}
+                      >
+                        <Icon name="trash" size={16} />
+                      </IconButton>
+                    </span>
+                  </Tooltip>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <Empty text="platform.noResources" />
+        )}
         <Pager cursor={listing.nextCursor} onNext={setCursor} onFirst={() => setCursor(null)} busy={loading} />
       </aside>
       <div className="platform-resource-editor">
