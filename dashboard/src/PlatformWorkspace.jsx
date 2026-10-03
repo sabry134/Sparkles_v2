@@ -1522,6 +1522,106 @@ function Access({ request, bootstrap }) {
   </>}</section>;
 }
 
+const blockedBlueprintKeys = new Set(['__proto__', 'prototype', 'constructor']);
+
+function safeBlueprintValue(value, depth = 0, state = { nodes: 0 }) {
+  if (depth > 24 || state.nodes++ > 10000) return false;
+  if (
+    value === null ||
+    typeof value === 'string' ||
+    typeof value === 'boolean'
+  ) {
+    return true;
+  }
+  if (typeof value === 'number') return Number.isFinite(value);
+  if (Array.isArray(value)) {
+    return value.every((item) => safeBlueprintValue(item, depth + 1, state));
+  }
+  if (
+    typeof value !== 'object' ||
+    ![Object.prototype, null].includes(Object.getPrototypeOf(value))
+  ) {
+    return false;
+  }
+  return Object.entries(value).every(
+    ([key, child]) =>
+      !blockedBlueprintKeys.has(key) &&
+      safeBlueprintValue(child, depth + 1, state),
+  );
+}
+
+function validBlueprintFile(blueprint, limits) {
+  if (!safeBlueprintValue(blueprint)) return false;
+  if (
+    !blueprint ||
+    blueprint.format !== 'sparkles-blueprint' ||
+    blueprint.version !== 1 ||
+    !/^\d{17,20}$/u.test(blueprint.sourceGuildId ?? '') ||
+    !Array.isArray(blueprint.resources) ||
+    !Array.isArray(blueprint.channels) ||
+    !Array.isArray(blueprint.categories) ||
+    !Array.isArray(blueprint.roles)
+  ) {
+    return false;
+  }
+
+  const allowedTopLevel = new Set([
+    'format',
+    'version',
+    'sourceGuildId',
+    'resources',
+    'channels',
+    'categories',
+    'roles',
+  ]);
+  if (Object.keys(blueprint).some((key) => !allowedTopLevel.has(key))) return false;
+
+  const maximumResources =
+    limits.maximumResourcesPerKind * Object.keys(FEATURES).length;
+  if (blueprint.resources.length > maximumResources) return false;
+
+  const sourceIds = new Set();
+  for (const item of blueprint.resources) {
+    if (
+      !item ||
+      Object.keys(item).some(
+        (key) => !['sourceId', 'kind', 'value'].includes(key),
+      ) ||
+      !/^[a-f0-9-]{36}$/u.test(item.sourceId ?? '') ||
+      sourceIds.has(item.sourceId) ||
+      !Object.hasOwn(FEATURES, item.kind) ||
+      !item.value ||
+      typeof item.value !== 'object' ||
+      Array.isArray(item.value)
+    ) {
+      return false;
+    }
+    sourceIds.add(item.sourceId);
+  }
+
+  const validMetadata = (items) => {
+    if (items.length > limits.maximumPageSize) return false;
+    const ids = new Set();
+    return items.every(
+      (item) =>
+        item &&
+        Object.keys(item).every((key) => ['id', 'name'].includes(key)) &&
+        /^\d{17,20}$/u.test(item.id ?? '') &&
+        !ids.has(item.id) &&
+        (ids.add(item.id), true) &&
+        typeof item.name === 'string' &&
+        item.name.length > 0 &&
+        item.name.length <= limits.maximumNameLength,
+    );
+  };
+
+  return (
+    validMetadata(blueprint.channels) &&
+    validMetadata(blueprint.categories) &&
+    validMetadata(blueprint.roles)
+  );
+}
+
 function Blueprints({ request, bootstrap }) {
   const [blueprint, setBlueprint] = useState(null);
   const [mapping, setMapping] = useState({});
@@ -1556,7 +1656,7 @@ function Blueprints({ request, bootstrap }) {
       } catch {
         throw { code: 'INVALID_INPUT' };
       }
-      if (parsed.format !== 'sparkles-blueprint' || !Array.isArray(parsed.resources)) {
+      if (!validBlueprintFile(parsed, bootstrap.limits)) {
         throw { code: 'INVALID_INPUT' };
       }
       setBlueprint(parsed);
