@@ -7,6 +7,7 @@ import { TOP_LEVEL_COMMANDS } from '../src/top-level-commands.js';
 import {
   CATEGORY_SLASH_NAMES,
   GROUPED_COMMAND_OPTIONS,
+  commandOptionPresentation,
   slashRoute,
 } from '../src/command-routes.js';
 
@@ -86,4 +87,37 @@ test('every command has an explicit, non-stacked switch case', async () => {
 
   assert.doesNotMatch(source, /case '[^']+':\s*\n\s*case '/);
   assert.doesNotMatch(source, /notConfigured/);
+});
+
+
+test('dashboard-owned destinations are not duplicated in slash command inputs', async () => {
+  assert.deepEqual(
+    GROUPED_COMMAND_OPTIONS.giveaway.map((option) => option.name),
+    ['prize', 'seconds'],
+  );
+  assert.deepEqual(GROUPED_COMMAND_OPTIONS.ticket, []);
+  assert.deepEqual(commandOptionPresentation('logs', true), []);
+
+  const catalogNames = new Set(catalog.map(({ name }) => name));
+  assert.equal(catalogNames.has('set-suggestions'), false);
+  assert.equal(catalogNames.has('reset-suggestions'), false);
+  assert.equal(TOP_LEVEL_COMMANDS.has('set-suggestions'), false);
+  assert.equal(TOP_LEVEL_COMMANDS.has('reset-suggestions'), false);
+
+  const extended = await readFile(
+    new URL('../src/modules/extended.js', import.meta.url),
+    'utf8',
+  );
+  const giveawayCase = extended.slice(
+    extended.indexOf("case 'giveaway'"),
+    extended.indexOf("case 'guess'"),
+  );
+  const ticketCase = extended.slice(
+    extended.indexOf("case 'ticket'"),
+    extended.indexOf("case 'translate'"),
+  );
+  assert.doesNotMatch(giveawayCase, /input\.channel|interaction\.channel/u);
+  assert.doesNotMatch(ticketCase, /input\.channel/u);
+  assert.match(giveawayCase, /config\.giveawayChannelId/u);
+  assert.match(ticketCase, /config\.ticketCategoryId/u);
 });
