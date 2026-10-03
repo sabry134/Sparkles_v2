@@ -1086,7 +1086,151 @@ function Moderation({ request, bootstrap, membersOnly = false }) {
       />
     </details><Button type="button" className="button primary" disabled={busy || !input.targetIds.length || !input.reason.trim()} onClick={() => run(async () => setPreview(await request('/moderation/preview', { method: 'POST', body: input })))}>{t('cases.previewAction')}</Button></div>}
     {profile && <section className="platform-profile"><div className="platform-section-heading"><h3>{profile.member.name}</h3><code>{profile.member.id}</code><Button type="button" className="button secondary" onClick={() => setProfile(null)}>{t('common.close')}</Button></div><dl><dt>{t('members.created')}</dt><dd>{time(profile.member.accountCreatedAt)}</dd><dt>{t('members.joined')}</dt><dd>{time(profile.member.joinedAt)}</dd><dt>{t('members.roles')}</dt><dd>{profile.member.roles.map(id => bootstrap.resources.roles.find(role => role.id === id)?.name ?? id).join(', ')}</dd><dt>{t('members.timeout')}</dt><dd>{time(profile.member.timeoutUntil)}</dd><dt>{t('members.tickets')}</dt><dd>{profile.tickets.length}</dd></dl>{profile.cases.map(entry => <p key={entry.id}>{t('cases.caseNumber', { number: entry.id })} · {entry.action} · {entry.reason}</p>)}</section>}
-    {!membersOnly && <><div className="platform-table-wrap"><table className="platform-table"><thead><tr>{['case', 'target', 'moderator', 'reason', 'date', 'actions'].map(key => <th key={key}>{t(`cases.${key}`)}</th>)}</tr></thead><tbody>{cases.items.map(entry => <tr key={entry.id}><td><strong>#{entry.id}</strong><span>{choice(entry.action)}</span><Status value={entry.status ?? 'active'} /></td><td><Button type="button" onClick={() => run(async () => setProfile(await request(`/members/${entry.targetId}`)))}>{entry.targetTag ?? entry.targetId}</Button></td><td>{entry.actorTag ?? entry.actorId}</td><td>{entry.reason}{entry.note && <small>{entry.note}</small>}{entry.evidence && <details><summary>{t('cases.evidence')}</summary><pre>{JSON.stringify(entry.evidence, null, 2)}</pre></details>}</td><td>{time(entry.at)}</td><td><Button type="button" className="button secondary" disabled={busy} onClick={() => editCaseReason(entry)}>{t('cases.editReason')}</Button><Button type="button" className="button secondary" disabled={busy} onClick={() => addCaseNote(entry)}>{t('cases.addNote')}</Button>{['ban', 'timeout'].includes(entry.action) && <Button type="button" className="button secondary" onClick={() => setInput({ ...input, type: entry.action === 'ban' ? 'unban' : 'untimeout', targetIds: [entry.targetId], reason: t('cases.reversalReason', { number: entry.id }) })}>{t('cases.reverse')}</Button>}</td></tr>)}</tbody></table></div>{!cases.items.length && <Empty text="cases.empty" />}<Pager cursor={cases.nextCursor} onNext={loadCases} onFirst={() => loadCases()} busy={busy} /></>}
+    {!membersOnly && (
+      <>
+        {cases.items.length ? (
+          <TableContainer
+            component={Paper}
+            variant="outlined"
+            className="platform-table-wrap mui-table-surface"
+          >
+            <Table size="small" className="platform-table">
+              <TableHead>
+                <TableRow>
+                  {['case', 'target', 'moderator', 'reason', 'date', 'actions'].map(
+                    (key) => (
+                      <TableCell key={key}>{t(`cases.${key}`)}</TableCell>
+                    ),
+                  )}
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {cases.items.map((entry) => (
+                  <TableRow key={entry.id} hover>
+                    <TableCell sx={{ minWidth: 135 }}>
+                      <Stack spacing={0.75} alignItems="flex-start">
+                        <Typography variant="subtitle2" fontWeight={800}>
+                          #{entry.id}
+                        </Typography>
+                        <Chip
+                          size="small"
+                          label={choice(entry.action)}
+                          variant="outlined"
+                        />
+                        <Status value={entry.status ?? 'active'} />
+                      </Stack>
+                    </TableCell>
+                    <TableCell sx={{ minWidth: 170 }}>
+                      <Button
+                        variant="text"
+                        size="small"
+                        onClick={() =>
+                          run(async () =>
+                            setProfile(await request(`/members/${entry.targetId}`)),
+                          )
+                        }
+                        sx={{ px: 0, justifyContent: 'flex-start' }}
+                      >
+                        {entry.targetTag ?? entry.targetId}
+                      </Button>
+                    </TableCell>
+                    <TableCell sx={{ minWidth: 165 }}>
+                      <Typography variant="body2">
+                        {entry.actorTag ?? entry.actorId}
+                      </Typography>
+                    </TableCell>
+                    <TableCell sx={{ minWidth: 280, maxWidth: 420 }}>
+                      <Stack spacing={0.75}>
+                        <Typography variant="body2">
+                          {entry.reason || t('moderation.noReason')}
+                        </Typography>
+                        {entry.note ? (
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{ whiteSpace: 'pre-wrap' }}
+                          >
+                            {entry.note}
+                          </Typography>
+                        ) : null}
+                        {entry.evidence ? (
+                          <Accordion
+                            disableGutters
+                            elevation={0}
+                            className="mui-inline-accordion"
+                          >
+                            <AccordionSummary>
+                              <Typography variant="caption" fontWeight={700}>
+                                {t('cases.evidence')}
+                              </Typography>
+                            </AccordionSummary>
+                            <AccordionDetails>
+                              <pre>{JSON.stringify(entry.evidence, null, 2)}</pre>
+                            </AccordionDetails>
+                          </Accordion>
+                        ) : null}
+                      </Stack>
+                    </TableCell>
+                    <TableCell sx={{ minWidth: 150 }}>
+                      <Typography variant="body2">{time(entry.at)}</Typography>
+                    </TableCell>
+                    <TableCell sx={{ minWidth: 250 }}>
+                      <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                        <Tooltip title={t('cases.editReason')}>
+                          <span>
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              disabled={busy}
+                              onClick={() => editCaseReason(entry)}
+                            >
+                              {t('cases.editReason')}
+                            </Button>
+                          </span>
+                        </Tooltip>
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          disabled={busy}
+                          onClick={() => addCaseNote(entry)}
+                        >
+                          {t('cases.addNote')}
+                        </Button>
+                        {['ban', 'timeout'].includes(entry.action) ? (
+                          <Button
+                            size="small"
+                            variant="text"
+                            color="warning"
+                            onClick={() =>
+                              setInput({
+                                ...input,
+                                type: entry.action === 'ban' ? 'unban' : 'untimeout',
+                                targetIds: [entry.targetId],
+                                reason: t('cases.reversalReason', { number: entry.id }),
+                              })
+                            }
+                          >
+                            {t('cases.reverse')}
+                          </Button>
+                        ) : null}
+                      </Stack>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        ) : (
+          <Empty text="cases.empty" />
+        )}
+        <Pager
+          cursor={cases.nextCursor}
+          onNext={loadCases}
+          onFirst={() => loadCases()}
+          busy={busy}
+        />
+      </>
+    )}
     {preview && <ImpactDialog preview={preview} resources={bootstrap.resources} busy={busy} onClose={() => setPreview(null)} onConfirm={() => run(async () => { await request('/moderation/execute', { method: 'POST', body: { token: preview.token } }); setPreview(null); setNotice(t('platform.queued')); })} />}
   </section>;
 }
