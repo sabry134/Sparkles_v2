@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Button,
   Checkbox,
+  Chip,
   Dialog,
   DialogActions,
   DialogContent,
@@ -36,7 +37,16 @@ export function PlatformErrorView({ error }) {
 function Empty({ text = 'platform.empty', children }) { return <div className="platform-empty"><p>{t(text)}</p>{children}</div>; }
 function Busy() { return <div className="platform-skeleton" role="status" aria-label={t('common.loading')}><span /><span /><span /></div>; }
 function Pager({ cursor, onNext, onFirst, busy }) { return <div className="platform-pagination"><Button type="button" className="button secondary" onClick={onFirst} disabled={busy}>{t('platform.firstPage')}</Button><Button type="button" className="button secondary" onClick={() => onNext(cursor)} disabled={!cursor || busy}>{t('platform.nextPage')}</Button></div>; }
-function Status({ value }) { return <span className={`platform-badge status-${value}`}>{t(`status.${value}`)}</span>; }
+function Status({ value }) {
+  return (
+    <Chip
+      className={`platform-badge status-${value}`}
+      size="small"
+      variant="outlined"
+      label={t(`status.${value}`)}
+    />
+  );
+}
 
 function useUnsaved(dirty) {
   const dialogs = useUiDialog();
@@ -756,7 +766,17 @@ function Records({ table, request, bootstrap }) {
       {entry.details?.changes ? <ChangeList changes={entry.details.changes} /> : entry.details && <pre>{JSON.stringify(entry.details, null, 2)}</pre>}
       {entry.answers && <dl className="platform-answers">{entry.answers.map((answer, index) => <div key={index}><dt>{answer.label}</dt><dd>{answer.value}</dd></div>)}</dl>}
       {table === 'submissions' && <div className="platform-actions">{statuses.filter(status => status !== entry.status).map(status => <Button key={status} type="button" className="button secondary" disabled={busy} onClick={() => act(`/submissions/${entry.id}`, { status }, 'PATCH')}>{t(`status.${status}`)}</Button>)}</div>}
-      {table === 'tickets' && <><p>{t('tickets.assignee', { user: entry.assigneeId ?? t('tickets.unassigned') })}</p><div className="platform-actions">{entry.channelId && <a className="button secondary" href={`https://discord.com/channels/${entry.guildId}/${entry.channelId}`} target="_blank" rel="noreferrer">{t('tickets.openChannel')}</a>}{['claim', entry.status === 'closed' ? 'reopen' : 'close'].map(action => <Button key={action} type="button" className="button secondary" disabled={busy} onClick={() => ticketAction(entry, action)}>{t(`tickets.${action}`)}</Button>)}<Button type="button" className="button secondary" disabled={busy} onClick={() => addTicketNote(entry)}>{t('tickets.addNote')}</Button>{entry.status === 'closed' && <Button type="button" className="button secondary" onClick={() => request(`/tickets/${entry.id}/transcript`).then(result => setTranscript(result.transcript)).catch(setError)}>{t('tickets.transcript')}</Button>}</div>{entry.notes?.map((note, index) => <p key={index}>{note.text}<small>{note.actorId} · {time(note.at)}</small></p>)}</>}
+      {table === 'tickets' && <><p>{t('tickets.assignee', { user: entry.assigneeId ?? t('tickets.unassigned') })}</p><div className="platform-actions">{entry.channelId && (
+          <Button
+            component="a"
+            variant="outlined"
+            href={`https://discord.com/channels/${entry.guildId}/${entry.channelId}`}
+            target="_blank"
+            rel="noreferrer"
+          >
+            {t('tickets.openChannel')}
+          </Button>
+        )}{['claim', entry.status === 'closed' ? 'reopen' : 'close'].map(action => <Button key={action} type="button" className="button secondary" disabled={busy} onClick={() => ticketAction(entry, action)}>{t(`tickets.${action}`)}</Button>)}<Button type="button" className="button secondary" disabled={busy} onClick={() => addTicketNote(entry)}>{t('tickets.addNote')}</Button>{entry.status === 'closed' && <Button type="button" className="button secondary" onClick={() => request(`/tickets/${entry.id}/transcript`).then(result => setTranscript(result.transcript)).catch(setError)}>{t('tickets.transcript')}</Button>}</div>{entry.notes?.map((note, index) => <p key={index}>{note.text}<small>{note.actorId} · {time(note.at)}</small></p>)}</>}
     </article>)}</div>}
     <Pager cursor={data.nextCursor} onNext={setCursor} onFirst={() => setCursor(null)} busy={busy} />
     {transcript && <section className="platform-transcript"><div className="platform-section-heading"><h3>{t('tickets.transcript')}</h3><Button type="button" className="button secondary" onClick={() => downloadJson(transcript, `transcript-${transcript.id}`)}>{t('studio.export')}</Button><Button type="button" className="button secondary" onClick={() => setTranscript(null)}>{t('common.close')}</Button></div>{transcript.capped && <p>{t('tickets.transcriptCapped')}</p>}{transcript.messages.map(message => <article key={message.id}><strong>{message.authorName ?? message.authorId}</strong><time>{time(message.at)}</time><p>{message.content}</p></article>)}</section>}
