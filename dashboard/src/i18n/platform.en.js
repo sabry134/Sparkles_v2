@@ -22,6 +22,8 @@ const copy = {
   'errorDetail.actorChannelPermission':
     'You cannot use channel {channel} because your Discord account is missing {permission} there.',
   'errorDetail.botPermissions':
+    'Sparkles is missing Discord permission(s): {permissions}.',
+  'errorDetail.botPermissionsChannel':
     'Sparkles is missing Discord permission(s): {permissions}. Channel: {channel}.',
   'errorDetail.actionPermission':
     'Action "{action}" requires {permission}. Missing for: {missingFor}.',
