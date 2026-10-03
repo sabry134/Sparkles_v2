@@ -909,30 +909,6 @@ function Dashboard({ session, onSessionExpired }) {
     }
   }
 
-  async function clearLegacyUserPolicies() {
-    if (!selectedGuild) return;
-    try {
-      const result = await api(
-        `/api/guilds/${selectedGuild.id}/legacy-user-policies`,
-        {
-          method: 'DELETE',
-          csrfToken: session.csrfToken,
-        },
-      );
-      setSavedSettings((current) => ({
-        ...current,
-        legacyUserPolicies: result.settings.legacyUserPolicies,
-      }));
-      setDraft((current) => ({
-        ...current,
-        legacyUserPolicies: result.settings.legacyUserPolicies,
-      }));
-      showSuccess(t('status.legacyPoliciesCleared'));
-    } catch (error) {
-      showError(error);
-    }
-  }
-
   async function removeReactionRole(key) {
     if (!selectedGuild) return;
     setReactionPending(true);
@@ -1923,29 +1899,6 @@ function Dashboard({ session, onSessionExpired }) {
                     <p>{t('automod.exemptionsDescription')}</p>
                   </div>
                 </div>
-                {(draft.legacyUserPolicies?.blockedCount ?? 0) +
-                  (draft.legacyUserPolicies?.exemptCount ?? 0) >
-                0 ? (
-                  <div className="legacy-policy-warning">
-                    <div>
-                      <strong>{t('automod.legacyPoliciesTitle')}</strong>
-                      <span>
-                        {t('automod.legacyPoliciesBody', {
-                          count:
-                            (draft.legacyUserPolicies?.blockedCount ?? 0) +
-                            (draft.legacyUserPolicies?.exemptCount ?? 0),
-                        })}
-                      </span>
-                    </div>
-                    <Button
-                      className="button secondary"
-                      type="button"
-                      onClick={clearLegacyUserPolicies}
-                    >
-                      {t('automod.clearLegacyPolicies')}
-                    </Button>
-                  </div>
-                ) : null}
                 <MultiSelectField
                   id="automod-blocked-roles"
                   label={t('automod.blockedRoles')}
