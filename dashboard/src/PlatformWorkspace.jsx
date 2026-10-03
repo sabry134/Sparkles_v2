@@ -9,7 +9,6 @@ import {
   DialogTitle,
   FormControl,
   FormControlLabel,
-  InputLabel,
   MenuItem,
   Select as MuiSelect,
   TextField,
