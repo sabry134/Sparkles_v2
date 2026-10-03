@@ -997,6 +997,9 @@ function Dashboard({ session, onSessionExpired }) {
     label: guild.name,
     guild,
   }));
+  const channelNames = new Map(
+    (resources?.channels ?? []).map((channel) => [channel.id, channel.name]),
+  );
   const roleNames = new Map((resources?.roles ?? []).map((role) => [role.id, role.name]));
   const activeNavigation =
     NAVIGATION.find(([id]) => id === activeSection) ?? NAVIGATION[0];
@@ -1344,7 +1347,8 @@ function Dashboard({ session, onSessionExpired }) {
                   checked={draft.automod.enabled}
                   onChange={(value) => updateNested('automod', 'enabled', value)}
                 />
-                {<>
+                {draft.automod.enabled ? (
+                  <>
                     <ToggleField
                       id="anti-link"
                       label={t('automod.antiLink')}
@@ -1359,8 +1363,10 @@ function Dashboard({ session, onSessionExpired }) {
                       checked={draft.automod.antiSwear}
                       onChange={(value) => updateNested('automod', 'antiSwear', value)}
                     />
-                  </>}
-                {<InputField
+                  </>
+                ) : null}
+                {draft.automod.enabled && draft.automod.antiSwear ? (
+                  <InputField
                   id="blocked-words"
                   label={t('automod.blockedWords')}
                   help={t('automod.blockedWordsHelp')}
@@ -1378,7 +1384,8 @@ function Dashboard({ session, onSessionExpired }) {
                         .slice(0, 100),
                     )
                   }
-                />}
+                />
+                ) : null}
               </div>
 
               <div className="settings-card automod-card" hidden={!draft.automod.enabled}>
@@ -1750,7 +1757,7 @@ function Dashboard({ session, onSessionExpired }) {
               <div className={`inline-status ${automodActive ? 'enabled' : ''}`}>
                 <span />
                 <Icon name="shield" size={16} />
-                {t('automod.engineRunning')}
+                {t(automodActive ? 'automod.engineRunning' : 'automod.enginePaused')}
               </div>
               {!resources.capabilities.canManageMessages ||
               !resources.capabilities.canKickMembers ||
@@ -1832,11 +1839,11 @@ function Dashboard({ session, onSessionExpired }) {
                           <span>
                             {t('common.channelPrefix', {
                               name:
-                                channelNames.get(mapping.channelId) ?? mapping.channelId,
+                                channelNames.get(mapping.channelId) ?? t('common.notConfigured'),
                             })}
                             {t('common.separator')}
                             {t('common.rolePrefix', {
-                              name: roleNames.get(mapping.roleId) ?? mapping.roleId,
+                              name: roleNames.get(mapping.roleId) ?? t('common.notConfigured'),
                             })}
                           </span>
                         </div>
@@ -2082,7 +2089,8 @@ function Dashboard({ session, onSessionExpired }) {
                     checked={draft[section].enabled}
                     onChange={(value) => updateNested(section, 'enabled', value)}
                   />
-                  {<>
+                  {draft[section].enabled ? (
+                    <>
                       <SelectField
                         id={`${section}-channel`}
                         label={t(`${prefix}Channel`)}
@@ -2108,7 +2116,8 @@ function Dashboard({ session, onSessionExpired }) {
                         multiline
                         placeholder={t(`${prefix}Placeholder`)}
                       />
-                    </>}
+                    </>
+                  ) : null}
                 </div>
               ))}
             </SettingSection>
@@ -2261,7 +2270,8 @@ function Dashboard({ session, onSessionExpired }) {
                   checked={draft.starboard.enabled}
                   onChange={(value) => updateNested('starboard', 'enabled', value)}
                 />
-                {<>
+                {draft.starboard.enabled ? (
+                  <>
                     <SelectField
                       id="starboard-channel"
                       label={t('automation.starboardChannel')}
@@ -2311,7 +2321,8 @@ function Dashboard({ session, onSessionExpired }) {
                       options={channelOptions}
                       icon="hash"
                     />
-                  </>}
+                  </>
+                ) : null}
               </div>
               </div>
             </SettingSection>
