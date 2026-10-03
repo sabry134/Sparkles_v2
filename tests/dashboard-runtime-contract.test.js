@@ -486,3 +486,28 @@ test('blueprint imports reject executable and unsafe JSON shapes', () => {
   assert.match(workspace, /validBlueprintFile/u);
   assert.match(workspace, /maximumImportBytes/u);
 });
+
+
+test('moderation staff notes and reason edits update the visible case immediately', () => {
+  const api = sources['dashboard/server/platform-api.js'];
+  const workspace = sources['dashboard/src/PlatformWorkspace.jsx'];
+
+  assert.match(
+    api,
+    /router\.patch\('\/cases\/:caseId'[\s\S]*?collection\(COLLECTIONS\.moderationCases\)[\s\S]*?updateOne/u,
+  );
+  assert.match(api, /response\.json\(\{ case: clean\(updated\) \}\)/u);
+  assert.doesNotMatch(
+    api,
+    /router\.patch\('\/cases\/:caseId'[\s\S]*?action: 'case_update'/u,
+  );
+  assert.match(workspace, /const replaceCase = useCallback/u);
+  assert.match(
+    workspace,
+    /body: \{ note \}[\s\S]*?replaceCase\(result\.case\)/u,
+  );
+  assert.match(
+    workspace,
+    /body: \{ reason \}[\s\S]*?replaceCase\(result\.case\)/u,
+  );
+});
