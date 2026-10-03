@@ -891,3 +891,24 @@
     grid-template-columns: 1fr;
   }
 }
+
+
+/* Shared page heading rhythm */
+.platform-section-heading > div:first-child,
+.studio-section-heading > div:first-child {
+  display: grid;
+  min-width: 0;
+  gap: 8px;
+}
+
+.platform-section-heading h2,
+.platform-section-heading h3,
+.studio-section-heading h2,
+.studio-section-heading h3 {
+  margin: 0;
+}
+
+.platform-section-heading p,
+.studio-section-heading p {
+  margin: 0;
+}
