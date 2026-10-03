@@ -385,7 +385,7 @@ export default function MessageStudio({ value = EMPTY_MESSAGE, onChange, resourc
             <TextControl label="allowedUsers" value={value.allowed_mentions?.users?.join(', ') ?? ''} onChange={users => update({ ...value, allowed_mentions: { ...value.allowed_mentions, users: users.split(/[\s,]+/u).filter(Boolean) } })} />
           </details>}
           <Button type="button" className="button secondary" onClick={() => update(structuredClone(EMPTY_MESSAGE))}>{t('studio.reset')}</Button>
-        </>}
+        </>)}
       </div>
       <aside className="studio-preview-column"><div className="studio-section-heading"><strong>{t('studio.livePreview')}</strong><Button type="button" className="button secondary" aria-pressed={mobile} onClick={() => setMobile(!mobile)}>{t(mobile ? 'studio.mobile' : 'studio.desktop')}</Button></div><MessagePreview value={value} resources={resources} mobile={mobile} /><p className="muted">{t('studio.previewHelp')}</p><p className={value.embeds.reduce((sum, embed) => sum + embedTextLength(embed), 0) > L.embedText ? 'error-text' : 'muted'}>{t('studio.embedCharacters', { count: value.embeds.reduce((sum, embed) => sum + embedTextLength(embed), 0), limit: L.embedText })}</p>
         {!!issues.length && <ul className="studio-issues" role="status">{issues.map((issue, index) => <li key={index}>{t(`studio.issue.${issue.code}`, { path: issue.path, limit: issue.limit })}</li>)}</ul>}
