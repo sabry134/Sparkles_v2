@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Button,
   Checkbox,
   FormControl,
@@ -273,7 +276,9 @@ export default function MessageStudio({ value = EMPTY_MESSAGE, onChange, resourc
           {embed && <div className="studio-embed-editor">
             <TextControl label="title" value={embed.title} maximum={L.title} onChange={title => changeEmbed({ title })} />
             <TextControl label="description" value={embed.description} maximum={L.description} multiline onChange={description => changeEmbed({ description })} />
-            <details className="studio-details"><summary>{t('studio.appearance')}</summary><div className="platform-form-grid">
+            <Accordion disableGutters elevation={0} className="studio-details mui-inline-accordion">
+              <AccordionSummary>{t('studio.appearance')}</AccordionSummary>
+              <AccordionDetails><div className="platform-form-grid">
               <TextControl label="titleUrl" value={embed.url} type="url" onChange={url => changeEmbed({ url })} />
               <TextControl label="color" value={embed.color === undefined ? '' : `#${embed.color.toString(16).padStart(6, '0')}`} onChange={color => {
                 if (/^#[a-f0-9]{6}$/iu.test(color)) changeEmbed({ color: Number.parseInt(color.slice(1), 16) });
@@ -287,7 +292,8 @@ export default function MessageStudio({ value = EMPTY_MESSAGE, onChange, resourc
               <TextControl label="footer" value={embed.footer?.text} maximum={L.footer} onChange={text => nested('footer', 'text', text)} />
               <TextControl label="footerIcon" value={embed.footer?.icon_url} type="url" onChange={url => nested('footer', 'icon_url', url)} />
               <TextControl label="timestamp" value={embed.timestamp ? new Date(embed.timestamp).toISOString().slice(0, 16) : ''} type="datetime-local" onChange={value => { const next = { ...embed }; if (value) next.timestamp = new Date(`${value}Z`).toISOString(); else delete next.timestamp; update({ ...last.current, embeds: last.current.embeds.map((item, index) => index === current ? next : item) }); }} />
-            </div></details>
+            </div></AccordionDetails>
+            </Accordion>
             <div className="studio-section-heading"><h4>{t('studio.fields')}</h4><Button type="button" className="button secondary" disabled={fields.length >= L.fields} onClick={() => changeEmbed({ fields: [...fields, { name: '', value: '', inline: false }] })}>{t('studio.addField')}</Button></div>
             {fields.map((field, index) => <div className="studio-field" key={index} draggable onDragStart={() => { dragIndex.current = index; }} onDragOver={event => event.preventDefault()} onDrop={event => { event.preventDefault(); reorder(dragIndex.current, index); }}>
               <div className="studio-field-top"><strong>{t('studio.fieldNumber', { number: index + 1 })}</strong><div className="platform-actions"><Button type="button" aria-label={t('studio.moveUp')} disabled={!index} onClick={() => reorder(index, index - 1)}>↑</Button><Button type="button" aria-label={t('studio.moveDown')} disabled={index === fields.length - 1} onClick={() => reorder(index, index + 1)}>↓</Button><Button type="button" onClick={() => changeEmbed({ fields: fields.filter((_, position) => position !== index) })}>{t('studio.remove')}</Button></div></div>
@@ -314,7 +320,10 @@ export default function MessageStudio({ value = EMPTY_MESSAGE, onChange, resourc
             </div>)}
             <div className="platform-actions"><Button type="button" className="button secondary" disabled={embedOnly || value.embeds.length >= L.embeds} onClick={() => { update({ ...value, embeds: [...value.embeds, structuredClone(embed)] }); setSelected(value.embeds.length); }}>{t('studio.duplicateEmbed')}</Button><Button type="button" className="button secondary" onClick={() => update({ ...value, embeds: value.embeds.filter((_, index) => index !== current) })}>{t('studio.removeEmbed')}</Button></div>
           </div>}
-          {!embedOnly && <details className="studio-details"><summary>{t('studio.componentsMentions')}</summary>
+          {!embedOnly && (
+            <Accordion disableGutters elevation={0} className="studio-details mui-inline-accordion">
+              <AccordionSummary>{t('studio.componentsMentions')}</AccordionSummary>
+              <AccordionDetails>
             <p className="muted">{t('studio.interactiveHelp')}</p>
             {(value.components ?? []).flatMap((row, rowIndex) => row.components.map((button, buttonIndex) => <div className="studio-field" key={`${rowIndex}:${buttonIndex}`}><TextControl label="buttonLabel" value={button.label} maximum={L.buttonLabel} onChange={label => update({ ...value, components: value.components.map((item, index) => index === rowIndex ? { ...item, components: item.components.map((component, current) => current === buttonIndex ? { ...component, label } : component) } : item) })} /><TextControl label="buttonUrl" value={button.url} type="url" onChange={url => update({ ...value, components: value.components.map((item, index) => index === rowIndex ? { ...item, components: item.components.map((component, current) => current === buttonIndex ? { ...component, url } : component) } : item) })} /><Button className="button secondary" type="button" onClick={() => update({ ...value, components: value.components.map((item, index) => index === rowIndex ? { ...item, components: item.components.filter((_, current) => current !== buttonIndex) } : item).filter(item => item.components.length) })}>{t('studio.remove')}</Button></div>))}
             <Button type="button" className="button secondary" disabled={value.components.length >= L.rows} onClick={() => update({ ...value, components: [...value.components, { type: 1, components: [{ type: 2, style: 5, label: '', url: '' }] }] })}>{t('studio.addLink')}</Button>
@@ -383,7 +392,9 @@ export default function MessageStudio({ value = EMPTY_MESSAGE, onChange, resourc
               </FormControl>
             </label>
             <TextControl label="allowedUsers" value={value.allowed_mentions?.users?.join(', ') ?? ''} onChange={users => update({ ...value, allowed_mentions: { ...value.allowed_mentions, users: users.split(/[\s,]+/u).filter(Boolean) } })} />
-          </details>}
+          </AccordionDetails>
+            </Accordion>
+          )}
           <Button type="button" className="button secondary" onClick={() => update(structuredClone(EMPTY_MESSAGE))}>{t('studio.reset')}</Button>
         </>)}
       </div>
