@@ -11,7 +11,64 @@ const copy = {
   'platform.notAvailable': 'Not available', 'platform.emptyValue': 'Empty',
   'platform.firstPage': 'First page', 'platform.nextPage': 'Next page',
   'platform.requestFailed': 'The request failed. Review the values and try again.',
-  'platform.requestReference': 'Request reference: {reference}',
+  'platform.requestReference': 'Support reference: {reference}',
+  'platform.errorDetailsTitle': 'What is wrong',
+  'platform.none': 'none',
+  'platform.unknownField': 'unknown field',
+  'errorDetail.missingCapability':
+    'Required dashboard permission: {capability}. Your current dashboard permissions: {current}.',
+  'errorDetail.noDashboardAccess':
+    'Your account currently has no Sparkles dashboard permissions for this server. A server owner or dashboard access administrator must grant access.',
+  'errorDetail.actorChannelPermission':
+    'You cannot use channel {channel} because your Discord account is missing {permission} there.',
+  'errorDetail.botPermissions':
+    'Sparkles is missing Discord permission(s): {permissions}. Channel: {channel}.',
+  'errorDetail.actionPermission':
+    'Action "{action}" requires {permission}. Missing for: {missingFor}.',
+  'errorDetail.roleNotFound':
+    'Role {role} does not exist in this server anymore.',
+  'errorDetail.everyoneRole':
+    'Role {role} is the @everyone role and cannot be used here.',
+  'errorDetail.roleNotAssignable':
+    'Role {role} cannot be assigned by Sparkles. Check whether it is managed by an integration or above the bot.',
+  'errorDetail.roleManaged':
+    'Role {role} is managed by Discord or an integration and cannot be assigned manually.',
+  'errorDetail.botRoleTooLow':
+    'Sparkles cannot manage role {role} because the bot\'s highest role is {highest}. Move the Sparkles role above the target role.',
+  'errorDetail.actorMissingManageRoles':
+    'You cannot manage role {role} because your Discord account is missing Manage Roles.',
+  'errorDetail.actorRoleTooLow':
+    'You cannot manage role {role} because your highest role is {highest}.',
+  'errorDetail.unsafeRole':
+    'Role {role} contains elevated permissions and cannot be exposed as a self-service role.',
+  'errorDetail.roleInvalid':
+    'Role {role} is invalid for {path}.',
+  'errorDetail.channelNotFound':
+    'Channel {channel} does not exist in this server anymore. Setting: {path}.',
+  'errorDetail.channelDifferentGuild':
+    'Channel {channel} belongs to another server.',
+  'errorDetail.channelType':
+    'Channel {channel} is not a supported text/thread destination.',
+  'errorDetail.channelArchived':
+    'Channel {channel} is an archived thread and cannot receive this action.',
+  'errorDetail.channelLocked':
+    'Channel {channel} is locked and cannot receive this action.',
+  'errorDetail.categoryNotFound':
+    'Category/channel {channel} is missing or is not a category. Setting: {path}.',
+  'errorDetail.channelInvalid':
+    'Channel {channel} is invalid for {path}.',
+  'errorDetail.categoryId':
+    'Category ID {id} is invalid for {path}.',
+  'errorDetail.messageNotFound':
+    'Discord message {messageId} could not be found in channel {channelId}. It may have been deleted or the link/ID is wrong.',
+  'errorDetail.discordId':
+    'Invalid Discord ID in {path}: "{value}". Discord IDs must contain 17–20 digits.',
+  'errorDetail.resourceId':
+    'Invalid Sparkles resource ID in {path}: "{value}". Expected a UUID.',
+  'errorDetail.revision':
+    'Invalid revision in {path}: "{value}". Reload the page and try again.',
+  'errorDetail.genericPath':
+    'The value in {path} is invalid.',
   'platform.unsavedConfirm': 'You have unsaved changes. Leave this editor and discard them?',
   'platform.unsavedTitle': 'Unsaved changes',
   'platform.leaveAnyway': 'Discard and leave',
@@ -195,7 +252,8 @@ Object.assign(copy, {
   'field.minimumMembershipAgeDays': 'Minimum server membership age in days', 'field.maximumTickets': 'Maximum open tickets per member',
   'field.autoCloseSeconds': 'Auto-close after inactivity in seconds · 0 to disable', 'field.slaSeconds': 'Response target in seconds · 0 to disable',
   'error.REVISION_CONFLICT': 'This item changed in another session. Reload it before saving or publishing.',
-  'error.DASHBOARD_FORBIDDEN': 'Your dashboard role does not allow this action.',
+  'error.DASHBOARD_FORBIDDEN':
+    'This action is blocked by your dashboard access permissions. See the exact requirement below.',
   'error.RESOURCE_BUSY': 'This item already has a pending job. Inspect its activity or cancel the queued job.',
   'error.RESOURCE_LIMIT': 'The configured limit for this module has been reached.',
   'error.MESSAGE_INVALID': 'The message exceeds a Discord limit or contains an invalid field.',
