@@ -8,7 +8,7 @@ import { evaluate, safeRegex } from '../../src/platform/evaluate.js';
 import { platformTranslate } from '../../shared/platform-copy.js';
 import { FEATURES, CAPABILITIES, PlatformError, ensure, id, resourceId, revision, onlyKeys, validateResource, configurationDiff, plainObject, validMessage } from '../../shared/platform-schema.js';
 import { DISCORD_LIMITS } from '../../shared/discord-limits.js';
-import { COLLECTIONS } from '../../src/mongodb.js';
+import { COLLECTIONS, bumpRevision } from '../../src/mongodb.js';
 import { catalog } from '../../src/catalog.js';
 
 const asyncRoute = handler => (request, response, next) => Promise.resolve(handler(request, response)).catch(next);
@@ -399,12 +399,69 @@ export function createPlatformApi(config, { store = new PlatformStore({ uri: con
     response.status(202).json({ job });
   }));
   router.patch('/cases/:caseId', asyncRoute(async (request, response) => {
-    await authorize(request, 'moderate_members'); onlyKeys(request.body, ['reason', 'note', 'evidence']);
+    await authorize(request, 'moderate_members');
+    onlyKeys(request.body, ['reason', 'note', 'evidence']);
     const patch = {};
-    for (const key of ['reason', 'note']) if (request.body[key] !== undefined) { ensure(typeof request.body[key] === 'string' && request.body[key].trim() && request.body[key].length <= limits.maximumEvidenceLength); patch[key] = request.body[key]; }
-    if (request.body.evidence) { onlyKeys(request.body.evidence, ['reference', 'content']); ensure(Object.values(request.body.evidence).every(value => typeof value === 'string' && value.length <= limits.maximumEvidenceLength)); patch.evidence = request.body.evidence; }
-    const job = await store.queueJob({ guildId: guild(request), actorId: actor(request), action: 'case_update', input: { caseId: revision(Number(request.params.caseId)), patch } });
-    response.status(202).json({ job });
+    for (const key of ['reason', 'note']) {
+      if (request.body[key] === undefined) continue;
+      ensure(
+        typeof request.body[key] === 'string' &&
+          request.body[key].trim() &&
+          request.body[key].length <= limits.maximumEvidenceLength,
+      );
+      patch[key] = request.body[key].trim();
+    }
+    if (request.body.evidence) {
+      onlyKeys(request.body.evidence, ['reference', 'content']);
+      ensure(
+        Object.values(request.body.evidence).every(
+          value =>
+            typeof value === 'string' &&
+            value.length <= limits.maximumEvidenceLength,
+        ),
+      );
+      patch.evidence = request.body.evidence;
+    }
+
+    const caseId = revision(Number(request.params.caseId));
+    const guildId = guild(request);
+    const actorId = actor(request);
+    const updatedAt = new Date().toISOString();
+    const updated = await store.transaction(async (db, session) => {
+      const collection = db.collection(COLLECTIONS.moderationCases);
+      const result = await collection.updateOne(
+        { guildId, id: caseId },
+        {
+          $set: {
+            ...patch,
+            updatedAt,
+            updatedBy: actorId,
+          },
+        },
+        { session },
+      );
+      ensure(result.matchedCount === 1, 'NOT_FOUND', 404);
+      const document = await collection.findOne(
+        { guildId, id: caseId },
+        { session },
+      );
+      ensure(document, 'NOT_FOUND', 404);
+      await store.record(
+        db,
+        session,
+        guildId,
+        'moderation_case_updated',
+        actorId,
+        {
+          caseId,
+          fields: Object.keys(patch),
+        },
+      );
+      return document;
+    });
+
+    await bumpRevision(await store.database());
+    response.json({ case: clean(updated) });
   }));
   router.get('/tickets/:ticketId/transcript', asyncRoute(async (request, response) => {
     await authorize(request, 'view_transcripts'); id(request.params.ticketId, 'ticketId');
