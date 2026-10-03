@@ -579,3 +579,348 @@
 *::-webkit-scrollbar:horizontal {
   height: 0;
 }
+
+
+/* Platform UX polish */
+.platform-workspace,
+.platform-module,
+.platform-resource-layout,
+.platform-resource-index,
+.platform-resource-editor,
+.platform-form-grid,
+.platform-config-fields,
+.platform-filterbar,
+.platform-actions,
+.platform-toolbar,
+.studio-layout,
+.studio-editor,
+.studio-preview-column,
+.platform-profile,
+.platform-transcript {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.platform-module {
+  margin-bottom: 24px;
+}
+
+.platform-section-heading {
+  margin-bottom: 14px;
+  align-items: center;
+}
+
+.platform-section-heading h2 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+}
+
+.platform-section-heading p {
+  max-width: 640px;
+  margin-top: 3px;
+  color: #929caf;
+  font-size: 0.76rem;
+  line-height: 1.45;
+}
+
+.platform-actions,
+.platform-toolbar,
+.studio-toolbar,
+.platform-filterbar {
+  min-width: 0;
+}
+
+.platform-filterbar {
+  flex-wrap: wrap;
+}
+
+.platform-filterbar > * {
+  min-width: 0;
+}
+
+.platform-form-grid,
+.platform-config-fields {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.platform-resource-layout {
+  grid-template-columns: 210px minmax(0, 1fr);
+  border-radius: 7px;
+  background: #141821;
+}
+
+.platform-resource-index {
+  overflow: hidden;
+}
+
+.platform-resource-list {
+  overflow: hidden;
+}
+
+.platform-resource-list button {
+  min-width: 0;
+  border-radius: 5px !important;
+}
+
+.platform-resource-list strong,
+.platform-resource-list small,
+.platform-record,
+.platform-record p,
+.platform-record-heading,
+.platform-mapping,
+.platform-profile dd {
+  overflow-wrap: anywhere;
+}
+
+.platform-array-row,
+.studio-field {
+  border-radius: 6px;
+  box-shadow: none;
+}
+
+.platform-tabs {
+  margin-bottom: 16px;
+  padding-bottom: 7px;
+  gap: 2px;
+}
+
+.platform-tabs .MuiButton-root,
+.platform-tabs .MuiTab-root {
+  min-height: 32px;
+  padding: 6px 10px !important;
+  border-radius: 5px !important;
+  font-size: 0.76rem;
+}
+
+.platform-badge,
+.MuiChip-root {
+  border-radius: 5px;
+}
+
+.platform-empty {
+  padding: 30px 12px;
+  font-size: 0.8rem;
+}
+
+.platform-error,
+.platform-notice {
+  margin: 10px 0;
+  padding: 10px 12px;
+  border-left-width: 2px;
+  border-radius: 4px;
+}
+
+.platform-table-wrap {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: hidden !important;
+  border-radius: 7px !important;
+  box-shadow: none !important;
+}
+
+.platform-table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.platform-table .MuiTableCell-root {
+  min-width: 0 !important;
+  max-width: none !important;
+  padding: 11px 12px;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.platform-table .MuiTableCell-root .MuiStack-root {
+  min-width: 0;
+}
+
+.platform-table .MuiButton-root {
+  max-width: 100%;
+  white-space: normal;
+  text-align: left;
+}
+
+.platform-workspace pre,
+.platform-dialog pre,
+.studio-json {
+  max-width: 100%;
+  overflow-x: hidden;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.studio-layout {
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 0.78fr);
+}
+
+.studio-preview-column {
+  overflow: hidden;
+}
+
+.studio-preview,
+.studio-preview-embed,
+.platform-transcript {
+  overflow-x: hidden;
+}
+
+.studio-preview-embed {
+  overflow-y: visible;
+}
+
+.mui-diff-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.platform-member-results > div {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: #141821;
+}
+
+.platform-profile {
+  margin: 18px 0;
+  padding: 16px 0;
+}
+
+.platform-profile dl {
+  grid-template-columns: minmax(120px, auto) minmax(0, 1fr);
+}
+
+.platform-moderation-form {
+  margin: 16px 0 22px;
+}
+
+.case-evidence {
+  padding-top: 2px;
+}
+
+.center-metrics {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.center-metrics strong {
+  font-size: 1.45rem;
+  line-height: 1.35;
+}
+
+.center-operations {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.center-operations > button,
+.center-operations > div {
+  border-radius: 6px;
+  background: #141821;
+}
+
+.center-bottom {
+  gap: 20px;
+}
+
+@media (max-width: 900px) {
+  .platform-resource-layout {
+    grid-template-columns: 180px minmax(0, 1fr);
+  }
+
+  .studio-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .studio-preview-column {
+    position: static;
+  }
+
+  .center-metrics,
+  .center-operations {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .center-bottom {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+  .platform-form-grid,
+  .platform-config-fields,
+  .mui-diff-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .platform-resource-layout {
+    display: block;
+  }
+
+  .platform-resource-index {
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .platform-resource-list {
+    display: flex;
+    padding-bottom: 2px;
+    gap: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .platform-resource-list::-webkit-scrollbar {
+    display: none;
+  }
+
+  .platform-resource-list .MuiButton-root {
+    flex: 0 0 auto;
+    width: auto;
+    max-width: min(240px, 70vw);
+  }
+
+  .platform-table,
+  .platform-table .MuiTableBody-root,
+  .platform-table .MuiTableRow-root,
+  .platform-table .MuiTableCell-root {
+    display: block;
+    width: 100%;
+  }
+
+  .platform-table .MuiTableHead-root {
+    display: none;
+  }
+
+  .platform-table .MuiTableRow-root {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .platform-table .MuiTableRow-root:last-child {
+    border-bottom: 0;
+  }
+
+  .platform-table .MuiTableCell-root {
+    padding: 5px 0;
+    border: 0;
+  }
+
+  .platform-table .MuiTableCell-root:empty {
+    display: none;
+  }
+
+  .platform-section-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .platform-section-heading > .MuiButton-root,
+  .platform-section-heading > .platform-actions {
+    align-self: flex-start;
+  }
+
+  .center-metrics,
+  .center-operations {
+    grid-template-columns: 1fr;
+  }
+}
