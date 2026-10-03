@@ -43,7 +43,7 @@ const theme = createTheme({
     divider: '#292f3a',
   },
   shape: {
-    borderRadius: 8,
+    borderRadius: 6,
   },
   typography: {
     fontFamily:
@@ -87,10 +87,10 @@ const theme = createTheme({
       },
       styleOverrides: {
         root: {
-          minHeight: 34,
-          paddingInline: 12,
-          borderRadius: 7,
-          fontSize: '0.78rem',
+          minHeight: 32,
+          paddingInline: 11,
+          borderRadius: 6,
+          fontSize: '0.76rem',
           whiteSpace: 'nowrap',
         },
         containedPrimary: {
@@ -129,9 +129,9 @@ const theme = createTheme({
     MuiOutlinedInput: {
       styleOverrides: {
         root: {
-          borderRadius: 7,
+          borderRadius: 6,
           backgroundColor: '#11161f',
-          fontSize: '0.82rem',
+          fontSize: '0.8rem',
           '&:hover .MuiOutlinedInput-notchedOutline': {
             borderColor: '#465268',
           },
@@ -193,10 +193,10 @@ const theme = createTheme({
         paper: {
           overflowX: 'hidden',
           border: '1px solid #30394a',
-          borderRadius: 10,
+          borderRadius: 8,
           backgroundImage: 'none',
           backgroundColor: '#151922',
-          boxShadow: '0 22px 64px rgba(0, 0, 0, 0.48)',
+          boxShadow: '0 18px 48px rgba(0, 0, 0, 0.4)',
         },
       },
     },
@@ -252,7 +252,7 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           border: '1px solid #292f3a',
-          borderRadius: '7px !important',
+          borderRadius: '6px !important',
           backgroundColor: '#151922',
           '&::before': {
             display: 'none',
@@ -305,8 +305,8 @@ const theme = createTheme({
     MuiChip: {
       styleOverrides: {
         root: {
-          height: 26,
-          borderRadius: 6,
+          height: 24,
+          borderRadius: 5,
           fontWeight: 650,
           fontSize: '0.7rem',
         },
