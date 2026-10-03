@@ -1,5 +1,8 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Button,
   Chip,
   IconButton,
@@ -1036,17 +1039,6 @@ function Dashboard({ session, onSessionExpired }) {
       value.toLocaleLowerCase('en-US').includes(normalizedCommandQuery),
     );
   });
-  const selectedCommand = (resources?.commands ?? []).find(
-    (command) => command.name === selectedCommandName,
-  );
-  const selectedCommandRule = selectedCommand
-    ? draft.commandPermissions[selectedCommand.name] ?? {
-        roleMode: 'allow-all-except',
-        roleIds: [],
-        channelMode: 'allow-all-except',
-        channelIds: [],
-      }
-    : null;
   const commandAccessModes = [
     { id: 'allow-all-except', label: t('modules.accessAllowAllExcept') },
     { id: 'deny-all-except', label: t('modules.accessDenyAllExcept') },
@@ -2459,168 +2451,173 @@ function Dashboard({ session, onSessionExpired }) {
                 <div className="command-manager-list">
                   {visibleCommands.map((command) => {
                     const enabled = !draft.disabledCommands.includes(command.name);
+                    const expanded = enabled && selectedCommandName === command.name;
+                    const rule = draft.commandPermissions[command.name] ?? {
+                      roleMode: 'allow-all-except',
+                      roleIds: [],
+                      channelMode: 'allow-all-except',
+                      channelIds: [],
+                    };
+                    const updateRule = (changes) =>
+                      setDraft((current) => ({
+                        ...current,
+                        commandPermissions: {
+                          ...current.commandPermissions,
+                          [command.name]: {
+                            ...(current.commandPermissions[command.name] ?? rule),
+                            ...changes,
+                          },
+                        },
+                      }));
+
                     return (
-                      <div className="command-manager-item" key={command.name}>
-                        <div>
-                          <strong>/{command.name}</strong>
-                          <span>{command.description}</span>
-                        </div>
-                        <div className="command-manager-actions">
-                          {enabled ? (
-                            <Button
-                              className={
-                                selectedCommandName === command.name
-                                  ? 'button secondary selected'
-                                  : 'button secondary'
-                              }
-                              type="button"
-                              onClick={() =>
-                                setSelectedCommandName((current) =>
-                                  current === command.name ? null : command.name,
-                                )
-                              }
-                            >
-                              {t('modules.commandConfigure')}
-                            </Button>
-                          ) : null}
-                          <Switch
-                            id={`command-${command.name}`}
-                            size="small"
-                            checked={enabled}
-                            inputProps={{
-                              'aria-label': `${command.name} ${enabled ? t('common.on') : t('common.off')}`,
-                            }}
-                            onChange={(_, checked) =>
-                              updateField(
-                                'disabledCommands',
-                                checked
-                                  ? draft.disabledCommands.filter(
-                                      (name) => name !== command.name,
-                                    )
-                                  : [...draft.disabledCommands, command.name],
-                              )
-                            }
-                          />
-                        </div>
-                      </div>
+                      <Accordion
+                        key={command.name}
+                        disableGutters
+                        elevation={0}
+                        expanded={expanded}
+                        className="command-access-accordion"
+                        onChange={(_, nextExpanded) =>
+                          enabled &&
+                          setSelectedCommandName(nextExpanded ? command.name : null)
+                        }
+                      >
+                        <AccordionSummary
+                          className="command-access-summary"
+                          expandIcon={
+                            enabled ? (
+                              <span className="command-access-chevron">
+                                <Icon name="chevron" size={15} />
+                              </span>
+                            ) : null
+                          }
+                          aria-controls={`command-access-${command.name}`}
+                          id={`command-access-summary-${command.name}`}
+                        >
+                          <div className="command-manager-item">
+                            <div className="command-manager-copy">
+                              <strong>/{command.name}</strong>
+                              <span>{command.description}</span>
+                            </div>
+                            <div className="command-manager-actions">
+                              {enabled ? (
+                                <span className="command-access-label">
+                                  {t('modules.commandConfigure')}
+                                </span>
+                              ) : null}
+                              <Switch
+                                id={`command-${command.name}`}
+                                size="small"
+                                checked={enabled}
+                                inputProps={{
+                                  'aria-label': `${command.name} ${enabled ? t('common.on') : t('common.off')}`,
+                                }}
+                                onClick={(event) => event.stopPropagation()}
+                                onFocus={(event) => event.stopPropagation()}
+                                onChange={(_, checked) => {
+                                  if (!checked && selectedCommandName === command.name) {
+                                    setSelectedCommandName(null);
+                                  }
+                                  updateField(
+                                    'disabledCommands',
+                                    checked
+                                      ? draft.disabledCommands.filter(
+                                          (name) => name !== command.name,
+                                        )
+                                      : [...draft.disabledCommands, command.name],
+                                  );
+                                }}
+                              />
+                            </div>
+                          </div>
+                        </AccordionSummary>
+                        <AccordionDetails
+                          id={`command-access-${command.name}`}
+                          className="command-access-details"
+                        >
+                          <div className="command-permission-panel">
+                            <div className="command-access-heading">
+                              <div>
+                                <h4>
+                                  {t('modules.commandAccessTitle', {
+                                    command: command.name,
+                                  })}
+                                </h4>
+                                <p>{t('modules.commandAccessDescription')}</p>
+                              </div>
+                              <Button
+                                variant="text"
+                                size="small"
+                                type="button"
+                                onClick={() => {
+                                  setDraft((current) => {
+                                    const commandPermissions = {
+                                      ...current.commandPermissions,
+                                    };
+                                    delete commandPermissions[command.name];
+                                    return { ...current, commandPermissions };
+                                  });
+                                }}
+                              >
+                                {t('modules.commandAccessReset')}
+                              </Button>
+                            </div>
+                            <div className="field-row">
+                              <div className="field-copy">
+                                <label htmlFor={`command-role-mode-${command.name}`}>
+                                  {t('modules.commandRoleMode')}
+                                </label>
+                                <p>{t('modules.commandRoleModeHelp')}</p>
+                              </div>
+                              <Select
+                                id={`command-role-mode-${command.name}`}
+                                label={t('modules.commandRoleMode')}
+                                value={rule.roleMode}
+                                onChange={(roleMode) => updateRule({ roleMode })}
+                                options={commandAccessModes}
+                                variant="field-select"
+                              />
+                            </div>
+                            <MultiSelectField
+                              id={`command-role-rules-${command.name}`}
+                              label={t('modules.commandRoles')}
+                              help={t('modules.commandRolesHelp')}
+                              value={rule.roleIds}
+                              onChange={(roleIds) => updateRule({ roleIds })}
+                              options={allRoleOptions}
+                              icon="role"
+                            />
+                            <div className="field-row">
+                              <div className="field-copy">
+                                <label htmlFor={`command-channel-mode-${command.name}`}>
+                                  {t('modules.commandChannelMode')}
+                                </label>
+                                <p>{t('modules.commandChannelModeHelp')}</p>
+                              </div>
+                              <Select
+                                id={`command-channel-mode-${command.name}`}
+                                label={t('modules.commandChannelMode')}
+                                value={rule.channelMode}
+                                onChange={(channelMode) => updateRule({ channelMode })}
+                                options={commandAccessModes}
+                                variant="field-select"
+                              />
+                            </div>
+                            <MultiSelectField
+                              id={`command-channel-rules-${command.name}`}
+                              label={t('modules.commandChannels')}
+                              help={t('modules.commandChannelsHelp')}
+                              value={rule.channelIds}
+                              onChange={(channelIds) => updateRule({ channelIds })}
+                              options={channelOptions}
+                              icon="hash"
+                            />
+                          </div>
+                        </AccordionDetails>
+                      </Accordion>
                     );
                   })}
                 </div>
-                {selectedCommand &&
-                selectedCommandRule &&
-                !draft.disabledCommands.includes(selectedCommand.name) ? (
-                  <div className="command-permission-panel">
-                    <div className="subsection-heading">
-                      <div>
-                        <h3>{t('modules.commandAccessTitle', { command: selectedCommand.name })}</h3>
-                        <p>{t('modules.commandAccessDescription')}</p>
-                      </div>
-                      <Button
-                        className="button secondary"
-                        type="button"
-                        onClick={() => {
-                          setDraft((current) => {
-                            const commandPermissions = { ...current.commandPermissions };
-                            delete commandPermissions[selectedCommand.name];
-                            return { ...current, commandPermissions };
-                          });
-                        }}
-                      >
-                        {t('modules.commandAccessReset')}
-                      </Button>
-                    </div>
-                    <div className="field-row">
-                      <div className="field-copy">
-                        <label htmlFor="command-role-mode">{t('modules.commandRoleMode')}</label>
-                        <p>{t('modules.commandRoleModeHelp')}</p>
-                      </div>
-                      <Select
-                        id="command-role-mode"
-                        label={t('modules.commandRoleMode')}
-                        value={selectedCommandRule.roleMode}
-                        onChange={(roleMode) =>
-                          setDraft((current) => ({
-                            ...current,
-                            commandPermissions: {
-                              ...current.commandPermissions,
-                              [selectedCommand.name]: {
-                                ...selectedCommandRule,
-                                roleMode,
-                              },
-                            },
-                          }))
-                        }
-                        options={commandAccessModes}
-                        variant="field-select"
-                      />
-                    </div>
-                    <MultiSelectField
-                      id="command-role-rules"
-                      label={t('modules.commandRoles')}
-                      help={t('modules.commandRolesHelp')}
-                      value={selectedCommandRule.roleIds}
-                      onChange={(roleIds) =>
-                        setDraft((current) => ({
-                          ...current,
-                          commandPermissions: {
-                            ...current.commandPermissions,
-                            [selectedCommand.name]: {
-                              ...selectedCommandRule,
-                              roleIds,
-                            },
-                          },
-                        }))
-                      }
-                      options={allRoleOptions}
-                      icon="role"
-                    />
-                    <div className="field-row">
-                      <div className="field-copy">
-                        <label htmlFor="command-channel-mode">{t('modules.commandChannelMode')}</label>
-                        <p>{t('modules.commandChannelModeHelp')}</p>
-                      </div>
-                      <Select
-                        id="command-channel-mode"
-                        label={t('modules.commandChannelMode')}
-                        value={selectedCommandRule.channelMode}
-                        onChange={(channelMode) =>
-                          setDraft((current) => ({
-                            ...current,
-                            commandPermissions: {
-                              ...current.commandPermissions,
-                              [selectedCommand.name]: {
-                                ...selectedCommandRule,
-                                channelMode,
-                              },
-                            },
-                          }))
-                        }
-                        options={commandAccessModes}
-                        variant="field-select"
-                      />
-                    </div>
-                    <MultiSelectField
-                      id="command-channel-rules"
-                      label={t('modules.commandChannels')}
-                      help={t('modules.commandChannelsHelp')}
-                      value={selectedCommandRule.channelIds}
-                      onChange={(channelIds) =>
-                        setDraft((current) => ({
-                          ...current,
-                          commandPermissions: {
-                            ...current.commandPermissions,
-                            [selectedCommand.name]: {
-                              ...selectedCommandRule,
-                              channelIds,
-                            },
-                          },
-                        }))
-                      }
-                      options={channelOptions}
-                      icon="hash"
-                    />
-                  </div>
-                ) : null}
               </div>
             </SettingSection>
 
