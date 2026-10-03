@@ -179,7 +179,7 @@ function fields(specs) {
 for (const feature of Object.values(FEATURES)) fields(feature.fields);
 for (const [action, specs] of Object.entries(ACTION_FIELDS)) { copy[`choice.${action}`] = humanize(action); fields(specs); }
 for (const field of [...CONDITION_FIELDS, ...TRIGGERS, 'content', 'recentMessageCount', 'duplicateCount', 'attachmentCount', 'commandName', 'roleIds', 'userId', 'type']) copy[`field.${field}`] ??= humanize(field);
-for (const key of ['none', 'unban', 'untimeout', 'note', 'active', 'normal', 'urgent', 'command']) copy[`choice.${key}`] ??= humanize(key);
+for (const key of ['none', 'unban', 'untimeout', 'note', 'automod', 'active', 'normal', 'urgent', 'command']) copy[`choice.${key}`] ??= key === 'automod' ? 'Auto moderation' : humanize(key);
 for (const capability of CAPABILITIES) copy[`capability.${capability}`] = humanize(capability);
 for (const status of ['draft', 'published', 'changed', 'queued', 'running', 'completed', 'failed', 'needs_review', 'cancelled', 'reviewed', 'open', 'pending', 'closed', 'accepted', 'rejected', 'archived', 'active', 'online', 'offline']) copy[`status.${status}`] = ({ changed: 'Changed since publication', needs_review: 'Needs review' })[status] ?? humanize(status);
 for (const action of ['publish', 'republish', 'unpublish', 'test', 'pause', 'workflow', 'feed', 'close_giveaway', 'close_poll', 'moderate', 'case_update', 'expire_role', 'expire_ban', 'ticket']) copy[`action.${action}`] = humanize(action);
