@@ -419,7 +419,19 @@ function RunList({ items, request, onRefresh }) {
   const dialogs = useUiDialog();
   const [error, setError] = useState(null);
   const [pending, setPending] = useState(false);
-  const cancel = async id => { setPending(true); try { await request(`/jobs/${id}/cancel`, { method: 'POST', body: {} }); onRefresh(); } catch (error) { setError(error); } finally { setPending(false); } };
+
+  const cancel = async (id) => {
+    setPending(true);
+    try {
+      await request(`/jobs/${id}/cancel`, { method: 'POST', body: {} });
+      onRefresh();
+    } catch (error) {
+      setError(error);
+    } finally {
+      setPending(false);
+    }
+  };
+
   const resolve = async (job) => {
     const note = await dialogs.prompt({
       title: t('jobs.review'),
@@ -457,7 +469,125 @@ function RunList({ items, request, onRefresh }) {
       setPending(false);
     }
   };
-  return <><PlatformErrorView error={error} />{items.length ? <div className="platform-table-wrap"><table className="platform-table"><thead><tr>{['action', 'status', 'scheduled', 'result'].map(key => <th key={key}>{t(`platform.${key}`)}</th>)}<th>{t('platform.actions')}</th></tr></thead><tbody>{items.map(job => <tr key={job.id}><td><strong>{t(`action.${job.action}`)}</strong><small>{job.snapshot?.name ?? job.input?.reason ?? job.resourceId}</small></td><td><Status value={job.status} /></td><td>{time(job.runAt)}<small>{time(job.finishedAt)}</small></td><td>{job.error ? <span className="error-text">{t(`error.${job.error}`)}</span> : job.result?.messageId ? <a href={`https://discord.com/channels/${job.guildId}/${job.result.channelId}/${job.result.messageId}`} target="_blank" rel="noreferrer">{t('platform.openMessage')}</a> : job.result?.skipped ? t('platform.skipped') : t('platform.notAvailable')}<details><summary>{t('platform.details')}</summary><pre>{JSON.stringify({ steps: job.steps, result: job.result, details: job.details }, null, 2)}</pre></details></td><td>{job.status === 'queued' && <Button className="button secondary" disabled={pending} type="button" onClick={() => cancel(job.id)}>{t('jobs.cancel')}</Button>}{job.status === 'needs_review' && <Button className="button secondary" disabled={pending} type="button" onClick={() => resolve(job)}>{t('jobs.review')}</Button>}</td></tr>)}</tbody></table></div> : <Empty text="jobs.empty" />}</>;
+
+  return (
+    <>
+      <PlatformErrorView error={error} />
+      {items.length ? (
+        <TableContainer
+          component={Paper}
+          variant="outlined"
+          className="platform-table-wrap mui-table-surface"
+        >
+          <Table size="small" className="platform-table">
+            <TableHead>
+              <TableRow>
+                {['action', 'status', 'scheduled', 'result', 'actions'].map((key) => (
+                  <TableCell key={key}>{t(`platform.${key}`)}</TableCell>
+                ))}
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {items.map((job) => (
+                <TableRow key={job.id} hover>
+                  <TableCell>
+                    <Stack spacing={0.25}>
+                      <Typography variant="body2" fontWeight={700}>
+                        {t(`action.${job.action}`)}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {job.snapshot?.name ?? job.input?.reason ?? job.resourceId}
+                      </Typography>
+                    </Stack>
+                  </TableCell>
+                  <TableCell>
+                    <Status value={job.status} />
+                  </TableCell>
+                  <TableCell>
+                    <Stack spacing={0.25}>
+                      <Typography variant="body2">{time(job.runAt)}</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {time(job.finishedAt)}
+                      </Typography>
+                    </Stack>
+                  </TableCell>
+                  <TableCell sx={{ minWidth: 260 }}>
+                    <Stack spacing={1}>
+                      {job.error ? (
+                        <Typography variant="body2" color="error.main">
+                          {t(`error.${job.error}`)}
+                        </Typography>
+                      ) : job.result?.messageId ? (
+                        <Button
+                          component="a"
+                          variant="text"
+                          size="small"
+                          href={`https://discord.com/channels/${job.guildId}/${job.result.channelId}/${job.result.messageId}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          sx={{ alignSelf: 'flex-start' }}
+                        >
+                          {t('platform.openMessage')}
+                        </Button>
+                      ) : (
+                        <Typography variant="body2" color="text.secondary">
+                          {job.result?.skipped
+                            ? t('platform.skipped')
+                            : t('platform.notAvailable')}
+                        </Typography>
+                      )}
+                      <Accordion disableGutters elevation={0} className="mui-inline-accordion">
+                        <AccordionSummary>{t('platform.details')}</AccordionSummary>
+                        <AccordionDetails>
+                          <pre>
+                            {JSON.stringify(
+                              {
+                                steps: job.steps,
+                                result: job.result,
+                                details: job.details,
+                              },
+                              null,
+                              2,
+                            )}
+                          </pre>
+                        </AccordionDetails>
+                      </Accordion>
+                    </Stack>
+                  </TableCell>
+                  <TableCell>
+                    <Stack direction="row" spacing={1}>
+                      {job.status === 'queued' ? (
+                        <Button
+                          variant="outlined"
+                          size="small"
+                          disabled={pending}
+                          onClick={() => cancel(job.id)}
+                        >
+                          {t('jobs.cancel')}
+                        </Button>
+                      ) : null}
+                      {job.status === 'needs_review' ? (
+                        <Button
+                          variant="contained"
+                          size="small"
+                          disabled={pending}
+                          onClick={() => resolve(job)}
+                        >
+                          {t('jobs.review')}
+                        </Button>
+                      ) : null}
+                    </Stack>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      ) : (
+        <Empty text="jobs.empty" />
+      )}
+    </>
+  );
 }
 
 function ResourcePage({ kind, request, bootstrap, selectedId, onNavigate }) {
