@@ -30,9 +30,12 @@ test('autosave preserves newer edits while a request is running', () => {
 });
 
 test('saved snackbar dismisses itself with a shrinking progress bar', () => {
-  assert.match(app, /window\.setTimeout\(onDismiss, duration\)/u);
-  assert.match(app, /className="toast-progress"/u);
-  assert.match(styles, /@keyframes toast-progress/u);
-  assert.match(styles, /animation: toast-progress var\(--toast-duration\)/u);
+  assert.match(app, /autoHideDuration=\{duration \|\| null\}/u);
+  assert.match(app, /className="toast-progress mui-toast-progress"/u);
+  assert.match(styles, /@keyframes mui-toast-countdown/u);
+  assert.match(
+    styles,
+    /animation: mui-toast-countdown var\(--toast-duration, 3600ms\) linear forwards/u,
+  );
   assert.match(copy, /'status\.saved': 'Saved'/u);
 });
