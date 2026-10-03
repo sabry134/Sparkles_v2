@@ -1329,9 +1329,7 @@ function Dashboard({ session, onSessionExpired }) {
             >
               <Suspense fallback={<Loading />}><PlatformWorkspace key={`${selectedGuildId}:automod`} page="automod" guildId={selectedGuildId} session={session} selectedId={platformResourceId} onNavigate={navigateSection} onSessionExpired={onSessionExpired} /></Suspense>
 
-              <Accordion disableGutters elevation={0} className="legacy-settings mui-inline-accordion">
-                <AccordionSummary>{t('navigation.legacy')}</AccordionSummary>
-                <AccordionDetails>
+              <div className="page-settings-stack">
 <div className="settings-card automod-card">
                 <div className="subsection-heading">
                   <div>
@@ -1762,7 +1760,7 @@ function Dashboard({ session, onSessionExpired }) {
                   {t('automod.capabilityWarning')}
                 </div>
               ) : null}
-              </AccordionDetails></Accordion>
+              </div>
             </SettingSection>
 
             <SettingSection
@@ -1773,9 +1771,7 @@ function Dashboard({ session, onSessionExpired }) {
             >
               <Suspense fallback={<Loading />}><PlatformWorkspace key={`${selectedGuildId}:roles`} page="roles" guildId={selectedGuildId} session={session} selectedId={platformResourceId} onNavigate={navigateSection} onSessionExpired={onSessionExpired} /></Suspense>
 
-              <Accordion disableGutters elevation={0} className="legacy-settings mui-inline-accordion">
-                <AccordionSummary>{t('navigation.legacy')}</AccordionSummary>
-                <AccordionDetails>
+              <div className="page-settings-stack">
 <div className="settings-card">
                 <SelectField
                   id="auto-role"
@@ -2009,7 +2005,7 @@ function Dashboard({ session, onSessionExpired }) {
                   </Button>
                 </form>
               </div>
-              </AccordionDetails></Accordion>
+              </div>
             </SettingSection>
 
             <SettingSection
@@ -2125,9 +2121,7 @@ function Dashboard({ session, onSessionExpired }) {
             >
               <Suspense fallback={<Loading />}><PlatformWorkspace key={`${selectedGuildId}:automation`} page="automation" guildId={selectedGuildId} session={session} selectedId={platformResourceId} onNavigate={navigateSection} onSessionExpired={onSessionExpired} /></Suspense>
 
-              <Accordion disableGutters elevation={0} className="legacy-settings mui-inline-accordion">
-                <AccordionSummary>{t('navigation.legacy')}</AccordionSummary>
-                <AccordionDetails>
+              <div className="page-settings-stack">
 <div className="settings-card automation-card">
                 <div className="subsection-heading page-card-heading">
                   <div>
@@ -2319,7 +2313,7 @@ function Dashboard({ session, onSessionExpired }) {
                     />
                   </>}
               </div>
-              </AccordionDetails></Accordion>
+              </div>
             </SettingSection>
 
             <SettingSection
@@ -2604,9 +2598,7 @@ function Dashboard({ session, onSessionExpired }) {
             >
               <Suspense fallback={<Loading />}><PlatformWorkspace key={`${selectedGuildId}:custom`} page="custom" guildId={selectedGuildId} session={session} selectedId={platformResourceId} onNavigate={navigateSection} onSessionExpired={onSessionExpired} /></Suspense>
 
-              <Accordion disableGutters elevation={0} className="legacy-settings mui-inline-accordion">
-                <AccordionSummary>{t('navigation.legacy')}</AccordionSummary>
-                <AccordionDetails>
+              <div className="page-settings-stack">
 <div className="settings-card reaction-card">
                 <div className="subsection-heading">
                   <div>
@@ -2694,7 +2686,7 @@ function Dashboard({ session, onSessionExpired }) {
                   </Button>
                 </form>
               </div>
-              </AccordionDetails></Accordion>
+              </div>
             </SettingSection>
           </div>
         ) : null}
