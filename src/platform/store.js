@@ -123,7 +123,11 @@ export class PlatformStore {
       ensure(resource, 'NOT_FOUND', 404);
       ensure(resource.revision === expectedRevision, 'REVISION_CONFLICT', 409);
       ensure(!resource.pendingJobId, 'RESOURCE_BUSY', 409);
-      ensure(resource.live?.enabled !== true, 'RESOURCE_ACTIVE', 409);
+      ensure(
+        resource.live?.enabled !== true && !resource.publication,
+        'RESOURCE_ACTIVE',
+        409,
+      );
 
       const deleted = await collection.deleteOne(
         { _id: resourceId, guildId, revision: expectedRevision },
@@ -131,34 +135,31 @@ export class PlatformStore {
       );
       ensure(deleted.deletedCount === 1, 'REVISION_CONFLICT', 409);
 
-      await Promise.all([
-        db.collection(TABLES.versions).deleteMany({ guildId, resourceId }, { session }),
-        db.collection(TABLES.previews).deleteMany(
-          {
-            guildId,
-            $or: [
-              { 'payload.resourceId': resourceId },
-              { 'payload.items.resourceId': resourceId },
-            ],
+      await db
+        .collection(TABLES.versions)
+        .deleteMany({ guildId, resourceId }, { session });
+      await db.collection(TABLES.previews).deleteMany(
+        {
+          guildId,
+          'payload.resourceId': resourceId,
+        },
+        { session },
+      );
+      await db.collection(TABLES.jobs).updateMany(
+        {
+          guildId,
+          resourceId,
+          status: 'queued',
+        },
+        {
+          $set: {
+            status: 'cancelled',
+            finishedAt: stamp(),
+            cancelledReason: 'RESOURCE_DELETED',
           },
-          { session },
-        ),
-        db.collection(TABLES.jobs).updateMany(
-          {
-            guildId,
-            resourceId,
-            status: 'queued',
-          },
-          {
-            $set: {
-              status: 'cancelled',
-              finishedAt: stamp(),
-              cancelledReason: 'RESOURCE_DELETED',
-            },
-          },
-          { session },
-        ),
-      ]);
+        },
+        { session },
+      );
 
       await this.record(db, session, guildId, 'draft_deleted', actorId, {
         kind,
