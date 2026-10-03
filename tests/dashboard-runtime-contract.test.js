@@ -389,3 +389,29 @@ test('dashboard interactive controls use Material UI instead of browser-native U
     assert.equal(visibleNativeInputs.length, 0);
   }
 });
+
+
+test('dashboard UI uses MUI primitives and avoids browser-native interaction chrome', () => {
+  for (const path of [
+    'dashboard/src/App.jsx',
+    'dashboard/src/PlatformWorkspace.jsx',
+    'dashboard/src/MessageStudio.jsx',
+    'dashboard/src/Navigation.jsx',
+  ]) {
+    const source = sources[path];
+    assert.doesNotMatch(source, /window\.(?:alert|confirm|prompt)\s*\(/u);
+    assert.doesNotMatch(source, /<(?:button|select|textarea)\b/u);
+  }
+
+  assert.doesNotMatch(
+    sources['dashboard/src/PlatformWorkspace.jsx'],
+    /members\.manualId|Advanced: member IDs/u,
+  );
+  assert.doesNotMatch(
+    sources['dashboard/src/Navigation.jsx'],
+    /sparkles\.pinnedPages|navigation\.pin|navigation\.unpin/u,
+  );
+  assert.match(sources['dashboard/src/MuiProvider.jsx'], /createTheme/u);
+  assert.match(sources['dashboard/src/Navigation.jsx'], /ListItemButton/u);
+  assert.match(sources['dashboard/src/PlatformWorkspace.jsx'], /<Table/u);
+});
