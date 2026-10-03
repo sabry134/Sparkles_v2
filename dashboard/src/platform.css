@@ -559,3 +559,23 @@
     margin-left: 0;
   }
 }
+
+
+.center-health,
+.studio-preview-embed,
+.platform-transcript,
+.moderation-evidence pre {
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.studio-preview-embed,
+.platform-transcript,
+.moderation-evidence pre {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+*::-webkit-scrollbar:horizontal {
+  height: 0;
+}
