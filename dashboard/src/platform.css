@@ -912,3 +912,153 @@
 .studio-section-heading p {
   margin: 0;
 }
+
+
+/* Shared workspace rhythm and overflow */
+.platform-workspace,
+.platform-module,
+.platform-resource-layout,
+.platform-resource-editor,
+.platform-resource-index,
+.platform-table-wrap,
+.platform-filterbar {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.platform-workspace,
+.platform-module {
+  overflow-x: clip;
+}
+
+.platform-module > h2 {
+  margin: 0 0 10px;
+}
+
+.platform-module > h2 + p {
+  max-width: 78ch;
+  margin: 0 0 20px;
+  color: var(--text-secondary);
+  font-size: 0.86rem;
+  line-height: 1.6;
+}
+
+.platform-section-heading {
+  margin-bottom: 20px;
+}
+
+.platform-section-heading > div:first-child {
+  display: grid;
+  gap: 8px;
+}
+
+.platform-section-heading h2,
+.platform-section-heading h3,
+.platform-section-heading p {
+  margin: 0;
+}
+
+.platform-filterbar {
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.platform-filterbar > .MuiTextField-root,
+.platform-filterbar > .MuiFormControl-root {
+  flex: 0 1 260px;
+}
+
+.platform-filterbar .MuiOutlinedInput-root {
+  min-height: 38px;
+}
+
+.platform-actions,
+.platform-toolbar,
+.studio-toolbar,
+.center-quick-actions {
+  column-gap: 10px;
+  row-gap: 8px;
+}
+
+.platform-resource-item {
+  display: grid;
+  min-width: 0;
+  grid-template-columns: minmax(0, 1fr) 34px;
+  align-items: center;
+  border-radius: 6px;
+}
+
+.platform-resource-item:has(.platform-resource-open[aria-pressed='true']) {
+  background: var(--primary-soft);
+  box-shadow: inset 2px 0 var(--primary);
+}
+
+.platform-resource-list .platform-resource-open.MuiButton-root {
+  width: 100%;
+  min-width: 0;
+  padding: 10px 9px !important;
+  justify-content: flex-start;
+  text-align: left;
+  border: 0 !important;
+  border-radius: 6px 0 0 6px !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.platform-resource-list .platform-resource-open.MuiButton-root[aria-pressed='true'] {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.platform-resource-open .MuiButton-startIcon,
+.platform-resource-open .MuiButton-endIcon {
+  margin: 0;
+}
+
+.platform-resource-list .platform-resource-delete-wrap {
+  display: grid;
+  place-items: center;
+}
+
+.platform-resource-list .platform-resource-delete.MuiIconButton-root {
+  width: 30px !important;
+  height: 30px;
+  min-width: 30px;
+  padding: 6px !important;
+  color: var(--text-tertiary);
+  border: 0 !important;
+  border-radius: 6px !important;
+  background: transparent !important;
+}
+
+.platform-resource-list .platform-resource-delete.MuiIconButton-root:hover {
+  color: var(--danger);
+  background: var(--danger-soft) !important;
+}
+
+.platform-resource-list .platform-resource-delete.Mui-disabled {
+  opacity: 0.35;
+}
+
+.platform-mapping {
+  min-width: 0;
+}
+
+.platform-mapping > * {
+  min-width: 0;
+}
+
+.platform-mapping .MuiFormControl-root {
+  min-width: 0;
+}
+
+@media (max-width: 640px) {
+  .platform-filterbar > .MuiTextField-root,
+  .platform-filterbar > .MuiFormControl-root {
+    flex: 1 1 100%;
+  }
+
+  .platform-module > h2 + p {
+    margin-bottom: 16px;
+  }
+}
