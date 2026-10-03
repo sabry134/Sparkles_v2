@@ -66,6 +66,12 @@ export default function Icon({ name, size = 20 }) {
         <path d="M20 4v7h-7" />
       </>
     ),
+    search: (
+      <>
+        <circle cx="11" cy="11" r="7" />
+        <path d="m20 20-4.2-4.2" />
+      </>
+    ),
     external: (
       <>
         <path d="M15 3h6v6M10 14 21 3" />
