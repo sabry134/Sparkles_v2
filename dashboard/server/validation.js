@@ -9,7 +9,21 @@ const graphemeSegmenter = new Intl.Segmenter('en', { granularity: 'grapheme' });
 
 export function snowflake(value, field, { nullable = false } = {}) {
   if (nullable && value === null) return null;
-  assert(typeof value === 'string' && SNOWFLAKE_PATTERN.test(value), 'INVALID_INPUT');
+  assert(
+    typeof value === 'string' && SNOWFLAKE_PATTERN.test(value),
+    'INVALID_INPUT',
+    400,
+    [
+      {
+        code: 'id',
+        path: field,
+        value:
+          value === undefined || value === null || value === ''
+            ? '(empty)'
+            : String(value).slice(0, 100),
+      },
+    ],
+  );
   return value;
 }
 
