@@ -139,8 +139,6 @@ export const DEFAULT_HELP_CATEGORIES = Object.freeze([
       'quote',
       'reply',
       'say',
-      'set-suggestions',
-      'reset-suggestions',
       'suggest',
       'tag',
     ],
