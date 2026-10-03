@@ -374,6 +374,49 @@ function ChangeList({ changes }) {
     </div>
   );
 }
+function EvidenceDetails({ evidence }) {
+  if (!evidence) return null;
+  const attachments = Array.isArray(evidence.attachments) ? evidence.attachments : [];
+  return (
+    <Stack spacing={1.25} className="case-evidence">
+      {evidence.content ? (
+        <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>
+          {evidence.content}
+        </Typography>
+      ) : null}
+      <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+        {evidence.reference ? (
+          <Button
+            component="a"
+            href={evidence.reference}
+            target="_blank"
+            rel="noreferrer"
+            variant="outlined"
+            size="small"
+          >
+            {t('cases.openEvidence')}
+          </Button>
+        ) : null}
+        {attachments.map((attachment, index) =>
+          attachment?.url ? (
+            <Button
+              component="a"
+              href={attachment.url}
+              target="_blank"
+              rel="noreferrer"
+              variant="text"
+              size="small"
+              key={attachment.url}
+            >
+              {attachment.name || t('moderation.attachment')} {index + 1}
+            </Button>
+          ) : null,
+        )}
+      </Stack>
+    </Stack>
+  );
+}
+
 function ImpactDialog({ preview, resources, onClose, onConfirm, busy }) {
   return (
     <Dialog open onClose={busy ? undefined : onClose} fullWidth maxWidth="md">
@@ -1079,7 +1122,6 @@ function Moderation({ request, bootstrap, membersOnly = false }) {
               label={
                 <span className="mui-member-label">
                   <strong>{member.name}</strong>
-                  <small>{member.id}</small>
                 </span>
               }
             />
@@ -1099,28 +1141,8 @@ function Moderation({ request, bootstrap, membersOnly = false }) {
     )}
     {!!input.targetIds.length && <p>{t('cases.selected', { count: input.targetIds.length })}<Button type="button" className="button secondary" onClick={() => setInput({ ...input, targetIds: [] })}>{t('cases.clearSelection')}</Button></p>}
     {!membersOnly && <div className="platform-moderation-form"><div className="platform-form-grid"><SchemaField name="type" spec={{ type: 'select', options: ['warn', 'note', 'timeout', 'untimeout', 'kick', 'ban', 'unban'] }} value={input.type} onChange={type => setInput({ ...input, type })} resources={bootstrap.resources} limits={bootstrap.limits} /><SchemaField name="reason" spec={{ type: 'text', required: true, multiline: true }} value={input.reason} onChange={reason => setInput({ ...input, reason })} resources={bootstrap.resources} limits={bootstrap.limits} />{['timeout', 'ban'].includes(input.type) && <SchemaField name="durationSeconds" spec={{ type: 'number', min: 0 }} value={input.durationSeconds} onChange={durationSeconds => setInput({ ...input, durationSeconds })} resources={bootstrap.resources} limits={bootstrap.limits} />}{input.type === 'warn' && <SchemaField name="points" spec={{ type: 'number', min: 1 }} value={input.points} onChange={points => setInput({ ...input, points })} resources={bootstrap.resources} limits={bootstrap.limits} />}</div>
-    <Accordion
-      disableGutters
-      elevation={0}
-      className="mui-inline-accordion mui-form-accordion"
-    >
-      <AccordionSummary>{t('members.manualId')}</AccordionSummary>
-      <AccordionDetails>
-        <TextField
-          fullWidth
-          aria-label={t('members.manualId')}
-          value={input.targetIds.join(', ')}
-          onChange={(event) =>
-            setInput({
-              ...input,
-              targetIds: event.target.value.split(/[\s,]+/u).filter(Boolean),
-            })
-          }
-        />
-      </AccordionDetails>
-    </Accordion>
     <Button type="button" className="button primary" disabled={busy || !input.targetIds.length || !input.reason.trim()} onClick={() => run(async () => setPreview(await request('/moderation/preview', { method: 'POST', body: input })))}>{t('cases.previewAction')}</Button></div>}
-    {profile && <section className="platform-profile"><div className="platform-section-heading"><h3>{profile.member.name}</h3><code>{profile.member.id}</code><Button type="button" className="button secondary" onClick={() => setProfile(null)}>{t('common.close')}</Button></div><dl><dt>{t('members.created')}</dt><dd>{time(profile.member.accountCreatedAt)}</dd><dt>{t('members.joined')}</dt><dd>{time(profile.member.joinedAt)}</dd><dt>{t('members.roles')}</dt><dd>{profile.member.roles.map(id => bootstrap.resources.roles.find(role => role.id === id)?.name ?? id).join(', ')}</dd><dt>{t('members.timeout')}</dt><dd>{time(profile.member.timeoutUntil)}</dd><dt>{t('members.tickets')}</dt><dd>{profile.tickets.length}</dd></dl>{profile.cases.map(entry => <p key={entry.id}>{t('cases.caseNumber', { number: entry.id })} · {entry.action} · {entry.reason}</p>)}</section>}
+    {profile && <section className="platform-profile"><div className="platform-section-heading"><h3>{profile.member.name}</h3><Button type="button" className="button secondary" onClick={() => setProfile(null)}>{t('common.close')}</Button></div><dl><dt>{t('members.created')}</dt><dd>{time(profile.member.accountCreatedAt)}</dd><dt>{t('members.joined')}</dt><dd>{time(profile.member.joinedAt)}</dd><dt>{t('members.roles')}</dt><dd>{profile.member.roles.map(id => bootstrap.resources.roles.find(role => role.id === id)?.name ?? t('platform.notAvailable')).join(', ')}</dd><dt>{t('members.timeout')}</dt><dd>{time(profile.member.timeoutUntil)}</dd><dt>{t('members.tickets')}</dt><dd>{profile.tickets.length}</dd></dl>{profile.cases.map(entry => <p key={entry.id}>{t('cases.caseNumber', { number: entry.id })} · {entry.action} · {entry.reason}</p>)}</section>}
     {!membersOnly && (
       <>
         {cases.items.length ? (
@@ -1142,7 +1164,7 @@ function Moderation({ request, bootstrap, membersOnly = false }) {
               <TableBody>
                 {cases.items.map((entry) => (
                   <TableRow key={entry.id} hover>
-                    <TableCell sx={{ minWidth: 135 }}>
+                    <TableCell>
                       <Stack spacing={0.75} alignItems="flex-start">
                         <Typography variant="subtitle2" fontWeight={800}>
                           #{entry.id}
@@ -1155,7 +1177,7 @@ function Moderation({ request, bootstrap, membersOnly = false }) {
                         <Status value={entry.status ?? 'active'} />
                       </Stack>
                     </TableCell>
-                    <TableCell sx={{ minWidth: 170 }}>
+                    <TableCell>
                       <Button
                         variant="text"
                         size="small"
@@ -1166,15 +1188,15 @@ function Moderation({ request, bootstrap, membersOnly = false }) {
                         }
                         sx={{ px: 0, justifyContent: 'flex-start' }}
                       >
-                        {entry.targetTag ?? entry.targetId}
+                        {entry.targetTag ?? t('platform.notAvailable')}
                       </Button>
                     </TableCell>
-                    <TableCell sx={{ minWidth: 165 }}>
+                    <TableCell>
                       <Typography variant="body2">
-                        {entry.actorTag ?? entry.actorId}
+                        {entry.actorTag ?? t('platform.notAvailable')}
                       </Typography>
                     </TableCell>
-                    <TableCell sx={{ minWidth: 280, maxWidth: 420 }}>
+                    <TableCell>
                       <Stack spacing={0.75}>
                         <Typography variant="body2">
                           {entry.reason || t('moderation.noReason')}
@@ -1200,16 +1222,16 @@ function Moderation({ request, bootstrap, membersOnly = false }) {
                               </Typography>
                             </AccordionSummary>
                             <AccordionDetails>
-                              <pre>{JSON.stringify(entry.evidence, null, 2)}</pre>
+                              <EvidenceDetails evidence={entry.evidence} />
                             </AccordionDetails>
                           </Accordion>
                         ) : null}
                       </Stack>
                     </TableCell>
-                    <TableCell sx={{ minWidth: 150 }}>
+                    <TableCell>
                       <Typography variant="body2">{time(entry.at)}</Typography>
                     </TableCell>
-                    <TableCell sx={{ minWidth: 250 }}>
+                    <TableCell>
                       <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                         <Tooltip title={t('cases.editReason')}>
                           <span>
