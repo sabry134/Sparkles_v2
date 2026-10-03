@@ -45,10 +45,14 @@ export function errorDetailText(detail = {}) {
         permission: detail.permission ?? 'View Channel',
       });
     case 'bot_permissions':
-      return t('errorDetail.botPermissions', {
-        permissions: listPermissions(detail.permissions),
-        channel: resourceLabel(detail.channelName, detail.channelId),
-      });
+      return detail.channelId || detail.channelName
+        ? t('errorDetail.botPermissionsChannel', {
+            permissions: listPermissions(detail.permissions),
+            channel: resourceLabel(detail.channelName, detail.channelId),
+          })
+        : t('errorDetail.botPermissions', {
+            permissions: listPermissions(detail.permissions),
+          });
     case 'action_permission':
       return t('errorDetail.actionPermission', {
         action: detail.action ?? t('platform.notAvailable'),
