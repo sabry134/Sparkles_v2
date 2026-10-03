@@ -640,8 +640,21 @@ button:disabled {
 }
 
 .settings-section {
+  display: grid;
   scroll-margin-top: 32px;
   padding-top: var(--space-12);
+  gap: var(--space-4);
+}
+
+.settings-section > * {
+  min-width: 0;
+}
+
+.settings-section > .settings-card,
+.settings-section > .warning-banner,
+.settings-section > .inline-status,
+.settings-section > .subsection-heading {
+  margin-block: 0;
 }
 
 .section-heading {
@@ -1105,8 +1118,18 @@ button:disabled {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 9px;
+  gap: var(--space-3);
 }
+
+.settings-card + .button-row,
+.field-row + .button-row,
+.input-wrap + .button-row,
+.list-editor + .button-row,
+.button-row + .inline-status,
+.button-row + .warning-banner {
+  margin-top: var(--space-2);
+}
+
 
 .toast {
   position: fixed;
