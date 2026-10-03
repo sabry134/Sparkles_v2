@@ -32,6 +32,33 @@ export function highestRole(member, roles, guildId) {
   return roles.filter(role => role.id === guildId || member.roles.includes(role.id)).sort((left, right) => compareRoles(right, left))[0];
 }
 const unsafeRoleBits = P.Administrator | P.ManageGuild | P.ManageRoles | P.BanMembers | P.KickMembers | P.ManageChannels | P.ManageWebhooks | P.ModerateMembers;
+const permissionLabels = new Map([
+  [P.ViewChannel, 'View Channel'],
+  [P.SendMessages, 'Send Messages'],
+  [P.SendMessagesInThreads, 'Send Messages in Threads'],
+  [P.EmbedLinks, 'Embed Links'],
+  [P.ManageRoles, 'Manage Roles'],
+  [P.ManageChannels, 'Manage Channels'],
+  [P.ManageMessages, 'Manage Messages'],
+  [P.ModerateMembers, 'Moderate Members'],
+  [P.KickMembers, 'Kick Members'],
+  [P.BanMembers, 'Ban Members'],
+  [P.MentionEveryone, 'Mention Everyone'],
+]);
+function missingPermissions(bits, permissions) {
+  return permissions
+    .filter(permission => !hasPermission(bits, permission))
+    .map(permission => permissionLabels.get(permission) ?? String(permission));
+}
+function roleDetail(role, roleId, reason, extra = {}) {
+  return {
+    code: 'role',
+    roleId,
+    roleName: role?.name ?? null,
+    reason,
+    ...extra,
+  };
+}
 
 export class DiscordPlatform {
   constructor({ token, clientId, store, rest } = {}) {
@@ -75,7 +102,19 @@ export class DiscordPlatform {
   async authorize(guildId, userId, capability, { fresh = false } = {}) {
     const context = await this.context(guildId, { fresh });
     const actor = await this.capabilities(guildId, userId, context);
-    ensure(actor.capabilities.includes(capability), 'DASHBOARD_FORBIDDEN', 403);
+    ensure(
+      actor.capabilities.includes(capability),
+      'DASHBOARD_FORBIDDEN',
+      403,
+      [
+        {
+          code: 'missing_capability',
+          capability,
+          currentCapabilities: actor.capabilities,
+          guildId,
+        },
+      ],
+    );
     return { ...context, actor };
   }
   publicResources(context) {
@@ -95,26 +134,157 @@ export class DiscordPlatform {
   async destination(guildId, channelId, { embed = false, actorId, fresh = true } = {}) {
     const context = await this.context(guildId, { fresh });
     const channel = await this.request('GET', `/channels/${channelId}`);
-    ensure(channel.guild_id === guildId && [0, 5, 10, 11, 12].includes(channel.type), 'INVALID_CHANNEL');
-    ensure(!channel.thread_metadata?.archived && !channel.thread_metadata?.locked, 'CHANNEL_UNAVAILABLE', 409);
-    const parent = channel.parent_id && [10, 11, 12].includes(channel.type) ? await this.request('GET', `/channels/${channel.parent_id}`) : channel;
-    let needed = P.ViewChannel | ([10, 11, 12].includes(channel.type) ? P.SendMessagesInThreads : P.SendMessages);
-    if (embed) needed |= P.EmbedLinks;
-    ensure(hasPermission(channelPermissions(context.bot, context.roles, parent, guildId), needed), 'BOT_MISSING_PERMISSION', 409);
+    ensure(
+      channel.guild_id === guildId && [0, 5, 10, 11, 12].includes(channel.type),
+      'INVALID_CHANNEL',
+      400,
+      [
+        {
+          code: 'channel',
+          channelId,
+          channelName: channel.name ?? null,
+          reason:
+            channel.guild_id !== guildId
+              ? 'different_guild'
+              : 'unsupported_channel_type',
+        },
+      ],
+    );
+    ensure(
+      !channel.thread_metadata?.archived && !channel.thread_metadata?.locked,
+      'CHANNEL_UNAVAILABLE',
+      409,
+      [
+        {
+          code: 'channel',
+          channelId,
+          channelName: channel.name ?? null,
+          reason: channel.thread_metadata?.archived ? 'archived' : 'locked',
+        },
+      ],
+    );
+    const parent =
+      channel.parent_id && [10, 11, 12].includes(channel.type)
+        ? await this.request('GET', `/channels/${channel.parent_id}`)
+        : channel;
+    const requiredPermissions = [
+      P.ViewChannel,
+      [10, 11, 12].includes(channel.type)
+        ? P.SendMessagesInThreads
+        : P.SendMessages,
+      ...(embed ? [P.EmbedLinks] : []),
+    ];
+    const botMissing = missingPermissions(
+      channelPermissions(context.bot, context.roles, parent, guildId),
+      requiredPermissions,
+    );
+    ensure(
+      !botMissing.length,
+      'BOT_MISSING_PERMISSION',
+      409,
+      [
+        {
+          code: 'bot_permissions',
+          permissions: botMissing,
+          channelId,
+          channelName: channel.name ?? null,
+        },
+      ],
+    );
     if (actorId) {
       const actor = await this.member(guildId, actorId);
-      ensure(hasPermission(channelPermissions(actor, context.roles, parent, guildId), P.ViewChannel), 'DASHBOARD_FORBIDDEN', 403);
+      ensure(
+        hasPermission(
+          channelPermissions(actor, context.roles, parent, guildId),
+          P.ViewChannel,
+        ),
+        'DASHBOARD_FORBIDDEN',
+        403,
+        [
+          {
+            code: 'actor_channel_permission',
+            permission: 'View Channel',
+            channelId,
+            channelName: channel.name ?? null,
+          },
+        ],
+      );
     }
     return { context, channel };
   }
   async manageableRole(guildId, roleId, { actorId, selfService = false, context } = {}) {
     const state = context ?? await this.context(guildId, { fresh: true });
     const role = state.roles.find(item => item.id === roleId);
-    ensure(role && role.id !== guildId && !role.managed && hasPermission(state.permissions, P.ManageRoles) && compareRoles(highestRole(state.bot, state.roles, guildId), role) > 0, 'ROLE_HIERARCHY', 409);
-    if (selfService) ensure((BigInt(role.permissions) & unsafeRoleBits) === 0n, 'DANGEROUS_SELF_ROLE', 409);
+    ensure(
+      role && role.id !== guildId,
+      'INVALID_ROLE',
+      400,
+      [roleDetail(role, roleId, role ? 'everyone_role' : 'not_found')],
+    );
+    ensure(
+      !role.managed,
+      'ROLE_HIERARCHY',
+      409,
+      [roleDetail(role, roleId, 'managed_by_discord_or_integration')],
+    );
+    ensure(
+      hasPermission(state.permissions, P.ManageRoles),
+      'BOT_MISSING_PERMISSION',
+      409,
+      [
+        {
+          code: 'bot_permissions',
+          permissions: ['Manage Roles'],
+          roleId,
+          roleName: role.name,
+        },
+      ],
+    );
+    const botHighest = highestRole(state.bot, state.roles, guildId);
+    ensure(
+      compareRoles(botHighest, role) > 0,
+      'ROLE_HIERARCHY',
+      409,
+      [
+        roleDetail(role, roleId, 'bot_role_too_low', {
+          botHighestRoleId: botHighest?.id ?? null,
+          botHighestRoleName: botHighest?.name ?? null,
+        }),
+      ],
+    );
+    if (selfService) {
+      ensure(
+        (BigInt(role.permissions) & unsafeRoleBits) === 0n,
+        'DANGEROUS_SELF_ROLE',
+        409,
+        [roleDetail(role, roleId, 'unsafe_permissions')],
+      );
+    }
     if (actorId && actorId !== state.guild.owner_id) {
       const actor = await this.member(guildId, actorId);
-      ensure(hasPermission(memberPermissions(actor, state.roles, guildId), P.ManageRoles) && compareRoles(highestRole(actor, state.roles, guildId), role) > 0, 'ACTOR_ROLE_HIERARCHY', 403);
+      const actorPermissions = memberPermissions(actor, state.roles, guildId);
+      const actorHighest = highestRole(actor, state.roles, guildId);
+      ensure(
+        hasPermission(actorPermissions, P.ManageRoles),
+        'ACTOR_ROLE_HIERARCHY',
+        403,
+        [
+          roleDetail(role, roleId, 'actor_missing_manage_roles', {
+            permission: 'Manage Roles',
+          }),
+        ],
+      );
+      ensure(
+        compareRoles(actorHighest, role) > 0,
+        'ACTOR_ROLE_HIERARCHY',
+        403,
+        [
+          roleDetail(role, roleId, 'actor_role_too_low', {
+            actorHighestRoleId: actorHighest?.id ?? null,
+            actorHighestRoleName: actorHighest?.name ?? null,
+          }),
+        ],
+      );
     }
     return role;
   }
@@ -161,20 +331,114 @@ export class DiscordPlatform {
       await this.authorize(guildId, actorId, 'publish_messages');
       await this.destination(guildId, snapshot.channelId, { embed: kind === 'rules' || !!snapshot.message.embeds.length, actorId, fresh: false });
     }
-    const walk = async (value, key = '') => {
-      if (typeof value === 'string' && value && /(?:roleId|RoleId)$/u.test(key)) await this.manageableRole(guildId, value, { actorId, selfService: ['rules', 'role-panels'].includes(kind), context });
-      else if (typeof value === 'string' && value && /(?:channelId|ChannelId)$/u.test(key)) await this.destination(guildId, value, { actorId, fresh: false });
-      else if (key === 'categoryId' && value) ensure(context.channels.some(channel => channel.id === value && channel.type === 4), 'INVALID_CATEGORY');
-      else if (/RoleIds$/u.test(key) && Array.isArray(value)) ensure(value.every(id => context.roles.some(role => role.id === id)), 'INVALID_ROLE');
-      else if (/ChannelIds$/u.test(key) && Array.isArray(value)) ensure(value.every(id => context.channels.some(channel => channel.id === id)), 'INVALID_CHANNEL');
-      else if (value && typeof value === 'object') for (const [childKey, child] of Object.entries(value)) await walk(child, childKey);
+    const walk = async (value, key = '', path = 'config') => {
+      if (typeof value === 'string' && value && /(?:roleId|RoleId)$/u.test(key)) {
+        await this.manageableRole(guildId, value, {
+          actorId,
+          selfService: ['rules', 'role-panels'].includes(kind),
+          context,
+        });
+      } else if (
+        typeof value === 'string' &&
+        value &&
+        /(?:channelId|ChannelId)$/u.test(key)
+      ) {
+        await this.destination(guildId, value, { actorId, fresh: false });
+      } else if (key === 'categoryId' && value) {
+        ensure(
+          context.channels.some(channel => channel.id === value && channel.type === 4),
+          'INVALID_CATEGORY',
+          400,
+          [{ code: 'category', path, categoryId: value }],
+        );
+      } else if (/RoleIds$/u.test(key) && Array.isArray(value)) {
+        const invalidRoleId = value.find(
+          candidate => !context.roles.some(role => role.id === candidate),
+        );
+        ensure(
+          !invalidRoleId,
+          'INVALID_ROLE',
+          400,
+          [{ code: 'role', path, roleId: invalidRoleId, reason: 'not_found' }],
+        );
+      } else if (/ChannelIds$/u.test(key) && Array.isArray(value)) {
+        const invalidChannelId = value.find(
+          candidate => !context.channels.some(channel => channel.id === candidate),
+        );
+        ensure(
+          !invalidChannelId,
+          'INVALID_CHANNEL',
+          400,
+          [
+            {
+              code: 'channel',
+              path,
+              channelId: invalidChannelId,
+              reason: 'not_found',
+            },
+          ],
+        );
+      } else if (value && typeof value === 'object') {
+        for (const [childKey, child] of Object.entries(value)) {
+          await walk(child, childKey, `${path}.${childKey}`);
+        }
+      }
     };
     await walk(snapshot.config);
-    if (kind === 'ticket-panels') ensure(hasPermission(context.permissions, P.ManageChannels), 'BOT_MISSING_PERMISSION', 409);
-    for (const action of [...(snapshot.config.actions ?? []), ...(snapshot.config.escalation ?? []).flatMap(entry => entry.actions)]) {
-      const permission = { timeout: P.ModerateMembers, kick: P.KickMembers, ban: P.BanMembers, delete_message: P.ManageMessages, slowmode: P.ManageChannels }[action.type];
-      if (permission) ensure(hasPermission(context.permissions, permission) && hasPermission(context.actor.permissions, permission), 'ACTION_PERMISSION', 403);
-      if (['send_message', 'dm'].includes(action.type)) ensure(context.actor.capabilities.includes('publish_messages'), 'DASHBOARD_FORBIDDEN', 403);
+    if (kind === 'ticket-panels') {
+      ensure(
+        hasPermission(context.permissions, P.ManageChannels),
+        'BOT_MISSING_PERMISSION',
+        409,
+        [{ code: 'bot_permissions', permissions: ['Manage Channels'] }],
+      );
+    }
+    for (const action of [
+      ...(snapshot.config.actions ?? []),
+      ...(snapshot.config.escalation ?? []).flatMap(entry => entry.actions),
+    ]) {
+      const permission = {
+        timeout: P.ModerateMembers,
+        kick: P.KickMembers,
+        ban: P.BanMembers,
+        delete_message: P.ManageMessages,
+        slowmode: P.ManageChannels,
+      }[action.type];
+      if (permission) {
+        const permissionName = permissionLabels.get(permission) ?? String(permission);
+        const botHas = hasPermission(context.permissions, permission);
+        const actorHas = hasPermission(context.actor.permissions, permission);
+        ensure(
+          botHas && actorHas,
+          'ACTION_PERMISSION',
+          403,
+          [
+            {
+              code: 'action_permission',
+              action: action.type,
+              permission: permissionName,
+              missingFor: [
+                ...(!botHas ? ['Sparkles'] : []),
+                ...(!actorHas ? ['you'] : []),
+              ],
+            },
+          ],
+        );
+      }
+      if (['send_message', 'dm'].includes(action.type)) {
+        ensure(
+          context.actor.capabilities.includes('publish_messages'),
+          'DASHBOARD_FORBIDDEN',
+          403,
+          [
+            {
+              code: 'missing_capability',
+              capability: 'publish_messages',
+              currentCapabilities: context.actor.capabilities,
+            },
+          ],
+        );
+      }
     }
     return context;
   }
