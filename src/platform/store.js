@@ -112,6 +112,63 @@ export class PlatformStore {
       return clean(document);
     });
   }
+  async remove(guildId, kind, resourceId, actorId, expectedRevision) {
+    ensure(Object.hasOwn(FEATURES, kind), 'NOT_FOUND', 404);
+    return this.transaction(async (db, session) => {
+      const collection = db.collection(collectionFor(kind));
+      const resource = await collection.findOne(
+        { _id: resourceId, guildId },
+        { session },
+      );
+      ensure(resource, 'NOT_FOUND', 404);
+      ensure(resource.revision === expectedRevision, 'REVISION_CONFLICT', 409);
+      ensure(!resource.pendingJobId, 'RESOURCE_BUSY', 409);
+      ensure(resource.live?.enabled !== true, 'RESOURCE_ACTIVE', 409);
+
+      const deleted = await collection.deleteOne(
+        { _id: resourceId, guildId, revision: expectedRevision },
+        { session },
+      );
+      ensure(deleted.deletedCount === 1, 'REVISION_CONFLICT', 409);
+
+      await Promise.all([
+        db.collection(TABLES.versions).deleteMany({ guildId, resourceId }, { session }),
+        db.collection(TABLES.previews).deleteMany(
+          {
+            guildId,
+            $or: [
+              { 'payload.resourceId': resourceId },
+              { 'payload.items.resourceId': resourceId },
+            ],
+          },
+          { session },
+        ),
+        db.collection(TABLES.jobs).updateMany(
+          {
+            guildId,
+            resourceId,
+            status: 'queued',
+          },
+          {
+            $set: {
+              status: 'cancelled',
+              finishedAt: stamp(),
+              cancelledReason: 'RESOURCE_DELETED',
+            },
+          },
+          { session },
+        ),
+      ]);
+
+      await this.record(db, session, guildId, 'draft_deleted', actorId, {
+        kind,
+        resourceId,
+        revision: expectedRevision,
+        name: resource.draft?.name ?? null,
+      });
+    });
+  }
+
   async version(guildId, resourceId, revision) {
     const result = await (await this.database()).collection(TABLES.versions).findOne({ guildId, resourceId, revision });
     ensure(result, 'NOT_FOUND', 404); return result;
