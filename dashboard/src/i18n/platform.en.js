@@ -9,7 +9,7 @@ const copy = {
   'platform.deleteResourceBody': 'Delete this draft permanently? This cannot be undone.',
   'platform.deleteResourceActive': 'Unpublish this item before deleting it.',
   'platform.deleteResourceBusy': 'Wait for the current job to finish before deleting it.',
-  'platform.deleted': 'Deleted.',
+  'platform.deleted': 'Deleted.', 'platform.saved': 'Saved.',
   'error.RESOURCE_ACTIVE': 'Unpublish this item before deleting it.',
   'error.RESOURCE_IN_USE': 'This item is still referenced by another configuration. Remove that reference before deleting it.', 'platform.name': 'Name', 'platform.description': 'Description',
   'platform.saveDraft': 'Save draft', 'platform.discard': 'Discard changes', 'platform.duplicate': 'Duplicate',
