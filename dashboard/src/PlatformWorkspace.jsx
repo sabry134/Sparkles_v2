@@ -791,7 +791,8 @@ function ResourcePage({ kind, request, bootstrap, selectedId, onNavigate }) {
         </Accordion>
       </div>}
             <div className="platform-config-fields">{configuredFields.map(([key, spec]) => <SchemaField key={key} name={key} spec={spec} value={value.config[key]} onChange={next => setValue({ ...value, config: { ...value.config, [key]: next } })} resources={resources} limits={limits} forms={forms} />)}</div>
-          </div>}
+          </div>
+          )}
           {tab === 'message' && <><p className="muted">{t(kind === 'rules' ? 'rules.messageHelp' : 'platform.messageHelp')}</p>{listing.items.length > 1 && (
           <label className="platform-field mui-platform-field">
             <span>{t('studio.useTemplate')}</span>
