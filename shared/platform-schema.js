@@ -123,9 +123,51 @@ export function plainObject(value) { return value !== null && typeof value === '
 export function onlyKeys(value, allowed) {
   ensure(plainObject(value) && Object.keys(value).every(key => allowed.includes(key)));
 }
-export function id(value) { ensure(typeof value === 'string' && /^\d{17,20}$/u.test(value)); return value; }
-export function resourceId(value) { ensure(typeof value === 'string' && /^[a-f0-9-]{36}$/u.test(value)); return value; }
-export function revision(value) { ensure(Number.isSafeInteger(value) && value > 0); return value; }
+export function id(value, path = 'id') {
+  ensure(
+    typeof value === 'string' && /^\d{17,20}$/u.test(value),
+    'INVALID_INPUT',
+    400,
+    [
+      {
+        path,
+        code: 'id',
+        value:
+          value === undefined || value === null || value === ''
+            ? '(empty)'
+            : String(value).slice(0, 100),
+      },
+    ],
+  );
+  return value;
+}
+export function resourceId(value, path = 'resourceId') {
+  ensure(
+    typeof value === 'string' && /^[a-f0-9-]{36}$/u.test(value),
+    'INVALID_INPUT',
+    400,
+    [
+      {
+        path,
+        code: 'resource_id',
+        value:
+          value === undefined || value === null || value === ''
+            ? '(empty)'
+            : String(value).slice(0, 100),
+      },
+    ],
+  );
+  return value;
+}
+export function revision(value, path = 'revision') {
+  ensure(
+    Number.isSafeInteger(value) && value > 0,
+    'INVALID_INPUT',
+    400,
+    [{ path, code: 'revision', value }],
+  );
+  return value;
+}
 export function validMessage(value, options) {
   const issues = messageIssues(value, options);
   ensure(!issues.length, 'MESSAGE_INVALID', 400, issues);
@@ -150,11 +192,15 @@ function validateField(spec, value, limits, path) {
       if (!Number.isSafeInteger(value) || value < (spec.min ?? 0) || value > (spec.max ?? (spec.limit ? limits[spec.limit] : Number.MAX_SAFE_INTEGER))) fail();
       return value;
     case 'select': if (!spec.options.includes(value)) fail(); return value;
-    case 'channel': case 'role': case 'category': return id(value);
-    case 'resource': return resourceId(value);
+    case 'channel': case 'role': case 'category': return id(value, path);
+    case 'resource': return resourceId(value, path);
     case 'roles': case 'channels': case 'users':
       if (!Array.isArray(value) || value.length > limits.maximumPageSize || (required && !value.length)) fail();
-      return [...new Set(value.map(id))];
+      return [
+        ...new Set(
+          value.map((entry, index) => id(entry, `${path}.${index}`)),
+        ),
+      ];
     case 'date':
       if (typeof value !== 'string' || !Number.isFinite(Date.parse(value))) fail();
       return new Date(value).toISOString();
