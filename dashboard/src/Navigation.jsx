@@ -125,7 +125,6 @@ export default function Navigation({ items, active, onNavigate, guildId }) {
           onChange={(event) => setQuery(event.target.value)}
           placeholder={t('navigation.search')}
           aria-label={t('navigation.search')}
-          onFocus={() => setPalette(true)}
           slotProps={{
             input: {
               startAdornment: (
