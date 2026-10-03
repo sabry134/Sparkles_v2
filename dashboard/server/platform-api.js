@@ -106,6 +106,18 @@ export function createPlatformApi(config, { store = new PlatformStore({ uri: con
     await resourceAccess(request); onlyKeys(request.body, ['revision', 'value']);
     response.json({ resource: await store.save(guild(request), kind(request), validateResource(kind(request), request.body.value, limits), actor(request), resourceId(request.params.resourceId), revision(request.body.revision)) });
   }));
+  router.delete('/resources/:kind/:resourceId', asyncRoute(async (request, response) => {
+    await resourceAccess(request);
+    onlyKeys(request.body, ['revision']);
+    await store.remove(
+      guild(request),
+      kind(request),
+      resourceId(request.params.resourceId),
+      actor(request),
+      revision(request.body.revision),
+    );
+    response.status(204).end();
+  }));
   router.get('/resources/:kind/:resourceId/history', asyncRoute(async (request, response) => {
     await resourceAccess(request);
     await store.find(guild(request), kind(request), resourceId(request.params.resourceId));
