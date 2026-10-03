@@ -3930,3 +3930,8 @@ body {
     display: none;
   }
 }
+
+
+.dashboard-header + .platform-workspace {
+  padding-top: 24px;
+}
