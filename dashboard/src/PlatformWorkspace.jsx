@@ -352,7 +352,27 @@ function SchemaField({ name, spec, value, onChange, resources, limits, forms = [
 }
 
 function ChangeList({ changes }) {
-  return !changes?.length ? <p className="muted">{t('platform.noChanges')}</p> : <div className="platform-diff">{changes.map((change, index) => <details key={index}><summary>{change.path}</summary><div><pre className="diff-before">{textValue(change.before)}</pre><pre className="diff-after">{textValue(change.after)}</pre></div></details>)}</div>;
+  if (!changes?.length) return <p className="muted">{t('platform.noChanges')}</p>;
+  return (
+    <div className="platform-diff">
+      {changes.map((change, index) => (
+        <Accordion
+          key={index}
+          disableGutters
+          elevation={0}
+          className="mui-inline-accordion"
+        >
+          <AccordionSummary>{change.path}</AccordionSummary>
+          <AccordionDetails>
+            <div className="mui-diff-grid">
+              <pre className="diff-before">{textValue(change.before)}</pre>
+              <pre className="diff-after">{textValue(change.after)}</pre>
+            </div>
+          </AccordionDetails>
+        </Accordion>
+      ))}
+    </div>
+  );
 }
 function ImpactDialog({ preview, resources, onClose, onConfirm, busy }) {
   return (
@@ -750,19 +770,25 @@ function ResourcePage({ kind, request, bootstrap, selectedId, onNavigate }) {
             </FormControl>
           </label>
         )}
-        <details>
-          <summary>{t('platform.advancedDestination')}</summary>
-          <label className="platform-field mui-platform-field">
-            <span>{label('channelId')}</span>
-            <TextField
-              fullWidth
-              value={value.channelId}
-              onChange={(event) =>
-                setValue({ ...value, channelId: event.target.value })
-              }
-            />
-          </label>
-        </details>
+        <Accordion
+          disableGutters
+          elevation={0}
+          className="mui-inline-accordion mui-form-accordion"
+        >
+          <AccordionSummary>{t('platform.advancedDestination')}</AccordionSummary>
+          <AccordionDetails>
+            <label className="platform-field mui-platform-field">
+              <span>{label('channelId')}</span>
+              <TextField
+                fullWidth
+                value={value.channelId}
+                onChange={(event) =>
+                  setValue({ ...value, channelId: event.target.value })
+                }
+              />
+            </label>
+          </AccordionDetails>
+        </Accordion>
       </div>}
             <div className="platform-config-fields">{configuredFields.map(([key, spec]) => <SchemaField key={key} name={key} spec={spec} value={value.config[key]} onChange={next => setValue({ ...value, config: { ...value.config, [key]: next } })} resources={resources} limits={limits} forms={forms} />)}</div>
           </div>}
@@ -1071,20 +1097,28 @@ function Moderation({ request, bootstrap, membersOnly = false }) {
       </div>
     )}
     {!!input.targetIds.length && <p>{t('cases.selected', { count: input.targetIds.length })}<Button type="button" className="button secondary" onClick={() => setInput({ ...input, targetIds: [] })}>{t('cases.clearSelection')}</Button></p>}
-    {!membersOnly && <div className="platform-moderation-form"><div className="platform-form-grid"><SchemaField name="type" spec={{ type: 'select', options: ['warn', 'note', 'timeout', 'untimeout', 'kick', 'ban', 'unban'] }} value={input.type} onChange={type => setInput({ ...input, type })} resources={bootstrap.resources} limits={bootstrap.limits} /><SchemaField name="reason" spec={{ type: 'text', required: true, multiline: true }} value={input.reason} onChange={reason => setInput({ ...input, reason })} resources={bootstrap.resources} limits={bootstrap.limits} />{['timeout', 'ban'].includes(input.type) && <SchemaField name="durationSeconds" spec={{ type: 'number', min: 0 }} value={input.durationSeconds} onChange={durationSeconds => setInput({ ...input, durationSeconds })} resources={bootstrap.resources} limits={bootstrap.limits} />}{input.type === 'warn' && <SchemaField name="points" spec={{ type: 'number', min: 1 }} value={input.points} onChange={points => setInput({ ...input, points })} resources={bootstrap.resources} limits={bootstrap.limits} />}</div><details>
-      <summary>{t('members.manualId')}</summary>
-      <TextField
-        fullWidth
-        aria-label={t('members.manualId')}
-        value={input.targetIds.join(', ')}
-        onChange={(event) =>
-          setInput({
-            ...input,
-            targetIds: event.target.value.split(/[\s,]+/u).filter(Boolean),
-          })
-        }
-      />
-    </details><Button type="button" className="button primary" disabled={busy || !input.targetIds.length || !input.reason.trim()} onClick={() => run(async () => setPreview(await request('/moderation/preview', { method: 'POST', body: input })))}>{t('cases.previewAction')}</Button></div>}
+    {!membersOnly && <div className="platform-moderation-form"><div className="platform-form-grid"><SchemaField name="type" spec={{ type: 'select', options: ['warn', 'note', 'timeout', 'untimeout', 'kick', 'ban', 'unban'] }} value={input.type} onChange={type => setInput({ ...input, type })} resources={bootstrap.resources} limits={bootstrap.limits} /><SchemaField name="reason" spec={{ type: 'text', required: true, multiline: true }} value={input.reason} onChange={reason => setInput({ ...input, reason })} resources={bootstrap.resources} limits={bootstrap.limits} />{['timeout', 'ban'].includes(input.type) && <SchemaField name="durationSeconds" spec={{ type: 'number', min: 0 }} value={input.durationSeconds} onChange={durationSeconds => setInput({ ...input, durationSeconds })} resources={bootstrap.resources} limits={bootstrap.limits} />}{input.type === 'warn' && <SchemaField name="points" spec={{ type: 'number', min: 1 }} value={input.points} onChange={points => setInput({ ...input, points })} resources={bootstrap.resources} limits={bootstrap.limits} />}</div>
+    <Accordion
+      disableGutters
+      elevation={0}
+      className="mui-inline-accordion mui-form-accordion"
+    >
+      <AccordionSummary>{t('members.manualId')}</AccordionSummary>
+      <AccordionDetails>
+        <TextField
+          fullWidth
+          aria-label={t('members.manualId')}
+          value={input.targetIds.join(', ')}
+          onChange={(event) =>
+            setInput({
+              ...input,
+              targetIds: event.target.value.split(/[\s,]+/u).filter(Boolean),
+            })
+          }
+        />
+      </AccordionDetails>
+    </Accordion>
+    <Button type="button" className="button primary" disabled={busy || !input.targetIds.length || !input.reason.trim()} onClick={() => run(async () => setPreview(await request('/moderation/preview', { method: 'POST', body: input })))}>{t('cases.previewAction')}</Button></div>}
     {profile && <section className="platform-profile"><div className="platform-section-heading"><h3>{profile.member.name}</h3><code>{profile.member.id}</code><Button type="button" className="button secondary" onClick={() => setProfile(null)}>{t('common.close')}</Button></div><dl><dt>{t('members.created')}</dt><dd>{time(profile.member.accountCreatedAt)}</dd><dt>{t('members.joined')}</dt><dd>{time(profile.member.joinedAt)}</dd><dt>{t('members.roles')}</dt><dd>{profile.member.roles.map(id => bootstrap.resources.roles.find(role => role.id === id)?.name ?? id).join(', ')}</dd><dt>{t('members.timeout')}</dt><dd>{time(profile.member.timeoutUntil)}</dd><dt>{t('members.tickets')}</dt><dd>{profile.tickets.length}</dd></dl>{profile.cases.map(entry => <p key={entry.id}>{t('cases.caseNumber', { number: entry.id })} · {entry.action} · {entry.reason}</p>)}</section>}
     {!membersOnly && (
       <>
@@ -1267,33 +1301,39 @@ function Access({ request, bootstrap }) {
     }
   };
   return <section className="platform-module"><h2>{t('access.title')}</h2><p>{t('access.help')}</p><PlatformErrorView error={error} />{notice && <p role="status">{notice}</p>}{!data ? <Busy /> : <>
-    <details>
-      <summary>{t('access.managerDefaults')}</summary>
-      <div className="access-capabilities">
-        {data.capabilities.map((capability) => (
-          <FormControlLabel
-            className="platform-check mui-platform-check"
-            key={capability}
-            control={
-              <Checkbox
-                checked={data.policy.managerCapabilities.includes(capability)}
-                onChange={(event) =>
-                  update({
-                    ...data.policy,
-                    managerCapabilities: event.target.checked
-                      ? [...data.policy.managerCapabilities, capability]
-                      : data.policy.managerCapabilities.filter(
-                          (key) => key !== capability,
-                        ),
-                  })
-                }
-              />
-            }
-            label={t(`capability.${capability}`)}
-          />
-        ))}
-      </div>
-    </details>
+    <Accordion
+      disableGutters
+      elevation={0}
+      className="mui-inline-accordion mui-form-accordion"
+    >
+      <AccordionSummary>{t('access.managerDefaults')}</AccordionSummary>
+      <AccordionDetails>
+        <div className="access-capabilities">
+          {data.capabilities.map((capability) => (
+            <FormControlLabel
+              className="platform-check mui-platform-check"
+              key={capability}
+              control={
+                <Checkbox
+                  checked={data.policy.managerCapabilities.includes(capability)}
+                  onChange={(event) =>
+                    update({
+                      ...data.policy,
+                      managerCapabilities: event.target.checked
+                        ? [...data.policy.managerCapabilities, capability]
+                        : data.policy.managerCapabilities.filter(
+                            (key) => key !== capability,
+                          ),
+                    })
+                  }
+                />
+              }
+              label={t(`capability.${capability}`)}
+            />
+          ))}
+        </div>
+      </AccordionDetails>
+    </Accordion>
     {data.policy.grants.map((grant, index) => <div className="platform-access-grant" key={index}><div className="platform-form-grid"><SchemaField name="roleId" spec={{ type: 'roles' }} value={grant.roleId ? [grant.roleId] : []} onChange={roles => update({ ...data.policy, grants: data.policy.grants.map((row, position) => position === index ? { roleId: roles.at(-1) ?? '', capabilities: row.capabilities } : row) })} resources={bootstrap.resources} limits={bootstrap.limits} /><label className="platform-field mui-platform-field">
         <span>{t('access.userId')}</span>
         <TextField
