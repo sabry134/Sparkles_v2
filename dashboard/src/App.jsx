@@ -169,10 +169,14 @@ function Login({ error, onDismiss }) {
           <p className="eyebrow">{t('login.eyebrow')}</p>
           <h1>{t('login.title')}</h1>
           <p className="hero-description">{t('login.description')}</p>
-          <a className="button primary login-button" href="/auth/discord">
-            <Icon name="discord" />
+          <Button
+            component="a"
+            className="button primary login-button"
+            href="/auth/discord"
+            startIcon={<Icon name="discord" />}
+          >
             {t('login.connect')}
-          </a>
+          </Button>
 
           <div className="security-note">
             <Icon name="shield" />
@@ -446,15 +450,16 @@ function MissingBot({ guild, onRefresh }) {
       <h1>{t('guild.botMissingTitle', { server: guild.name })}</h1>
       <p>{t('guild.botMissingBody')}</p>
       <div className="button-row">
-        <a
+        <Button
+          component="a"
           className="button primary"
           href={guild.installUrl}
           target="_blank"
           rel="noreferrer"
+          endIcon={<Icon name="external" size={17} />}
         >
           {t('guild.install')}
-          <Icon name="external" size={17} />
-        </a>
+        </Button>
         <Button className="button secondary" type="button" onClick={onRefresh}>
           <Icon name="refresh" size={17} />
           {t('guild.refresh')}
