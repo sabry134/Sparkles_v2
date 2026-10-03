@@ -1,8 +1,5 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Accordion,
-  AccordionDetails,
-  AccordionSummary,
   Button,
   Chip,
   IconButton,
@@ -2458,26 +2455,24 @@ function Dashboard({ session, onSessionExpired }) {
                               {t('modules.commandConfigure')}
                             </Button>
                           ) : null}
-                          <Button
+                          <Switch
                             id={`command-${command.name}`}
-                            className={enabled ? 'toggle checked' : 'toggle'}
-                            type="button"
-                            role="switch"
-                            aria-checked={enabled}
-                            onClick={() =>
+                            size="small"
+                            checked={enabled}
+                            inputProps={{
+                              'aria-label': `${command.name} ${enabled ? t('common.on') : t('common.off')}`,
+                            }}
+                            onChange={(_, checked) =>
                               updateField(
                                 'disabledCommands',
-                                enabled
-                                  ? [...draft.disabledCommands, command.name]
-                                  : draft.disabledCommands.filter(
+                                checked
+                                  ? draft.disabledCommands.filter(
                                       (name) => name !== command.name,
-                                    ),
+                                    )
+                                  : [...draft.disabledCommands, command.name],
                               )
                             }
-                          >
-                            <span>{enabled ? t('common.on') : t('common.off')}</span>
-                            <i />
-                          </Button>
+                          />
                         </div>
                       </div>
                     );
