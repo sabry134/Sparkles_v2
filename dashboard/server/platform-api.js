@@ -23,7 +23,7 @@ function pageQuery(request) {
   return { query, limit, cursor };
 }
 function actor(request) { return request.session.user.id; }
-function guild(request) { return id(request.params.guildId); }
+function guild(request) { return id(request.params.guildId, 'guildId'); }
 function kind(request) { ensure(Object.hasOwn(FEATURES, request.params.kind), 'NOT_FOUND', 404); return request.params.kind; }
 
 export function createPlatformApi(config, { store = new PlatformStore({ uri: config.mongo.uri, dbName: config.mongo.dbName }), discord, botStore } = {}) {
@@ -35,7 +35,18 @@ export function createPlatformApi(config, { store = new PlatformStore({ uri: con
   router.get('/bootstrap', asyncRoute(async (request, response) => {
     const context = await gateway.context(guild(request));
     const access = await gateway.capabilities(guild(request), actor(request), context);
-    ensure(access.capabilities.length, 'DASHBOARD_FORBIDDEN', 403);
+    ensure(
+      access.capabilities.length,
+      'DASHBOARD_FORBIDDEN',
+      403,
+      [
+        {
+          code: 'no_dashboard_access',
+          guildId: guild(request),
+          currentCapabilities: access.capabilities,
+        },
+      ],
+    );
     response.json({ resources: gateway.publicResources({ ...context, actor: access }), limits, features: Object.keys(FEATURES).filter(key => access.capabilities.includes(FEATURES[key].capability)) });
   }));
   router.get('/overview', asyncRoute(async (request, response) => {
@@ -107,8 +118,20 @@ export function createPlatformApi(config, { store = new PlatformStore({ uri: con
     response.json(await store.rows(guild(request), 'jobs', { ...pageQuery(request), resourceId: request.params.resourceId }));
   }));
   router.get('/threads', asyncRoute(async (request, response) => {
-    const access = await gateway.capabilities(guild(request), actor(request)); ensure(access.capabilities.includes('publish_messages'), 'DASHBOARD_FORBIDDEN', 403);
-    const channelId = id(request.query.channelId);
+    const access = await gateway.capabilities(guild(request), actor(request));
+    ensure(
+      access.capabilities.includes('publish_messages'),
+      'DASHBOARD_FORBIDDEN',
+      403,
+      [
+        {
+          code: 'missing_capability',
+          capability: 'publish_messages',
+          currentCapabilities: access.capabilities,
+        },
+      ],
+    );
+    const channelId = id(request.query.channelId, 'channelId');
     await gateway.destination(guild(request), channelId, { actorId: actor(request), fresh: false });
     const result = await gateway.request('GET', `/guilds/${guild(request)}/threads/active`);
     response.json({ items: result.threads.filter(thread => thread.parent_id === channelId && thread.type !== 12 && !thread.thread_metadata?.archived && !thread.thread_metadata?.locked).map(thread => ({ id: thread.id, name: thread.name })) });
@@ -166,7 +189,7 @@ export function createPlatformApi(config, { store = new PlatformStore({ uri: con
     response.json(await store.preview(guild(request), actor(request), 'resource', { kind: doc.kind, resourceId: doc._id, revision: doc.revision, action }, impact));
   }));
   router.post('/execute', asyncRoute(async (request, response) => {
-    onlyKeys(request.body, ['token']); resourceId(request.body.token);
+    onlyKeys(request.body, ['token']); resourceId(request.body.token, 'token');
     const preview = await (await store.database()).collection(TABLES.previews).findOne({ _id: request.body.token, guildId: guild(request), actorId: actor(request) });
     ensure(preview?.payload?.kind && Object.hasOwn(FEATURES, preview.payload.kind), 'PREVIEW_EXPIRED', 409);
     await authorize(request, FEATURES[preview.payload.kind].capability, { fresh: true });
@@ -178,7 +201,7 @@ export function createPlatformApi(config, { store = new PlatformStore({ uri: con
     const permission = { jobs: 'view_audit', events: 'view_audit', executions: 'view_audit', tickets: 'manage_tickets', submissions: 'manage_community', acceptances: 'manage_rules' }[table];
     ensure(permission, 'NOT_FOUND', 404); await authorize(request, permission);
     if (request.query.resourceId) resourceId(request.query.resourceId);
-    if (request.query.userId) id(request.query.userId);
+    if (request.query.userId) id(request.query.userId, 'userId');
     response.json(await store.rows(guild(request), table, { ...pageQuery(request), resourceId: request.query.resourceId, userId: request.query.userId, status: queryText(request.query.status) || undefined }));
   }));
   router.post('/jobs/:jobId/cancel', asyncRoute(async (request, response) => {
@@ -198,7 +221,7 @@ export function createPlatformApi(config, { store = new PlatformStore({ uri: con
     if (request.body.messageId) {
       ensure(['publish', 'republish'].includes(job.action) && FEATURES[job.kind]?.publish === 'message', 'INVALID_ACTION');
       await authorize(request, 'publish_messages', { fresh: true });
-      id(request.body.messageId); ensure(job.snapshot?.channelId, 'INVALID_INPUT');
+      id(request.body.messageId, 'messageId'); ensure(job.snapshot?.channelId, 'INVALID_INPUT');
       const message = await gateway.request('GET', `/channels/${job.snapshot.channelId}/messages/${request.body.messageId}`);
       ensure(message.author?.id === config.discord.clientId, 'MESSAGE_NOT_OWNED', 409);
       ensure(String(message.nonce) === createHash('sha256').update(job._id).digest('hex').slice(0, 24), 'RECOVERY_MESSAGE_MISMATCH', 409);
@@ -224,7 +247,7 @@ export function createPlatformApi(config, { store = new PlatformStore({ uri: con
   }));
   router.get('/members/:userId', asyncRoute(async (request, response) => {
     await authorize(request, 'moderate_members');
-    const userId = id(request.params.userId);
+    const userId = id(request.params.userId, 'userId');
     let member = null;
     try { member = await gateway.member(guild(request), userId); } catch (error) { if (error.code !== 'DISCORD_OBJECT_DELETED') throw error; }
     const db = await store.database();
@@ -242,7 +265,7 @@ export function createPlatformApi(config, { store = new PlatformStore({ uri: con
     const { query, cursor, limit } = pageQuery(request);
     const filter = { guildId: guild(request) };
     if (cursor) { revision(Number(cursor)); filter.id = { $lt: Number(cursor) }; }
-    if (request.query.userId) filter.targetId = id(request.query.userId);
+    if (request.query.userId) filter.targetId = id(request.query.userId, 'userId');
     if (query) filter.$or = ['targetId', 'actorId', 'reason', 'action'].map(key => ({ [key]: { $regex: escaped(query), $options: 'i' } }));
     const items = await (await store.database()).collection(COLLECTIONS.moderationCases).find(filter).sort({ id: -1 }).limit(limit + 1).toArray();
     response.json({ items: items.slice(0, limit).map(item => ({ ...item, _id: undefined })), nextCursor: items.length > limit ? items[limit - 1].id : null });
@@ -281,7 +304,7 @@ export function createPlatformApi(config, { store = new PlatformStore({ uri: con
     response.status(202).json({ job });
   }));
   router.get('/tickets/:ticketId/transcript', asyncRoute(async (request, response) => {
-    await authorize(request, 'view_transcripts'); id(request.params.ticketId);
+    await authorize(request, 'view_transcripts'); id(request.params.ticketId, 'ticketId');
     const transcript = await (await store.database()).collection(TABLES.transcripts).findOne({ _id: request.params.ticketId, guildId: guild(request) });
     ensure(transcript, 'NOT_FOUND', 404); response.json({ transcript: clean(transcript) });
   }));
@@ -290,13 +313,13 @@ export function createPlatformApi(config, { store = new PlatformStore({ uri: con
     ensure(['claim', 'close', 'reopen', 'note', 'priority'].includes(request.body.action));
     if (request.body.action === 'note') ensure(typeof request.body.text === 'string' && request.body.text.trim() && request.body.text.length <= limits.maximumTextLength);
     if (request.body.action === 'priority') ensure(['low', 'normal', 'high', 'urgent'].includes(request.body.priority));
-    const ticket = await (await store.database()).collection(TABLES.tickets).findOne({ _id: id(request.params.ticketId), guildId: guild(request) }); ensure(ticket, 'NOT_FOUND', 404);
+    const ticket = await (await store.database()).collection(TABLES.tickets).findOne({ _id: id(request.params.ticketId, 'ticketId'), guildId: guild(request) }); ensure(ticket, 'NOT_FOUND', 404);
     response.status(202).json({ job: await store.queueJob({ guildId: guild(request), actorId: actor(request), action: 'ticket', input: { ...request.body, ticketId: ticket._id } }) });
   }));
   router.patch('/submissions/:submissionId', asyncRoute(async (request, response) => {
     await authorize(request, 'manage_community'); onlyKeys(request.body, ['status']); ensure(['pending', 'accepted', 'rejected', 'archived'].includes(request.body.status));
     await store.transaction(async (db, session) => {
-      const result = await db.collection(TABLES.submissions).updateOne({ _id: id(request.params.submissionId), guildId: guild(request) }, { $set: { status: request.body.status, reviewedBy: actor(request), reviewedAt: new Date().toISOString() } }, { session });
+      const result = await db.collection(TABLES.submissions).updateOne({ _id: id(request.params.submissionId, 'submissionId'), guildId: guild(request) }, { $set: { status: request.body.status, reviewedBy: actor(request), reviewedAt: new Date().toISOString() } }, { session });
       ensure(result.matchedCount, 'NOT_FOUND', 404); await store.record(db, session, guild(request), 'submission_reviewed', actor(request), { submissionId: request.params.submissionId, status: request.body.status });
     }); response.status(204).end();
   }));
@@ -309,8 +332,25 @@ export function createPlatformApi(config, { store = new PlatformStore({ uri: con
     const allowed = list => ensure(Array.isArray(list) && list.length <= CAPABILITIES.length && list.every(key => CAPABILITIES.includes(key) && key !== 'manage_access'));
     allowed(request.body.managerCapabilities);
     for (const grant of request.body.grants) { onlyKeys(grant, ['userId', 'roleId', 'capabilities']); ensure(!!grant.userId !== !!grant.roleId); allowed(grant.capabilities);
-      if (grant.userId) { id(grant.userId); await gateway.member(guild(request), grant.userId); }
-      if (grant.roleId) ensure(context.roles.some(role => role.id === grant.roleId && role.id !== guild(request)), 'INVALID_ROLE');
+      if (grant.userId) { id(grant.userId, 'grants.userId'); await gateway.member(guild(request), grant.userId); }
+      if (grant.roleId) {
+        id(grant.roleId, 'grants.roleId');
+        ensure(
+          context.roles.some(
+            role => role.id === grant.roleId && role.id !== guild(request),
+          ),
+          'INVALID_ROLE',
+          400,
+          [
+            {
+              code: 'role',
+              path: 'grants.roleId',
+              roleId: grant.roleId,
+              reason: 'not_found',
+            },
+          ],
+        );
+      }
     }
     await store.transaction(async (db, session) => {
       const before = await db.collection(TABLES.access).findOne({ _id: guild(request) }, { session });
@@ -319,7 +359,19 @@ export function createPlatformApi(config, { store = new PlatformStore({ uri: con
     }); response.status(204).end();
   }));
   router.get('/search', asyncRoute(async (request, response) => {
-    const context = await gateway.capabilities(guild(request), actor(request)); ensure(context.capabilities.length, 'DASHBOARD_FORBIDDEN', 403);
+    const context = await gateway.capabilities(guild(request), actor(request));
+    ensure(
+      context.capabilities.length,
+      'DASHBOARD_FORBIDDEN',
+      403,
+      [
+        {
+          code: 'no_dashboard_access',
+          guildId: guild(request),
+          currentCapabilities: context.capabilities,
+        },
+      ],
+    );
     const q = queryText(request.query.q); ensure(q.length > 0);
     const results = await Promise.all(Object.entries(FEATURES).filter(([, feature]) => context.capabilities.includes(feature.capability)).map(async ([kind]) => ({ kind, ...(await store.list(guild(request), kind, { query: q, limit: limits.pageSize })) })));
     response.json({ items: results.flatMap(result => result.items.map(item => ({ kind: result.kind, id: item.id, name: item.draft.name, revision: item.revision }))) });
@@ -339,7 +391,10 @@ export function createPlatformApi(config, { store = new PlatformStore({ uri: con
     const { blueprint, mapping, kinds } = request.body;
     ensure(plainObject(blueprint) && blueprint.format === 'sparkles-blueprint' && blueprint.version === 1 && Array.isArray(blueprint.resources) && blueprint.resources.length <= limits.maximumPageSize);
     ensure(plainObject(mapping) && Array.isArray(kinds) && kinds.every(kind => Object.hasOwn(FEATURES, kind)));
-    for (const [oldId, newId] of Object.entries(mapping)) { id(oldId); id(newId); }
+    for (const [oldId, newId] of Object.entries(mapping)) {
+      id(oldId, `mapping.${oldId}.sourceId`);
+      id(newId, `mapping.${oldId}.destinationId`);
+    }
     const ids = new Map(blueprint.resources.map(item => [item.sourceId, randomUUID()]));
     const remap = (value, key = '') => {
       if (typeof value === 'string' && /^(?:\d{17,20})$/u.test(value) && /(?:Id|Ids)$/u.test(key)) { ensure(mapping[value], 'BLUEPRINT_MAPPING_REQUIRED', 400, [{ path: key, code: 'mapping', value }]); return mapping[value]; }
@@ -350,7 +405,19 @@ export function createPlatformApi(config, { store = new PlatformStore({ uri: con
     };
     const items = [];
     for (const item of blueprint.resources.filter(item => kinds.includes(item.kind))) {
-      ensure(context.actor.capabilities.includes(FEATURES[item.kind].capability), 'DASHBOARD_FORBIDDEN', 403);
+      ensure(
+        context.actor.capabilities.includes(FEATURES[item.kind].capability),
+        'DASHBOARD_FORBIDDEN',
+        403,
+        [
+          {
+            code: 'missing_capability',
+            capability: FEATURES[item.kind].capability,
+            currentCapabilities: context.actor.capabilities,
+            resourceKind: item.kind,
+          },
+        ],
+      );
       const value = validateResource(item.kind, remap(item.value), limits);
       // Imports create drafts only. Object mappings are still checked against this server.
       const destinationIds = [...context.channels.map(channel => channel.id), ...context.roles.map(role => role.id)];
