@@ -451,6 +451,24 @@ export async function guildResources(guildId, config) {
   };
 }
 
+function invalidChannel(path, channelId, reason = 'not_found') {
+  return new AppError('INVALID_CHANNEL', 400, {
+    details: [{ code: 'channel', path, channelId, reason }],
+  });
+}
+
+function invalidRole(path, roleId, reason = 'not_found', roleName = null) {
+  return new AppError('INVALID_ROLE', 400, {
+    details: [{ code: 'role', path, roleId, roleName, reason }],
+  });
+}
+
+function missingBotPermission(permission, path = null) {
+  return new AppError('BOT_MISSING_PERMISSION', 409, {
+    details: [{ code: 'bot_permissions', permissions: [permission], path }],
+  });
+}
+
 export function validateSettingsResources(patch, resources) {
   const channelIds = new Set(resources.channels.map((channel) => channel.id));
   const categoryIds = new Set(resources.categories.map((category) => category.id));
@@ -470,7 +488,7 @@ export function validateSettingsResources(patch, resources) {
       patch.automod?.antiLinkSpam === true) &&
     !resources.capabilities.canManageMessages
   ) {
-    throw new AppError('BOT_MISSING_PERMISSION', 409);
+    throw missingBotPermission('Manage Messages', 'automod');
   }
 
   if (
@@ -479,14 +497,14 @@ export function validateSettingsResources(patch, resources) {
       patch.automod?.antiRaid === true) &&
     !resources.capabilities.canKickMembers
   ) {
-    throw new AppError('BOT_MISSING_PERMISSION', 409);
+    throw missingBotPermission('Kick Members', 'automod');
   }
 
   if (
     patch.automod?.antiSwear === true &&
     !resources.capabilities.canModerateMembers
   ) {
-    throw new AppError('BOT_MISSING_PERMISSION', 409);
+    throw missingBotPermission('Moderate Members', 'automod');
   }
 
   for (const field of ['logsChannelId', 'suggestionsChannelId', 'giveawayChannelId']) {
@@ -495,60 +513,65 @@ export function validateSettingsResources(patch, resources) {
       patch[field] !== null &&
       !channelIds.has(patch[field])
     ) {
-      throw new AppError('INVALID_CHANNEL', 400);
+      throw invalidChannel(field, patch[field]);
     }
   }
 
-  for (const channelId of [
-    patch.actionLog?.channelId,
-    patch.starboard?.channelId,
-  ].filter(Boolean)) {
+  for (const [path, channelId] of [
+    ['actionLog.channelId', patch.actionLog?.channelId],
+    ['starboard.channelId', patch.starboard?.channelId],
+  ].filter(([, channelId]) => Boolean(channelId))) {
     if (!channelIds.has(channelId)) {
-      throw new AppError('INVALID_CHANNEL', 400);
+      throw invalidChannel(path, channelId);
     }
   }
 
   for (const channelId of patch.starboard?.ignoreChannelIds ?? []) {
     if (!channelIds.has(channelId)) {
-      throw new AppError('INVALID_CHANNEL', 400);
+      throw invalidChannel('starboard.ignoreChannelIds', channelId);
     }
   }
 
   for (const channelId of patch.automod?.exemptChannelIds ?? []) {
     if (!channelIds.has(channelId)) {
-      throw new AppError('INVALID_CHANNEL', 400);
+      throw invalidChannel('automod.exemptChannelIds', channelId);
     }
   }
 
   for (const channelId of patch.actionLog?.ignoreChannelIds ?? []) {
     if (!channelIds.has(channelId)) {
-      throw new AppError('INVALID_CHANNEL', 400);
+      throw invalidChannel('actionLog.ignoreChannelIds', channelId);
     }
   }
 
   for (const field of ['blockedRoleIds', 'exemptRoleIds']) {
     for (const roleId of patch.automod?.[field] ?? []) {
       if (!roleIds.has(roleId)) {
-        throw new AppError('INVALID_ROLE', 400);
+        throw invalidRole(`automod.${field}`, roleId);
       }
     }
   }
 
   for (const roleId of patch.actionLog?.ignoreRoleIds ?? []) {
     if (!roleIds.has(roleId)) {
-      throw new AppError('INVALID_ROLE', 400);
+      throw invalidRole('actionLog.ignoreRoleIds', roleId);
     }
   }
 
-  for (const rule of Object.values(patch.commandPermissions ?? {})) {
+  for (const [command, rule] of Object.entries(
+    patch.commandPermissions ?? {},
+  )) {
     for (const roleId of rule.roleIds ?? []) {
       if (!roleIds.has(roleId)) {
-        throw new AppError('INVALID_ROLE', 400);
+        throw invalidRole(`commandPermissions.${command}.roleIds`, roleId);
       }
     }
     for (const channelId of rule.channelIds ?? []) {
       if (!channelIds.has(channelId)) {
-        throw new AppError('INVALID_CHANNEL', 400);
+        throw invalidChannel(
+          `commandPermissions.${command}.channelIds`,
+          channelId,
+        );
       }
     }
   }
@@ -559,7 +582,7 @@ export function validateSettingsResources(patch, resources) {
       patch[field].channelId !== null &&
       !channelIds.has(patch[field].channelId)
     ) {
-      throw new AppError('INVALID_CHANNEL', 400);
+      throw invalidChannel(`${field}.channelId`, patch[field].channelId);
     }
   }
 
@@ -568,7 +591,11 @@ export function validateSettingsResources(patch, resources) {
     patch.ticketCategoryId !== null &&
     !categoryIds.has(patch.ticketCategoryId)
   ) {
-    throw new AppError('INVALID_CHANNEL', 400);
+    throw invalidChannel(
+      'ticketCategoryId',
+      patch.ticketCategoryId,
+      'not_found_or_not_category',
+    );
   }
 
   if (
@@ -576,7 +603,7 @@ export function validateSettingsResources(patch, resources) {
     patch.ticketCategoryId !== null &&
     !resources.capabilities.canManageChannels
   ) {
-    throw new AppError('BOT_MISSING_PERMISSION', 409);
+    throw missingBotPermission('Manage Channels', 'ticketCategoryId');
   }
 
   for (const field of ['autoRoleId', 'verificationRoleId']) {
@@ -585,7 +612,13 @@ export function validateSettingsResources(patch, resources) {
       patch[field] !== null &&
       !assignableRoleIds.has(patch[field])
     ) {
-      throw new AppError('INVALID_ROLE', 400);
+      const role = resources.roles.find((candidate) => candidate.id === patch[field]);
+      throw invalidRole(
+        field,
+        patch[field],
+        role ? 'not_assignable' : 'not_found',
+        role?.name ?? null,
+      );
     }
   }
 }
@@ -598,8 +631,15 @@ function reactionRouteEmoji(emoji) {
 export async function validateAndAddReaction(guildId, mapping, resources, config) {
   const channel = resources.channels.find(({ id }) => id === mapping.channelId);
   const role = resources.roles.find(({ id }) => id === mapping.roleId);
-  if (!channel) throw new AppError('INVALID_CHANNEL', 400);
-  if (!role?.assignable) throw new AppError('INVALID_ROLE', 400);
+  if (!channel) throw invalidChannel('channelId', mapping.channelId);
+  if (!role?.assignable) {
+    throw invalidRole(
+      'roleId',
+      mapping.roleId,
+      role ? 'not_assignable' : 'not_found',
+      role?.name ?? null,
+    );
+  }
 
   try {
     await botRequest(
@@ -612,15 +652,40 @@ export async function validateAndAddReaction(guildId, mapping, resources, config
       { method: 'PUT' },
     );
   } catch (error) {
-    if (error.discordStatus === 404) throw new AppError('MESSAGE_NOT_FOUND', 400);
-    if (error.discordStatus === 403) throw new AppError('BOT_MISSING_PERMISSION', 409);
+    if (error.discordStatus === 404) {
+      throw new AppError('MESSAGE_NOT_FOUND', 400, {
+        details: [
+          {
+            code: 'message',
+            channelId: mapping.channelId,
+            messageId: mapping.messageId,
+            reason: 'not_found',
+          },
+        ],
+      });
+    }
+    if (error.discordStatus === 403) {
+      throw new AppError('BOT_MISSING_PERMISSION', 409, {
+        details: [
+          {
+            code: 'bot_permissions',
+            permissions: [
+              'View Channel',
+              'Read Message History',
+              'Add Reactions',
+            ],
+            channelId: mapping.channelId,
+          },
+        ],
+      });
+    }
     throw error;
   }
 }
 
 export async function sendDashboardEmbed(guildId, input, resources, config) {
   const channel = resources.channels.find(({ id }) => id === input.channelId);
-  if (!channel) throw new AppError('INVALID_CHANNEL', 400);
+  if (!channel) throw invalidChannel('channelId', input.channelId);
 
   try {
     const message = await botRequest(
@@ -642,7 +707,17 @@ export async function sendDashboardEmbed(guildId, input, resources, config) {
       messageLink: `https://discord.com/channels/${guildId}/${input.channelId}/${message.id}`,
     };
   } catch (error) {
-    if (error.discordStatus === 403) throw new AppError('BOT_MISSING_PERMISSION', 409);
+    if (error.discordStatus === 403) {
+      throw new AppError('BOT_MISSING_PERMISSION', 409, {
+        details: [
+          {
+            code: 'bot_permissions',
+            permissions: ['View Channel', 'Send Messages', 'Embed Links'],
+            channelId: input.channelId,
+          },
+        ],
+      });
+    }
     throw error;
   }
 }
@@ -654,7 +729,14 @@ export async function createReactionRoleEmbed(
   config,
 ) {
   const role = resources.roles.find(({ id }) => id === input.roleId);
-  if (!role?.assignable) throw new AppError('INVALID_ROLE', 400);
+  if (!role?.assignable) {
+    throw invalidRole(
+      'roleId',
+      input.roleId,
+      role ? 'not_assignable' : 'not_found',
+      role?.name ?? null,
+    );
+  }
 
   const message = await sendDashboardEmbed(guildId, input, resources, config);
   const mapping = {
