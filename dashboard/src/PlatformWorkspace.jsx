@@ -1136,6 +1136,15 @@ function Moderation({ request, bootstrap, membersOnly = false }) {
   const dialogs = useUiDialog();
   const [query, setQuery] = useState(''); const [members, setMembers] = useState([]); const [profile, setProfile] = useState(null);
   const [cases, setCases] = useState({ items: [], nextCursor: null }); const [error, setError] = useState(null); const [busy, setBusy] = useState(false); const [preview, setPreview] = useState(null); const [notice, setNotice] = useState('');
+  const replaceCase = useCallback((updatedCase) => {
+    if (!updatedCase) return;
+    setCases((current) => ({
+      ...current,
+      items: current.items.map((entry) =>
+        entry.id === updatedCase.id ? updatedCase : entry,
+      ),
+    }));
+  }, []);
   const [input, setInput] = useState({ type: 'warn', targetIds: [], reason: '', durationSeconds: 0, points: 1 });
   const loadCases = useCallback(async cursor => { try { setCases(await request(`/cases${cursor ? `?cursor=${cursor}` : ''}`)); } catch (error) { setError(error); } }, [request]);
   useEffect(() => { if (!membersOnly) loadCases(); }, [loadCases, membersOnly]);
@@ -1157,12 +1166,12 @@ function Moderation({ request, bootstrap, membersOnly = false }) {
     });
     if (!reason?.trim()) return;
     await run(async () => {
-      await request(`/cases/${entry.id}`, {
+      const result = await request(`/cases/${entry.id}`, {
         method: 'PATCH',
         body: { reason },
       });
-      setNotice(t('platform.queued'));
-      await loadCases();
+      replaceCase(result.case);
+      setNotice(t('platform.saved'));
     });
   };
   const addCaseNote = async (entry) => {
@@ -1176,12 +1185,12 @@ function Moderation({ request, bootstrap, membersOnly = false }) {
     });
     if (!note?.trim()) return;
     await run(async () => {
-      await request(`/cases/${entry.id}`, {
+      const result = await request(`/cases/${entry.id}`, {
         method: 'PATCH',
         body: { note },
       });
-      setNotice(t('platform.queued'));
-      await loadCases();
+      replaceCase(result.case);
+      setNotice(t('platform.saved'));
     });
   };
   return <section className="platform-module"><div className="platform-section-heading"><div><h2>{t(membersOnly ? 'members.title' : 'cases.title')}</h2><p>{t('cases.help')}</p></div><Button type="button" className="button secondary" onClick={() => loadCases()}>{t('platform.refresh')}</Button></div><PlatformErrorView error={error} />{notice && <p role="status" className="platform-notice">{notice}</p>}
