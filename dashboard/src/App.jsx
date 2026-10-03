@@ -506,10 +506,7 @@ function Dashboard({ session, onSessionExpired }) {
   const [embedForm, setEmbedForm] = useState(emptyEmbedForm);
   const [embedPending, setEmbedPending] = useState(false);
   const [lastPublishedEmbed, setLastPublishedEmbed] = useState(null);
-  const [moderationCases, setModerationCases] = useState([]);
   const [dashboardAudit, setDashboardAudit] = useState([]);
-  const [moderationCasesLoading, setModerationCasesLoading] = useState(false);
-  const [moderationCaseQuery, setModerationCaseQuery] = useState('');
   const [commandQuery, setCommandQuery] = useState('');
   const [selectedCommandName, setSelectedCommandName] = useState(null);
   const [autoresponderForm, setAutoresponderForm] = useState({
@@ -656,21 +653,12 @@ function Dashboard({ session, onSessionExpired }) {
     }
 
     let cancelled = false;
-    setModerationCasesLoading(true);
-    Promise.all([
-      api(`/api/guilds/${selectedGuild.id}/moderation-cases?limit=150`),
-      api(`/api/guilds/${selectedGuild.id}/dashboard-audit?limit=100`),
-    ])
-      .then(([caseResult, auditResult]) => {
-        if (cancelled) return;
-        setModerationCases(caseResult.cases ?? []);
-        setDashboardAudit(auditResult.entries ?? []);
+    api(`/api/guilds/${selectedGuild.id}/dashboard-audit?limit=100`)
+      .then((result) => {
+        if (!cancelled) setDashboardAudit(result.entries ?? []);
       })
       .catch((error) => {
         if (!cancelled) showError(error);
-      })
-      .finally(() => {
-        if (!cancelled) setModerationCasesLoading(false);
       });
 
     return () => {
@@ -683,18 +671,6 @@ function Dashboard({ session, onSessionExpired }) {
     selectedGuild?.id,
     showError,
   ]);
-
-  useEffect(() => {
-    if (!window.matchMedia('(max-width: 900px)').matches) return;
-    const activeButton = document.querySelector(
-      '.sidebar nav button[aria-current="page"]',
-    );
-    activeButton?.scrollIntoView({
-      behavior: scrollBehavior(),
-      block: 'nearest',
-      inline: 'center',
-    });
-  }, [activeSection]);
 
   const editableSettings = useCallback(
     (settings) =>
@@ -1021,28 +997,7 @@ function Dashboard({ session, onSessionExpired }) {
     label: guild.name,
     guild,
   }));
-  const channelNames = new Map(
-    (resources?.channels ?? []).map((channel) => [channel.id, channel.name]),
-  );
   const roleNames = new Map((resources?.roles ?? []).map((role) => [role.id, role.name]));
-  const normalizedCaseQuery = moderationCaseQuery.trim().toLocaleLowerCase('en-US');
-  const visibleModerationCases = normalizedCaseQuery
-    ? moderationCases.filter((entry) =>
-        [
-          entry.action,
-          entry.actorTag,
-          entry.actorId,
-          entry.targetTag,
-          entry.targetId,
-          entry.reason,
-          entry.evidence?.content,
-        ]
-          .filter(Boolean)
-          .some((value) =>
-            String(value).toLocaleLowerCase('en-US').includes(normalizedCaseQuery),
-          ),
-      )
-    : moderationCases;
   const activeNavigation =
     NAVIGATION.find(([id]) => id === activeSection) ?? NAVIGATION[0];
   const activePageTitle = t(activeNavigation[1]);
