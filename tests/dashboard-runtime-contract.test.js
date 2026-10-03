@@ -19,6 +19,13 @@ const sources = Object.fromEntries(
       'src/store.js',
       'src/mongodb.js',
       'dashboard/src/App.jsx',
+      'dashboard/src/MuiProvider.jsx',
+      'dashboard/src/Select.jsx',
+      'dashboard/src/Navigation.jsx',
+      'dashboard/src/EmojiPicker.jsx',
+      'dashboard/src/MessageStudio.jsx',
+      'dashboard/src/PlatformWorkspace.jsx',
+      'dashboard/package.json',
       'dashboard/server/index.js',
       'dashboard/server/bot-store.js',
       'dashboard/server/config.js',
@@ -333,4 +340,45 @@ test('removed provider commands and credentials stay removed', () => {
 
   assert.doesNotMatch(sources['dashboard/src/App.jsx'], /aiChatEnabled|ai-chat/u);
   assert.doesNotMatch(sources['dashboard/server/bot-store.js'], /aiChatEnabled/u);
+});
+
+
+test('dashboard interactive controls use Material UI instead of browser-native UI', () => {
+  const packageJson = JSON.parse(sources['dashboard/package.json']);
+  assert.equal(packageJson.dependencies['@mui/material'], '^9.4.0');
+  assert.equal(packageJson.dependencies['@emotion/react'], '^11.14.0');
+  assert.equal(packageJson.dependencies['@emotion/styled'], '^11.14.1');
+
+  assert.match(sources['dashboard/src/MuiProvider.jsx'], /ThemeProvider/u);
+  assert.match(sources['dashboard/src/MuiProvider.jsx'], /<Dialog/u);
+  assert.match(sources['dashboard/src/Select.jsx'], /Select as MuiSelect/u);
+  assert.match(sources['dashboard/src/App.jsx'], /<Snackbar/u);
+  assert.match(sources['dashboard/src/App.jsx'], /<Switch/u);
+  assert.match(sources['dashboard/src/Navigation.jsx'], /<Dialog/u);
+  assert.match(sources['dashboard/src/MessageStudio.jsx'], /<Tabs/u);
+
+  for (const file of [
+    'dashboard/src/App.jsx',
+    'dashboard/src/Select.jsx',
+    'dashboard/src/Navigation.jsx',
+    'dashboard/src/EmojiPicker.jsx',
+    'dashboard/src/MessageStudio.jsx',
+    'dashboard/src/PlatformWorkspace.jsx',
+  ]) {
+    assert.doesNotMatch(sources[file], /window\.(?:alert|prompt|confirm)\s*\(/u);
+    assert.doesNotMatch(sources[file], /<dialog\b/u);
+    assert.doesNotMatch(sources[file], /<select\b/u);
+    assert.doesNotMatch(sources[file], /<textarea\b/u);
+    assert.doesNotMatch(sources[file], /<button\b/u);
+  }
+
+  for (const file of [
+    'dashboard/src/MessageStudio.jsx',
+    'dashboard/src/PlatformWorkspace.jsx',
+  ]) {
+    const visibleNativeInputs = [
+      ...sources[file].matchAll(/<input\b([^>]*)>/gu),
+    ].filter(([, attributes]) => !/type="file"/u.test(attributes));
+    assert.equal(visibleNativeInputs.length, 0);
+  }
 });
