@@ -108,3 +108,25 @@ test('invalid upstream bot identities cannot become member request paths', async
   });
   assert.ok(fetch.mock.calls.every(({ arguments: [url] }) => !url.includes('/members/')));
 });
+
+
+test('AppError response details remain safe and structured', async () => {
+  const { AppError, errorResponse } = await import('../dashboard/server/errors.js');
+  const result = errorResponse(
+    new AppError('INVALID_ROLE', 400, {
+      details: [
+        {
+          code: 'role',
+          path: 'automod.exemptRoleIds',
+          roleId: '523456789012345678',
+          reason: 'not_found',
+        },
+      ],
+    }),
+    'request-test',
+  );
+
+  assert.equal(result.status, 400);
+  assert.equal(result.body.error.requestId, 'request-test');
+  assert.equal(result.body.error.details[0].roleId, '523456789012345678');
+});
