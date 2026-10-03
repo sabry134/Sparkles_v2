@@ -10,6 +10,7 @@ import {
 } from '@mui/material';
 import { api, ApiError } from './api.js';
 import { t } from './i18n/index.js';
+import { errorDetailsText } from './error-details.js';
 import Icon from './Icon.jsx';
 import Select from './Select.jsx';
 import EmbedBuilder, { EMPTY_EMBED } from './EmbedBuilder.jsx';
@@ -85,16 +86,21 @@ function translatedError(error) {
   const key = `error.${error.code}`;
   const variables = { reference: error.requestId };
   const value = t(key, variables);
+  let message;
   if (value !== key) {
     if (error.code === 'INTERNAL_ERROR' && !error.requestId) {
-      return t('error.internalNoReference');
+      message = t('error.internalNoReference');
+    } else {
+      message = value;
     }
-    return value;
+  } else {
+    message = error.requestId
+      ? t('error.fallback', variables)
+      : t('error.fallbackNoReference');
   }
 
-  return error.requestId
-    ? t('error.fallback', variables)
-    : t('error.fallbackNoReference');
+  const details = errorDetailsText(error.details);
+  return details.length ? `${message} ${details.join(' ')}` : message;
 }
 
 function rememberedGuild() {
