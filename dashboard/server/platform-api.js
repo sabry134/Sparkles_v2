@@ -22,6 +22,97 @@ function pageQuery(request) {
   ensure(cursor === undefined || (typeof cursor === 'string' && cursor.length <= limits.maximumCursorLength));
   return { query, limit, cursor };
 }
+const blockedJsonKeys = new Set(['__proto__', 'prototype', 'constructor']);
+
+function safeJsonValue(value, depth = 0, state = { nodes: 0 }) {
+  ensure(depth <= 24);
+  state.nodes += 1;
+  ensure(state.nodes <= 10000);
+
+  if (
+    value === null ||
+    typeof value === 'string' ||
+    typeof value === 'boolean'
+  ) {
+    return;
+  }
+  if (typeof value === 'number') {
+    ensure(Number.isFinite(value));
+    return;
+  }
+  if (Array.isArray(value)) {
+    ensure(value.length <= limits.maximumResourcesPerKind * Object.keys(FEATURES).length);
+    for (const item of value) safeJsonValue(item, depth + 1, state);
+    return;
+  }
+
+  ensure(plainObject(value));
+  for (const [key, child] of Object.entries(value)) {
+    ensure(
+      typeof key === 'string' &&
+        key.length <= limits.maximumTextLength &&
+        !blockedJsonKeys.has(key),
+    );
+    safeJsonValue(child, depth + 1, state);
+  }
+}
+
+function validateBlueprintEnvelope(blueprint) {
+  safeJsonValue(blueprint);
+  onlyKeys(blueprint, [
+    'format',
+    'version',
+    'sourceGuildId',
+    'resources',
+    'channels',
+    'categories',
+    'roles',
+  ]);
+  ensure(
+    blueprint.format === 'sparkles-blueprint' &&
+      blueprint.version === 1 &&
+      Array.isArray(blueprint.resources) &&
+      Array.isArray(blueprint.channels) &&
+      Array.isArray(blueprint.categories) &&
+      Array.isArray(blueprint.roles),
+  );
+  id(blueprint.sourceGuildId, 'blueprint.sourceGuildId');
+
+  const maximumResources =
+    limits.maximumResourcesPerKind * Object.keys(FEATURES).length;
+  ensure(blueprint.resources.length <= maximumResources);
+  const sourceIds = new Set();
+  for (const [index, item] of blueprint.resources.entries()) {
+    onlyKeys(item, ['sourceId', 'kind', 'value']);
+    resourceId(item.sourceId, `blueprint.resources.${index}.sourceId`);
+    ensure(!sourceIds.has(item.sourceId));
+    sourceIds.add(item.sourceId);
+    ensure(Object.hasOwn(FEATURES, item.kind));
+    ensure(plainObject(item.value));
+  }
+
+  const validateMetadata = (items, name) => {
+    ensure(items.length <= limits.maximumPageSize);
+    const seen = new Set();
+    for (const [index, item] of items.entries()) {
+      onlyKeys(item, ['id', 'name']);
+      id(item.id, `blueprint.${name}.${index}.id`);
+      ensure(!seen.has(item.id));
+      seen.add(item.id);
+      ensure(
+        typeof item.name === 'string' &&
+          item.name.length > 0 &&
+          item.name.length <= limits.maximumNameLength,
+      );
+    }
+  };
+
+  validateMetadata(blueprint.channels, 'channels');
+  validateMetadata(blueprint.categories, 'categories');
+  validateMetadata(blueprint.roles, 'roles');
+  return blueprint;
+}
+
 function actor(request) { return request.session.user.id; }
 function guild(request) { return id(request.params.guildId, 'guildId'); }
 function kind(request) { ensure(Object.hasOwn(FEATURES, request.params.kind), 'NOT_FOUND', 404); return request.params.kind; }
@@ -399,10 +490,18 @@ export function createPlatformApi(config, { store = new PlatformStore({ uri: con
     response.json({ format: 'sparkles-blueprint', version: 1, sourceGuildId: guild(request), resources, channels: metadata.channels.map(({ id, name }) => ({ id, name })), categories: metadata.categories, roles: metadata.roles.map(({ id, name }) => ({ id, name })) });
   }));
   router.post('/blueprint/preview', asyncRoute(async (request, response) => {
-    const context = await authorize(request, 'manage_settings'); onlyKeys(request.body, ['blueprint', 'mapping', 'kinds']);
-    const { blueprint, mapping, kinds } = request.body;
-    ensure(plainObject(blueprint) && blueprint.format === 'sparkles-blueprint' && blueprint.version === 1 && Array.isArray(blueprint.resources) && blueprint.resources.length <= limits.maximumPageSize);
-    ensure(plainObject(mapping) && Array.isArray(kinds) && kinds.every(kind => Object.hasOwn(FEATURES, kind)));
+    const context = await authorize(request, 'manage_settings');
+    onlyKeys(request.body, ['blueprint', 'mapping', 'kinds']);
+    const blueprint = validateBlueprintEnvelope(request.body.blueprint);
+    const { mapping, kinds } = request.body;
+    safeJsonValue(mapping);
+    ensure(
+      plainObject(mapping) &&
+        Array.isArray(kinds) &&
+        kinds.length <= Object.keys(FEATURES).length &&
+        new Set(kinds).size === kinds.length &&
+        kinds.every((kind) => Object.hasOwn(FEATURES, kind)),
+    );
     for (const [oldId, newId] of Object.entries(mapping)) {
       id(oldId, `mapping.${oldId}.sourceId`);
       id(newId, `mapping.${oldId}.destinationId`);
