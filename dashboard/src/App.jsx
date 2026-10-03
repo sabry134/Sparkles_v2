@@ -1222,16 +1222,14 @@ function Dashboard({ session, onSessionExpired }) {
 
                 </div>
               </div>
-              <div className={`save-status ${dirty || saving ? 'dirty' : ''}`}>
-                <span>
-                  <Icon name={dirty || saving ? 'refresh' : 'check'} size={15} />
-                  {saving
-                    ? t('common.saving')
-                    : dirty
-                      ? t('header.autosavePending')
-                      : t('header.saved')}
-                </span>
-              </div>
+              {dirty || saving ? (
+                <div className="save-status dirty" aria-live="polite">
+                  <span>
+                    <Icon name="refresh" size={15} />
+                    {saving ? t('common.saving') : t('header.autosavePending')}
+                  </span>
+                </div>
+              ) : null}
             </header>
 
             {['rules', 'tickets', 'forms', 'giveaways', 'polls', 'feeds', 'members', 'activity', 'jobs', 'access', 'blueprints'].includes(activeSection) && (
