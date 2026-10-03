@@ -3181,3 +3181,364 @@ a.moderation-evidence-reference:hover {
     animation-duration: var(--toast-duration) !important;
   }
 }
+
+
+html,
+body,
+#root,
+.app-shell,
+.dashboard-main,
+.dashboard-content,
+.settings-section,
+.platform-workspace {
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+body {
+  overscroll-behavior-x: none;
+}
+
+.app-shell {
+  width: 100%;
+  min-height: 100dvh;
+}
+
+.sidebar {
+  padding: 18px 14px 12px;
+  overflow: hidden;
+}
+
+.sidebar-brand {
+  padding: 0 8px 18px;
+}
+
+.sidebar-search-row {
+  margin: 0 6px 12px;
+}
+
+.mui-sidebar-search {
+  width: 100%;
+}
+
+.mui-sidebar-search .MuiOutlinedInput-root {
+  height: 38px;
+  border-radius: 8px;
+  background: #10141c;
+}
+
+.mui-sidebar-search .MuiOutlinedInput-input {
+  padding-block: 8px;
+  font-size: 0.76rem;
+}
+
+.command-palette-button.MuiIconButton-root {
+  width: auto;
+  min-width: 44px;
+  height: 25px;
+  padding: 0 6px;
+  border-radius: 5px;
+  color: var(--text-tertiary);
+}
+
+.command-palette-button kbd {
+  font-family: inherit;
+  font-size: 0.62rem;
+  font-weight: 650;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.sidebar-navigation.MuiList-root {
+  display: block;
+  min-height: 0;
+  margin: 0 -2px;
+  padding: 0 2px 8px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  flex: 1 1 auto;
+  scrollbar-width: none;
+}
+
+.sidebar-navigation.MuiList-root::-webkit-scrollbar {
+  display: none;
+}
+
+.nav-group {
+  margin: 0 0 14px;
+}
+
+.nav-group:last-child {
+  margin-bottom: 4px;
+}
+
+.nav-group-label.MuiListSubheader-root {
+  height: 26px;
+  padding: 0 10px;
+  color: #77839a;
+  background: transparent;
+  font-size: 0.64rem;
+  font-weight: 720;
+  letter-spacing: 0.055em;
+  line-height: 26px;
+  text-transform: uppercase;
+}
+
+.nav-entry {
+  position: relative;
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  align-items: center;
+}
+
+.nav-page-button.MuiListItemButton-root {
+  width: 100%;
+  min-width: 0;
+  min-height: 39px;
+  margin: 1px 0;
+  padding: 0 34px 0 9px;
+  border-radius: 7px;
+  color: var(--text-secondary);
+  transition:
+    background 120ms ease,
+    color 120ms ease;
+}
+
+.nav-page-button.MuiListItemButton-root:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.nav-page-button.MuiListItemButton-root.Mui-selected,
+.nav-page-button.MuiListItemButton-root.Mui-selected:hover {
+  color: #f3f1ff;
+  background: rgba(139, 124, 246, 0.13);
+}
+
+.nav-page-icon.MuiListItemIcon-root {
+  width: 32px;
+  min-width: 32px;
+  height: 39px;
+  align-items: center;
+  justify-content: center;
+  color: #8f99ad;
+}
+
+.nav-page-button.Mui-selected .nav-page-icon {
+  color: var(--primary);
+}
+
+.nav-page-text.MuiListItemText-root {
+  min-width: 0;
+  margin: 0;
+}
+
+.nav-page-text .MuiTypography-root {
+  overflow: hidden;
+  font-size: 0.77rem;
+  font-weight: 620;
+  letter-spacing: -0.005em;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nav-pin.MuiIconButton-root {
+  position: absolute;
+  z-index: 2;
+  right: 5px;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  color: #697386;
+  opacity: 0;
+  font-size: 0.76rem;
+  transition:
+    opacity 120ms ease,
+    color 120ms ease,
+    background 120ms ease;
+}
+
+.nav-entry:hover .nav-pin,
+.nav-pin.pinned,
+.nav-pin:focus-visible {
+  opacity: 1;
+}
+
+.nav-pin.pinned {
+  color: var(--primary);
+}
+
+.nav-pin.MuiIconButton-root:hover {
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.palette-results.MuiList-root {
+  max-height: min(52vh, 460px);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.palette-results .MuiListItemButton-root {
+  min-height: 44px;
+  border-radius: 7px;
+}
+
+.palette-results .MuiListItemIcon-root {
+  min-width: 34px;
+  color: var(--text-tertiary);
+}
+
+.account-card {
+  margin-top: 8px;
+  padding: 12px 6px 0;
+}
+
+.dashboard-content {
+  width: min(var(--content-width), calc(100% - 56px));
+  padding: 34px 0 80px;
+}
+
+.dashboard-header {
+  padding-bottom: 22px;
+  gap: 20px;
+}
+
+.server-heading {
+  align-items: center;
+  gap: 13px;
+}
+
+.server-heading h1 {
+  font-size: clamp(1.45rem, 2.2vw, 1.9rem);
+  font-weight: 720;
+  letter-spacing: -0.03em;
+}
+
+.server-heading .eyebrow {
+  margin-bottom: 4px;
+  color: var(--text-tertiary);
+  font-size: 0.69rem;
+}
+
+.settings-section {
+  padding-top: 28px;
+}
+
+.settings-card {
+  border-radius: 8px;
+  background: #151922;
+}
+
+.settings-card + .settings-card {
+  margin-top: 10px;
+}
+
+.field-row {
+  min-height: 78px;
+  padding: 15px 18px;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 310px);
+  gap: 24px;
+}
+
+.field-copy p {
+  margin-top: 4px;
+  color: #9da7ba;
+  line-height: 1.45;
+}
+
+.section-heading {
+  margin-bottom: 13px;
+}
+
+.section-heading p {
+  max-width: 640px;
+}
+
+.MuiDialog-paper {
+  max-width: min(560px, calc(100vw - 32px));
+}
+
+.MuiDialogContent-root,
+.MuiDialogTitle-root,
+.MuiDialogActions-root {
+  min-width: 0;
+}
+
+.MuiPopover-paper,
+.MuiMenu-paper {
+  max-width: calc(100vw - 24px);
+  overflow-x: hidden;
+}
+
+@media (max-width: 900px) {
+  .sidebar-search-row,
+  .nav-group-label,
+  .nav-pin {
+    display: none !important;
+  }
+
+  .sidebar-navigation.MuiList-root {
+    display: flex;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    gap: 3px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+  }
+
+  .nav-group {
+    display: contents;
+  }
+
+  .nav-entry {
+    flex: 0 0 78px;
+    height: 54px;
+  }
+
+  .nav-page-button.MuiListItemButton-root {
+    height: 54px;
+    min-height: 54px;
+    padding: 5px;
+    justify-content: center;
+    flex-direction: column;
+    gap: 3px;
+    text-align: center;
+  }
+
+  .nav-page-icon.MuiListItemIcon-root {
+    width: 20px;
+    min-width: 20px;
+    height: 20px;
+  }
+
+  .nav-page-text .MuiTypography-root {
+    max-width: 72px;
+    font-size: 0.6rem;
+    text-align: center;
+  }
+
+  .dashboard-content {
+    width: min(100% - 28px, var(--content-width));
+    padding-top: 24px;
+  }
+}
+
+@media (max-width: 640px) {
+  .dashboard-content {
+    width: min(100% - 20px, var(--content-width));
+  }
+
+  .dashboard-header {
+    align-items: flex-start;
+  }
+
+  .field-row {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+}
