@@ -1,27 +1,10 @@
 import { t } from './i18n/index.js';
 
-const CAPABILITY_KEYS = Object.freeze({
-  view_analytics: 'capability.viewAnalytics',
-  manage_messages: 'capability.manageMessages',
-  publish_messages: 'capability.publishMessages',
-  manage_rules: 'capability.manageRules',
-  manage_roles: 'capability.manageRoles',
-  manage_automod: 'capability.manageAutomod',
-  moderate_members: 'capability.moderateMembers',
-  manage_tickets: 'capability.manageTickets',
-  view_transcripts: 'capability.viewTranscripts',
-  manage_commands: 'capability.manageCommands',
-  manage_workflows: 'capability.manageWorkflows',
-  manage_integrations: 'capability.manageIntegrations',
-  manage_community: 'capability.manageCommunity',
-  view_audit: 'capability.viewAudit',
-  manage_settings: 'capability.manageSettings',
-  manage_access: 'capability.manageAccess',
-});
-
 export function capabilityLabel(capability) {
-  const key = CAPABILITY_KEYS[capability];
-  return key ? t(key) : capability;
+  if (!capability) return t('platform.notAvailable');
+  const key = `capability.${capability}`;
+  const value = t(key);
+  return value === key ? capability : value;
 }
 
 function resourceLabel(name, id) {
