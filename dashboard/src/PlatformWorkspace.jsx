@@ -1525,8 +1525,17 @@ function Access({ request, bootstrap }) {
 
 const blockedBlueprintKeys = new Set(['__proto__', 'prototype', 'constructor']);
 
-function safeBlueprintValue(value, depth = 0, state = { nodes: 0 }) {
-  if (depth > 24 || state.nodes++ > 10000) return false;
+function safeBlueprintValue(
+  value,
+  depth = 0,
+  state = { nodes: 0, limits: null },
+) {
+  if (
+    depth > state.limits.maximumBlueprintDepth ||
+    state.nodes++ > state.limits.maximumBlueprintNodes
+  ) {
+    return false;
+  }
   if (
     value === null ||
     typeof value === 'string' ||
@@ -1552,7 +1561,7 @@ function safeBlueprintValue(value, depth = 0, state = { nodes: 0 }) {
 }
 
 function validBlueprintFile(blueprint, limits) {
-  if (!safeBlueprintValue(blueprint)) return false;
+  if (!safeBlueprintValue(blueprint, 0, { nodes: 0, limits })) return false;
   if (
     !blueprint ||
     blueprint.format !== 'sparkles-blueprint' ||
@@ -1601,19 +1610,23 @@ function validBlueprintFile(blueprint, limits) {
   }
 
   const validMetadata = (items) => {
-    if (items.length > limits.maximumPageSize) return false;
+    if (items.length > limits.maximumBlueprintObjects) return false;
     const ids = new Set();
-    return items.every(
-      (item) =>
-        item &&
-        Object.keys(item).every((key) => ['id', 'name'].includes(key)) &&
-        /^\d{17,20}$/u.test(item.id ?? '') &&
-        !ids.has(item.id) &&
-        (ids.add(item.id), true) &&
-        typeof item.name === 'string' &&
-        item.name.length > 0 &&
-        item.name.length <= limits.maximumNameLength,
-    );
+    for (const item of items) {
+      if (
+        !item ||
+        Object.keys(item).some((key) => !['id', 'name'].includes(key)) ||
+        !/^\d{17,20}$/u.test(item.id ?? '') ||
+        ids.has(item.id) ||
+        typeof item.name !== 'string' ||
+        item.name.length === 0 ||
+        item.name.length > limits.maximumNameLength
+      ) {
+        return false;
+      }
+      ids.add(item.id);
+    }
+    return true;
   };
 
   return (
