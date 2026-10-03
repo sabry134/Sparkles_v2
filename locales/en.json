@@ -276,7 +276,10 @@
     "relayTitle": "{user} · relayed by {moderator}",
     "textChannelRequired": "This command must be used in a text channel.",
     "purgeEmpty": "No matching recent messages were found.",
-    "purgeCompleted": "Deleted {count} matching recent message(s)."
+    "purgeCompleted": "Deleted {count} matching recent message(s).",
+    "configurationRequiredTitle": "Dashboard configuration required",
+    "giveawayChannelRequired": "Choose a giveaway channel in the Sparkles dashboard before starting a giveaway.",
+    "ticketCategoryRequired": "Choose a ticket category in the Sparkles dashboard before opening tickets."
   },
   "responses": {
     "ping": "Pong! API: {api}ms • WebSocket: {ws}ms",
@@ -301,10 +304,6 @@
     "warn": "Warned {user}. They now have {count} warning(s).",
     "warnings": "{user} has {count} warning(s).",
     "warningsCleared": "Cleared warnings for {user}.",
-    "logsSet": "Moderation logs will be sent to {channel}.",
-    "logsDisabled": "Moderation logs are disabled.",
-    "suggestionsSet": "Suggestions will be sent to {channel}.",
-    "suggestionsDisabled": "Suggestions are disabled.",
     "suggestion": "Suggestion from {user}",
     "suggestionSent": "Your suggestion was submitted.",
     "saySent": "Message sent.",
@@ -348,6 +347,8 @@
     "serverHasNoIcon": "This server does not have an icon.",
     "quoteMissing": "I could not find that message in this channel.",
     "quoteTitle": "Quoted from {user}",
-    "notFound": "Nothing was found."
+    "notFound": "Nothing was found.",
+    "logsCurrent": "Moderation logs are configured for {channel}.",
+    "logsNotConfigured": "No moderation log channel is configured. Set it from the Sparkles dashboard."
   }
 }
