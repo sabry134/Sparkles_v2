@@ -746,7 +746,7 @@ function ResourcePage({ kind, request, bootstrap, selectedId, onNavigate }) {
     open(id);
   };
   const removeResource = async (item) => {
-    if (item.live?.enabled || item.pendingJobId) return;
+    if (item.live?.enabled || item.publication || item.pendingJobId) return;
     const confirmed = await dialogs.confirm({
       title: t('platform.deleteResourceTitle', { name: item.draft.name }),
       message: t('platform.deleteResourceBody'),
@@ -798,10 +798,11 @@ function ResourcePage({ kind, request, bootstrap, selectedId, onNavigate }) {
         ) : listing.items.length ? (
           <div className="platform-resource-list">
             {listing.items.map((item) => {
-              const deletionBlocked = item.live?.enabled || item.pendingJobId;
+              const deletionBlocked =
+                item.live?.enabled || item.publication || item.pendingJobId;
               const deleteHint = item.pendingJobId
                 ? t('platform.deleteResourceBusy')
-                : item.live?.enabled
+                : item.live?.enabled || item.publication
                   ? t('platform.deleteResourceActive')
                   : t('platform.delete');
 
