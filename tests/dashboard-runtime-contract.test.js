@@ -356,6 +356,11 @@ test('dashboard interactive controls use Material UI instead of browser-native U
   assert.match(sources['dashboard/src/App.jsx'], /<Switch/u);
   assert.match(sources['dashboard/src/Navigation.jsx'], /<Dialog/u);
   assert.match(sources['dashboard/src/MessageStudio.jsx'], /<Tabs/u);
+  assert.match(sources['dashboard/src/MessageStudio.jsx'], /<Accordion/u);
+  assert.match(sources['dashboard/src/PlatformWorkspace.jsx'], /<TableContainer/u);
+  assert.match(sources['dashboard/src/PlatformWorkspace.jsx'], /<TableHead/u);
+  assert.match(sources['dashboard/src/PlatformWorkspace.jsx'], /<TableBody/u);
+  assert.match(sources['dashboard/src/PlatformWorkspace.jsx'], /useUiDialog/u);
 
   for (const file of [
     'dashboard/src/App.jsx',
@@ -370,6 +375,8 @@ test('dashboard interactive controls use Material UI instead of browser-native U
     assert.doesNotMatch(sources[file], /<select\b/u);
     assert.doesNotMatch(sources[file], /<textarea\b/u);
     assert.doesNotMatch(sources[file], /<button\b/u);
+    assert.doesNotMatch(sources[file], /<details\b/u);
+    assert.doesNotMatch(sources[file], /<summary\b/u);
   }
 
   for (const file of [
