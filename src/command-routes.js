@@ -270,7 +270,6 @@ export const GROUPED_COMMAND_OPTIONS = Object.freeze({
       minValue: 10,
       maxValue: 604_800,
     }),
-    channel('channel', 'options.destinationChannel'),
   ],
   guess: [
     integer('amount', 'number', 'options.guessNumber', true, {
@@ -364,9 +363,7 @@ export const GROUPED_COMMAND_OPTIONS = Object.freeze({
     string('text', 'message', 'options.messageContent', true, { maxLength: 2_000 }),
     channel('channel', 'options.destinationChannel'),
   ],
-  ticket: [
-    channel('channel', 'options.ticketCategory', false, [ChannelType.GuildCategory]),
-  ],
+  ticket: [],
   translate: [
     string('text', 'text', 'options.translationText', true, { maxLength: 1_000 }),
     string('action', 'language', 'options.targetLanguage', true, {
@@ -420,8 +417,7 @@ const TOP_LEVEL_HELP_OPTIONS = Object.freeze({
   warn: [{ name: 'user', required: true }, { name: 'reason' }],
   'user-warnings': [{ name: 'user', required: true }],
   'clear-warnings': [{ name: 'user', required: true }],
-  logs: [{ name: 'channel' }],
-  'set-suggestions': [{ name: 'channel', required: true }],
+  logs: [],
   suggest: [{ name: 'text', required: true }],
   say: [
     { name: 'channel', required: true },
