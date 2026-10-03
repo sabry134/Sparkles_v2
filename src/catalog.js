@@ -49,7 +49,7 @@ filter-http|Filter links that use the HTTP protocol
 filter-https|Filter links that use the HTTPS protocol
 generate|Generate a premium claim code
 generate-code|Generate a restricted Sparkles staff access code
-giveaway|Start a giveaway in a selected channel
+giveaway|Start a giveaway in the dashboard-configured giveaway channel
 guess|Guess a number from one to ten
 health|View your economy health status
 help|Open the interactive command guide
@@ -60,7 +60,7 @@ kick|Remove a member from the server
 leaderboard|View the tournament points leaderboard
 level|View your XP, level, and available perks
 list|List current Sparkles events
-logs|View, set, or disable the moderation log channel
+logs|Show the moderation log channel configured in the dashboard
 lookup|Look up a Discord bot profile
 lyrics|Search for song lyrics
 memory|Generate a hidden sequence for a memory challenge
@@ -85,7 +85,6 @@ remove-premium|Remove premium access from a user or server
 remove-role|Remove a role from a server member
 rename|Change or randomize a member's nickname
 reply|Reply to an existing Discord message
-reset-suggestions|Disable and clear the suggestion channel
 rob|Attempt to steal coins from another member
 rps|Play one round of rock paper scissors
 rules|Display this server's configured rules
@@ -94,7 +93,6 @@ say|Send an embed message to a selected channel
 search|Search Sparkles frequently asked questions
 set-currency|Set this server's economy currency
 set-profile|Update a field on your Sparkles profile
-set-suggestions|Set the channel used for suggestions
 set-verification|Configure the verified-member role
 setup|Create the standard Sparkles server layout
 shop|Browse the economy store and prices
@@ -107,7 +105,7 @@ sudo|Send a webhook-style message as a member
 suggest|Submit a suggestion to the configured channel
 tag|Create, view, list, edit, or delete server tags
 thread|Create a public thread in the current channel
-ticket|Open the restricted Sparkles management ticket
+ticket|Open a ticket in the dashboard-configured ticket category
 timeout|Timeout a member and privately notify them
 translate|Detect and translate text with language controls
 unban|Revoke a ban using a Discord user ID
