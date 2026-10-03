@@ -3542,3 +3542,267 @@ body {
     gap: 10px;
   }
 }
+
+
+/* Final dashboard polish */
+html,
+body,
+#root {
+  width: 100%;
+  overflow-x: hidden;
+}
+
+body {
+  min-width: 0;
+}
+
+.app-shell,
+.dashboard-main,
+.dashboard-content,
+.settings-section,
+.settings-card,
+.field-row,
+.platform-workspace {
+  min-width: 0;
+}
+
+.sidebar {
+  padding: 16px 12px 12px;
+  overflow: hidden;
+}
+
+.sidebar-brand {
+  padding: 0 8px 18px;
+}
+
+.guild-picker-label {
+  margin: 0 8px 6px;
+  font-size: 0.66rem;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+.guild-picker {
+  margin-bottom: 12px;
+}
+
+.sidebar-search-row {
+  margin: 0 4px 12px;
+}
+
+.mui-sidebar-search .MuiOutlinedInput-root {
+  height: 38px;
+  border-radius: 7px;
+  background: #10141b;
+}
+
+.mui-sidebar-search .MuiInputAdornment-root {
+  color: #778197;
+}
+
+.search-shortcut {
+  padding: 2px 5px;
+  color: #707a8e;
+  border: 1px solid #2c3441;
+  border-radius: 4px;
+  background: #151a22;
+  font: 600 0.58rem/1.2 inherit;
+  white-space: nowrap;
+}
+
+.sidebar-navigation.MuiList-root {
+  margin: 0;
+  padding: 0 2px 8px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.sidebar-navigation.MuiList-root::-webkit-scrollbar {
+  display: none;
+}
+
+.nav-group {
+  margin: 0 0 12px;
+}
+
+.nav-group-label.MuiListSubheader-root {
+  height: 24px;
+  padding: 0 10px;
+  color: #778197;
+  background: transparent;
+  font-size: 0.64rem;
+  font-weight: 650;
+  letter-spacing: 0.015em;
+  line-height: 24px;
+  text-transform: none;
+}
+
+.nav-page-button.MuiListItemButton-root {
+  display: grid;
+  width: 100%;
+  min-height: 38px;
+  margin: 1px 0;
+  padding: 0 10px;
+  grid-template-columns: 30px minmax(0, 1fr);
+  column-gap: 8px;
+  align-items: center;
+  border-radius: 6px;
+}
+
+.nav-page-icon.MuiListItemIcon-root {
+  display: flex;
+  width: 30px;
+  min-width: 30px;
+  height: 38px;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-page-text.MuiListItemText-root {
+  min-width: 0;
+  margin: 0;
+}
+
+.nav-page-text .MuiTypography-root {
+  font-size: 0.76rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.nav-page-button.Mui-selected {
+  box-shadow: inset 2px 0 var(--primary);
+}
+
+.account-card {
+  margin: 8px 2px 0;
+  padding: 10px 6px 0;
+  border-top: 1px solid var(--border);
+}
+
+.dashboard-content {
+  width: min(1120px, calc(100% - 48px));
+  padding: 30px 0 72px;
+}
+
+.dashboard-header {
+  min-height: 58px;
+  padding-bottom: 18px;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+}
+
+.server-heading h1 {
+  font-size: clamp(1.35rem, 2vw, 1.72rem);
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+.server-heading .eyebrow {
+  margin-bottom: 2px;
+  font-size: 0.66rem;
+  font-weight: 550;
+}
+
+.settings-section {
+  padding-top: 22px;
+}
+
+.section-heading,
+.subsection-heading {
+  margin-bottom: 12px;
+}
+
+.section-heading p,
+.subsection-heading p {
+  max-width: 680px;
+  color: var(--text-secondary);
+  font-size: 0.77rem;
+  line-height: 1.45;
+}
+
+.settings-card {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: #141821;
+  box-shadow: none;
+}
+
+.settings-card + .settings-card {
+  margin-top: 10px;
+}
+
+.field-row {
+  min-height: 70px;
+  padding: 13px 16px;
+  grid-template-columns: minmax(0, 1fr) minmax(210px, 300px);
+  gap: 22px;
+}
+
+.field-copy label,
+.field-copy strong {
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+
+.field-copy p {
+  margin-top: 3px;
+  color: #929caf;
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+.MuiButton-root.button,
+.MuiButton-root {
+  border-radius: 6px;
+}
+
+.MuiDialog-paper {
+  overflow-x: hidden !important;
+  border-radius: 8px !important;
+}
+
+.MuiDialogTitle-root {
+  letter-spacing: -0.01em;
+}
+
+.palette-results.MuiList-root {
+  overflow-x: hidden;
+}
+
+.toast {
+  border-radius: 7px;
+  box-shadow: 0 12px 30px rgb(0 0 0 / 0.24);
+}
+
+@media (max-width: 900px) {
+  .dashboard-content {
+    width: min(100% - 28px, 1120px);
+  }
+
+  .sidebar-navigation.MuiList-root {
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+
+  .nav-page-button.MuiListItemButton-root {
+    display: flex;
+    padding: 5px;
+  }
+}
+
+@media (max-width: 640px) {
+  .dashboard-content {
+    width: min(100% - 20px, 1120px);
+  }
+
+  .dashboard-header {
+    min-height: 0;
+  }
+
+  .field-row {
+    grid-template-columns: 1fr;
+  }
+}
