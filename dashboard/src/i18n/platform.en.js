@@ -3,7 +3,14 @@ import { platformEnglish } from '../../../shared/platform-copy.js';
 
 const copy = {
   'platform.search': 'Search', 'platform.create': 'Create', 'platform.choose': 'Choose…',
-  'platform.refresh': 'Refresh', 'platform.name': 'Name', 'platform.description': 'Description',
+  'platform.refresh': 'Refresh',
+  'platform.delete': 'Delete',
+  'platform.deleteResourceTitle': 'Delete {name}',
+  'platform.deleteResourceBody': 'Delete this draft permanently? This cannot be undone.',
+  'platform.deleteResourceActive': 'Unpublish this item before deleting it.',
+  'platform.deleteResourceBusy': 'Wait for the current job to finish before deleting it.',
+  'platform.deleted': 'Deleted.',
+  'error.RESOURCE_ACTIVE': 'Unpublish this item before deleting it.', 'platform.name': 'Name', 'platform.description': 'Description',
   'platform.saveDraft': 'Save draft', 'platform.discard': 'Discard changes', 'platform.duplicate': 'Duplicate',
   'platform.copyName': '{name} (copy)', 'platform.empty': 'No records match these filters.',
   'platform.noResources': 'No saved items yet. Create one to get started.',
