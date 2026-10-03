@@ -95,8 +95,93 @@ const theme = createTheme({
       styleOverrides: {
         paper: {
           border: '1px solid #30394a',
+          borderRadius: 14,
           backgroundImage: 'none',
+          backgroundColor: '#151a23',
           boxShadow: '0 24px 70px rgba(0, 0, 0, 0.48)',
+        },
+      },
+    },
+    MuiDialogTitle: {
+      styleOverrides: {
+        root: {
+          padding: '22px 24px 10px',
+          fontSize: '1.02rem',
+          fontWeight: 750,
+        },
+      },
+    },
+    MuiDialogContent: {
+      styleOverrides: {
+        root: {
+          padding: '14px 24px 20px',
+        },
+      },
+    },
+    MuiDialogActions: {
+      styleOverrides: {
+        root: {
+          padding: '12px 24px 20px',
+          gap: 8,
+        },
+      },
+    },
+    MuiPaper: {
+      styleOverrides: {
+        root: {
+          backgroundImage: 'none',
+        },
+        outlined: {
+          borderColor: '#2a3241',
+        },
+      },
+    },
+    MuiTableCell: {
+      styleOverrides: {
+        head: {
+          color: '#8792a8',
+          fontSize: '0.72rem',
+          fontWeight: 700,
+          textTransform: 'uppercase',
+          letterSpacing: '0.035em',
+          borderColor: '#2a3241',
+        },
+        body: {
+          color: '#e9edf6',
+          fontSize: '0.8rem',
+          borderColor: '#242c39',
+        },
+      },
+    },
+    MuiTableRow: {
+      styleOverrides: {
+        root: {
+          '&.MuiTableRow-hover:hover': {
+            backgroundColor: 'rgba(139, 124, 246, 0.045)',
+          },
+        },
+      },
+    },
+    MuiChip: {
+      styleOverrides: {
+        root: {
+          borderRadius: 7,
+          fontWeight: 650,
+        },
+      },
+    },
+    MuiSwitch: {
+      styleOverrides: {
+        root: {
+          padding: 7,
+        },
+        switchBase: {
+          '&.Mui-checked': {
+            color: '#63d4a0',
+          },
+          '&.Mui-checked + .MuiSwitch-track': {
+            backgroundColor: '#63d4a0',
+          },
         },
       },
     },
@@ -176,14 +261,17 @@ export default function SparklesMuiProvider({ children }) {
         <Dialog
           open={Boolean(dialog)}
           onClose={(_, reason) => {
-            if (reason !== 'backdropClick') close(dialog?.type === 'confirm' ? false : null);
+            if (reason !== 'backdropClick') {
+              close(dialog?.type === 'confirm' ? false : null);
+            }
           }}
           fullWidth
           maxWidth="sm"
+          aria-labelledby="sparkles-dialog-title"
         >
           {dialog ? (
             <>
-              <DialogTitle>{dialog.title}</DialogTitle>
+              <DialogTitle id="sparkles-dialog-title">{dialog.title}</DialogTitle>
               <DialogContent>
                 {dialog.message ? (
                   <DialogContentText sx={{ mb: dialog.type === 'prompt' ? 2 : 0 }}>
@@ -197,7 +285,8 @@ export default function SparklesMuiProvider({ children }) {
                     required={dialog.required}
                     label={dialog.label || dialog.title}
                     multiline={dialog.multiline}
-                    minRows={dialog.multiline ? 3 : undefined}
+                    minRows={dialog.multiline ? 4 : undefined}
+                    maxRows={dialog.multiline ? 10 : undefined}
                     value={value}
                     onChange={(event) => setValue(event.target.value)}
                     onKeyDown={(event) => {
@@ -214,7 +303,11 @@ export default function SparklesMuiProvider({ children }) {
                 ) : null}
               </DialogContent>
               <DialogActions>
-                <Button onClick={() => close(dialog.type === 'confirm' ? false : null)}>
+                <Button
+                  variant="text"
+                  color="inherit"
+                  onClick={() => close(dialog.type === 'confirm' ? false : null)}
+                >
                   {dialog.cancelLabel}
                 </Button>
                 <Button
