@@ -3284,37 +3284,6 @@ body {
   white-space: nowrap;
 }
 
-.nav-pin.MuiIconButton-root {
-  position: absolute;
-  z-index: 2;
-  right: 5px;
-  width: 26px;
-  height: 26px;
-  padding: 0;
-  color: #697386;
-  opacity: 0;
-  font-size: 0.76rem;
-  transition:
-    opacity 120ms ease,
-    color 120ms ease,
-    background 120ms ease;
-}
-
-.nav-entry:hover .nav-pin,
-.nav-pin.pinned,
-.nav-pin:focus-visible {
-  opacity: 1;
-}
-
-.nav-pin.pinned {
-  color: var(--primary);
-}
-
-.nav-pin.MuiIconButton-root:hover {
-  color: var(--text);
-  background: rgba(255, 255, 255, 0.045);
-}
-
 .palette-results.MuiList-root {
   max-height: min(52vh, 460px);
   overflow-y: auto;
@@ -3415,8 +3384,7 @@ body {
 
 @media (max-width: 900px) {
   .sidebar-search-row,
-  .nav-group-label,
-  .nav-pin {
+  .nav-group-label {
     display: none !important;
   }
 
