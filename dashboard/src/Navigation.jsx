@@ -4,7 +4,6 @@ import {
   Dialog,
   DialogContent,
   DialogTitle,
-  IconButton,
   InputAdornment,
   List,
   ListItemButton,
@@ -12,7 +11,6 @@ import {
   ListItemText,
   ListSubheader,
   TextField,
-  Tooltip,
 } from '@mui/material';
 import { t } from './i18n/index.js';
 import { api } from './api.js';
@@ -49,16 +47,6 @@ export default function Navigation({ items, active, onNavigate, guildId }) {
   const [palette, setPalette] = useState(false);
   const [results, setResults] = useState([]);
   const search = useRef(null);
-  const [pins, setPins] = useState(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem('sparkles.pinnedPages') ?? '[]');
-      return Array.isArray(saved)
-        ? saved.filter((item) => items.some(([id]) => id === item))
-        : [];
-    } catch {
-      return [];
-    }
-  });
 
   useEffect(() => {
     const listener = (event) => {
@@ -93,7 +81,7 @@ export default function Navigation({ items, active, onNavigate, guildId }) {
           .catch(() => {
             if (current) setResults([]);
           }),
-      300,
+      250,
     );
 
     return () => {
@@ -102,57 +90,29 @@ export default function Navigation({ items, active, onNavigate, guildId }) {
     };
   }, [palette, query, guildId]);
 
-  const pin = (page) => {
-    const next = pins.includes(page)
-      ? pins.filter((id) => id !== page)
-      : [...pins, page];
-    setPins(next);
-    try {
-      localStorage.setItem('sparkles.pinnedPages', JSON.stringify(next));
-    } catch {}
-  };
-
   const matches = items.filter(([, label]) =>
     t(label).toLocaleLowerCase().includes(query.toLocaleLowerCase()),
   );
 
-  const entry = ([id, key, icon]) => {
-    const pinned = pins.includes(id);
-    return (
-      <Box className="nav-entry" key={id}>
-        <ListItemButton
-          className="nav-page-button"
-          selected={active === id}
-          aria-current={active === id ? 'page' : undefined}
-          data-section={id}
-          onClick={() => onNavigate(id)}
-        >
-          <ListItemIcon className="nav-page-icon">
-            <Icon name={icon} size={19} />
-          </ListItemIcon>
-          <ListItemText
-            className="nav-page-text"
-            primary={t(key)}
-            primaryTypographyProps={{ noWrap: true }}
-          />
-        </ListItemButton>
-        <Tooltip
-          title={t(pinned ? 'navigation.unpin' : 'navigation.pin')}
-          placement="right"
-        >
-          <IconButton
-            size="small"
-            className={`nav-pin ${pinned ? 'pinned' : ''}`}
-            aria-label={t(pinned ? 'navigation.unpin' : 'navigation.pin')}
-            aria-pressed={pinned}
-            onClick={() => pin(id)}
-          >
-            {pinned ? '★' : '☆'}
-          </IconButton>
-        </Tooltip>
-      </Box>
-    );
-  };
+  const entry = ([id, key, icon]) => (
+    <ListItemButton
+      key={id}
+      className="nav-page-button"
+      selected={active === id}
+      aria-current={active === id ? 'page' : undefined}
+      data-section={id}
+      onClick={() => onNavigate(id)}
+    >
+      <ListItemIcon className="nav-page-icon">
+        <Icon name={icon} size={18} />
+      </ListItemIcon>
+      <ListItemText
+        className="nav-page-text"
+        primary={t(key)}
+        primaryTypographyProps={{ noWrap: true }}
+      />
+    </ListItemButton>
+  );
 
   return (
     <>
@@ -165,20 +125,17 @@ export default function Navigation({ items, active, onNavigate, guildId }) {
           onChange={(event) => setQuery(event.target.value)}
           placeholder={t('navigation.search')}
           aria-label={t('navigation.search')}
+          onFocus={() => setPalette(true)}
           slotProps={{
             input: {
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Icon name="search" size={16} />
+                </InputAdornment>
+              ),
               endAdornment: (
                 <InputAdornment position="end">
-                  <Tooltip title={t('navigation.palette')}>
-                    <IconButton
-                      size="small"
-                      className="command-palette-button"
-                      aria-label={t('navigation.palette')}
-                      onClick={() => setPalette(true)}
-                    >
-                      <kbd>Ctrl K</kbd>
-                    </IconButton>
-                  </Tooltip>
+                  <kbd className="search-shortcut">Ctrl K</kbd>
                 </InputAdornment>
               ),
             },
@@ -192,15 +149,6 @@ export default function Navigation({ items, active, onNavigate, guildId }) {
         disablePadding
         aria-label={t('navigation.palette')}
       >
-        {pins.length && matches.some(([id]) => pins.includes(id)) ? (
-          <Box className="nav-group">
-            <ListSubheader component="div" disableSticky className="nav-group-label">
-              {t('navigation.pinned')}
-            </ListSubheader>
-            {matches.filter(([id]) => pins.includes(id)).map(entry)}
-          </Box>
-        ) : null}
-
         {Object.entries(GROUPS).map(([group, pages]) => {
           const groupItems = matches.filter(([id]) => pages.includes(id));
           if (!groupItems.length) return null;
@@ -231,7 +179,16 @@ export default function Navigation({ items, active, onNavigate, guildId }) {
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder={t('navigation.search')}
-            sx={{ mt: 0.5, mb: 1.5 }}
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Icon name="search" size={17} />
+                  </InputAdornment>
+                ),
+              },
+            }}
+            sx={{ mt: 0.5, mb: 1.25 }}
           />
           <List className="palette-results" disablePadding>
             {matches.map(([id, label, icon]) => (
