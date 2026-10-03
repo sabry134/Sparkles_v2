@@ -120,8 +120,6 @@ const optionNames = {
   ],
   role: ['add-role', 'remove-role', 'delete-role', 'modify-role', 'role-info'],
   channel: [
-    'logs',
-    'set-suggestions',
     'say',
     'slowmode',
     'delete-channel',
@@ -187,8 +185,6 @@ const protectedCommands = new Map([
   ].map((name) => [name, [PermissionFlagsBits.ManageChannels, 'Manage Channels']]),
   ...[
     'logs',
-    'set-suggestions',
-    'reset-suggestions',
     'say',
     'announce',
     'module',
@@ -1088,31 +1084,16 @@ client.on('interactionCreate', async (interaction) => {
       }
       case 'logs': {
         const config = guildConfig(interaction.guildId);
-        const channel = interaction.options.getChannel('channel');
-        if (channel && !channel.isTextBased()) {
-          return interaction.reply(ephemeral(t('errors.invalidChannel')));
-        }
-        config.logsChannelId = channel?.id ?? null;
-        await saveStore();
+        const channel = config.logsChannelId
+          ? await interaction.guild.channels.fetch(config.logsChannelId).catch(() => null)
+          : null;
         return interaction.reply(
           ephemeral(
-            channel ? t('responses.logsSet', { channel }) : t('responses.logsDisabled'),
+            channel?.isTextBased()
+              ? t('responses.logsCurrent', { channel })
+              : t('responses.logsNotConfigured'),
           ),
         );
-      }
-      case 'set-suggestions': {
-        const channel = interaction.options.getChannel('channel');
-        if (!channel?.isTextBased()) {
-          return interaction.reply(ephemeral(t('errors.invalidChannel')));
-        }
-        guildConfig(interaction.guildId).suggestionsChannelId = channel.id;
-        await saveStore();
-        return interaction.reply(ephemeral(t('responses.suggestionsSet', { channel })));
-      }
-      case 'reset-suggestions': {
-        guildConfig(interaction.guildId).suggestionsChannelId = null;
-        await saveStore();
-        return interaction.reply(ephemeral(t('responses.suggestionsDisabled')));
       }
       case 'suggest': {
         return submitSuggestion(interaction, t);
