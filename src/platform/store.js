@@ -128,6 +128,21 @@ export class PlatformStore {
         'RESOURCE_ACTIVE',
         409,
       );
+      if (kind === 'forms') {
+        const dependent = await db
+          .collection(collectionFor('ticket-panels'))
+          .findOne(
+            {
+              guildId,
+              $or: [
+                { 'draft.config.formId': resourceId },
+                { 'live.snapshot.config.formId': resourceId },
+              ],
+            },
+            { session, projection: { _id: 1 } },
+          );
+        ensure(!dependent, 'RESOURCE_IN_USE', 409);
+      }
 
       const deleted = await collection.deleteOne(
         { _id: resourceId, guildId, revision: expectedRevision },
