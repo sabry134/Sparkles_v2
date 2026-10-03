@@ -115,13 +115,13 @@
 .platform-dialog-footer { position: sticky; bottom: 0; background: var(--surface); display: flex; justify-content: flex-end; gap: var(--space-3); border-top: 1px solid var(--border); padding-top: var(--space-4); margin-top: var(--space-5); }
 .platform-diff { display: grid; gap: 8px; }
 .mui-diff-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--space-3); }
-.platform-workspace pre, .platform-dialog pre { font-size: .75rem; white-space: pre-wrap; word-break: break-word; padding: 10px; background: var(--surface-subtle); max-height: 300px; overflow: auto; }
+.platform-workspace pre, .platform-dialog pre { font-size: .75rem; white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; padding: 10px; background: var(--surface-subtle); max-height: 300px; overflow-x: hidden; overflow-y: auto; }
 .diff-before { border-left: 2px solid var(--danger); }.diff-after { border-left: 2px solid var(--success); }
 .platform-version, .platform-record { padding: var(--space-4) 0; border-bottom: 1px solid var(--border); }
 .platform-version .studio-section-heading > span { font-size: .75rem; color: var(--text-secondary); }
 .platform-record-heading { display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap; }
 .platform-record-heading time { margin-left: auto; color: var(--text-tertiary); font-size: .75rem; }
-.platform-table-wrap { max-width: 100%; overflow-x: auto; }
+.platform-table-wrap { max-width: 100%; overflow-x: hidden; }
 .mui-table-surface {
   border-radius: 12px !important;
   background: var(--surface) !important;
@@ -294,21 +294,6 @@
 
 .sidebar {
   max-height: 100dvh;
-}.legacy-settings {
-  margin-top: var(--space-6) !important;
-  border: 1px solid var(--border) !important;
-  border-radius: 12px !important;
-  background: var(--surface-subtle) !important;
-}
-.legacy-settings .MuiAccordionSummary-root {
-  min-height: 46px;
-  padding: 0 16px;
-  color: var(--text-secondary);
-  font-size: .86rem;
-  font-weight: 650;
-}
-.legacy-settings .MuiAccordionDetails-root {
-  padding: 0 14px 14px;
 }
 .palette-search { width: 100%; }
 .mui-palette-results .MuiButton-root { justify-content: flex-start; text-align: left; color: var(--text); border-bottom: 1px solid var(--border); border-radius: 0; }.palette-results { display: grid; margin-top: var(--space-4); max-height: 55dvh; overflow-y: auto; }.palette-results button { text-align: left; padding: 12px; border: 0; border-bottom: 1px solid var(--border); background: transparent; color: var(--text); cursor: pointer; }.palette-results button:hover { background: var(--surface-hover); }.palette-results small { display: block; color: var(--text-secondary); margin-top: 4px; }
