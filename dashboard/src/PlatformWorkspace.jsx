@@ -31,6 +31,7 @@ import {
 } from '@mui/material';
 import { api } from './api.js';
 import { t } from './i18n/index.js';
+import { errorDetailsText } from './error-details.js';
 import MessageStudio, { MessagePreview, downloadJson } from './MessageStudio.jsx';
 import { ACTION_FIELDS, FEATURES, emptyResource, configurationDiff } from '../../shared/platform-schema.js';
 import { EMPTY_MESSAGE } from '../../shared/discord-limits.js';
@@ -48,6 +49,7 @@ export function PlatformErrorView({ error }) {
   if (!error) return null;
   const key = `error.${error.code}`;
   const message = t(key);
+  const details = errorDetailsText(error.details);
   return (
     <Paper
       className="platform-error mui-platform-error"
@@ -61,27 +63,36 @@ export function PlatformErrorView({ error }) {
     >
       <Stack direction="row" spacing={1.25} alignItems="flex-start">
         <Box sx={{ color: 'error.main', pt: 0.25 }}>●</Box>
-        <Box sx={{ minWidth: 0 }}>
+        <Box sx={{ minWidth: 0, flex: 1 }}>
           <Typography variant="subtitle2" sx={{ fontWeight: 700 }}>
             {message === key ? t('platform.requestFailed') : message}
           </Typography>
+          {details.length ? (
+            <Box sx={{ mt: 1.25 }}>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ display: 'block', mb: 0.5, fontWeight: 700 }}
+              >
+                {t('platform.errorDetailsTitle')}
+              </Typography>
+              <Stack component="ul" spacing={0.5} sx={{ pl: 2.5, mb: 0, mt: 0 }}>
+                {details.map((detail, index) => (
+                  <Typography component="li" variant="body2" key={index}>
+                    {detail}
+                  </Typography>
+                ))}
+              </Stack>
+            </Box>
+          ) : null}
           {error.requestId ? (
-            <Typography variant="caption" color="text.secondary">
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ display: 'block', mt: details.length ? 1.25 : 0.75 }}
+            >
               {t('platform.requestReference', { reference: error.requestId })}
             </Typography>
-          ) : null}
-          {error.details?.length > 0 ? (
-            <Stack component="ul" spacing={0.5} sx={{ pl: 2.5, mb: 0, mt: 1 }}>
-              {error.details.map((detail, index) => (
-                <Typography component="li" variant="body2" key={index}>
-                  {detail.path}:{' '}
-                  {t(`studio.issue.${detail.code}`, {
-                    path: detail.path,
-                    limit: detail.limit,
-                  })}
-                </Typography>
-              ))}
-            </Stack>
           ) : null}
         </Box>
       </Stack>
