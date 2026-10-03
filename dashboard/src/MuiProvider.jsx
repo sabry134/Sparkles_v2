@@ -171,7 +171,7 @@ export default function SparklesMuiProvider({ children }) {
     <StyledEngineProvider injectFirst>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-      <DialogContext.Provider value={contextValue}>
+        <DialogContext.Provider value={contextValue}>
         {children}
         <Dialog
           open={Boolean(dialog)}
@@ -230,7 +230,7 @@ export default function SparklesMuiProvider({ children }) {
             </>
           ) : null}
         </Dialog>
-      </DialogContext.Provider>
+        </DialogContext.Provider>
       </ThemeProvider>
     </StyledEngineProvider>
   );
