@@ -1243,7 +1243,7 @@ function Dashboard({ session, onSessionExpired }) {
                 <div>
                   <p className="eyebrow">{selectedGuild.name}</p>
                   <h1>{activePageTitle}</h1>
-                  <p>{activePageDescription}</p>
+
                 </div>
               </div>
               <div className={`save-status ${dirty || saving ? 'dirty' : ''}`}>
