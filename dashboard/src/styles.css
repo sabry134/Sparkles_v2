@@ -827,58 +827,6 @@ button:disabled {
   color: #697284;
 }
 
-.toggle {
-  position: relative;
-  display: inline-flex;
-  width: 68px;
-  height: 30px;
-  padding: 3px 4px;
-  justify-self: end;
-  align-items: center;
-  justify-content: space-between;
-  color: var(--text-tertiary);
-  border: 1px solid var(--border-strong);
-  border-radius: 999px;
-  background: var(--surface-subtle);
-  font-size: 0.62rem;
-  font-weight: 650;
-  text-transform: none;
-  cursor: pointer;
-  transition:
-    border-color 120ms ease,
-    background 120ms ease,
-    color 120ms ease;
-}
-
-.toggle span {
-  flex: 1;
-  padding-left: 4px;
-  text-align: left;
-}
-
-.toggle i {
-  display: block;
-  width: 22px;
-  height: 22px;
-  flex: 0 0 auto;
-  border-radius: 50%;
-  background: #636b79;
-  box-shadow: none;
-  transition:
-    background 120ms ease,
-    transform 120ms ease;
-}
-
-.toggle.checked {
-  color: #dff6e8;
-  border-color: rgba(111, 203, 150, 0.38);
-  background: var(--success-soft);
-}
-
-.toggle.checked i {
-  background: var(--success);
-}
-
 .inline-status {
   display: flex;
   min-height: 40px;
@@ -2503,10 +2451,6 @@ a.moderation-evidence-reference:hover {
   white-space: nowrap;
 }
 
-.command-manager-item .toggle {
-  justify-self: end;
-}
-
 .command-manager-actions {
   display: flex !important;
   min-width: auto !important;
@@ -2732,10 +2676,6 @@ a.moderation-evidence-reference:hover {
   .field-row {
     grid-template-columns: 1fr;
     gap: 13px;
-  }
-
-  .toggle {
-    justify-self: start;
   }
 
   .reaction-form {
@@ -3805,4 +3745,15 @@ body {
   .field-row {
     grid-template-columns: 1fr;
   }
+}
+
+.page-settings-stack {
+  display: grid;
+  min-width: 0;
+  margin-top: 16px;
+  gap: 10px;
+}
+
+.page-settings-stack > .settings-card {
+  margin-top: 0;
 }
