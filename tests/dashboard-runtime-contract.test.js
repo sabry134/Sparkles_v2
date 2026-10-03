@@ -415,3 +415,35 @@ test('dashboard UI uses MUI primitives and avoids browser-native interaction chr
   assert.match(sources['dashboard/src/Navigation.jsx'], /ListItemButton/u);
   assert.match(sources['dashboard/src/PlatformWorkspace.jsx'], /<Table/u);
 });
+
+
+test('dashboard errors explain permissions and IDs before the support reference', () => {
+  assert.match(
+    sources['src/platform/discord.js'],
+    /code: 'missing_capability'[\s\S]*?capability[\s\S]*?currentCapabilities/u,
+  );
+  assert.match(
+    sources['shared/platform-schema.js'],
+    /code: 'id'[\s\S]*?path[\s\S]*?value/u,
+  );
+  assert.match(
+    sources['dashboard/src/PlatformWorkspace.jsx'],
+    /errorDetailsText\(error\.details\)/u,
+  );
+  assert.match(
+    sources['dashboard/src/PlatformWorkspace.jsx'],
+    /platform\.errorDetailsTitle/u,
+  );
+  assert.match(
+    sources['dashboard/src/i18n/platform.en.js'],
+    /Support reference: \{reference\}/u,
+  );
+  assert.match(
+    sources['dashboard/src/i18n/platform.en.js'],
+    /Required dashboard permission: \{capability\}/u,
+  );
+  assert.match(
+    sources['dashboard/src/i18n/platform.en.js'],
+    /Invalid Discord ID in \{path\}/u,
+  );
+});
